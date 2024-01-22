@@ -1,5 +1,3 @@
-
-
 # LemmeKnow
 
 [![Living document](https://img.shields.io/badge/Google_Docs-Living_document-green)](https://docs.google.com/document/d/1d1Dfsa-rxboUDKKB_DPqz7EQ5tSm0tDeaKtedVD5LeU/edit?usp=sharing)
