@@ -1,4 +1,9 @@
+
+
 # LemmeKnow
+
+[![Living document](https://img.shields.io/badge/Google_Docs-Living_document-green)](https://docs.google.com/document/d/1d1Dfsa-rxboUDKKB_DPqz7EQ5tSm0tDeaKtedVD5LeU/edit?usp=sharing)
+
 LemmeKnow is a group activity planning platform with an integrated calendar to show availability and an integrated polling system to help make decisions. It offers a centralized dashboard of who is attending an event, their status, and that of their assigned tasks.
 
 ## Goals
@@ -7,3 +12,9 @@ LemmeKnow is a group activity planning platform with an integrated calendar to s
 - Polls, for reaching a consensus based on individual preferences
 - Messaging system, for general discussion and coordination
 - Reminders, to increase the chance of attendance
+
+## Layout
+
+- `frontend/` will contain the frontend website
+- `backend/` contains the backend microservice
+- `terraform/` will contain infrastructure definitions
