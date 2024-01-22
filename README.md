@@ -1,2 +1,0 @@
-# lemme-know
-Lemme Know
