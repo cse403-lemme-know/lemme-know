@@ -16,24 +16,22 @@ import (
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 )
 
-func main() {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
+// Take an authenticated AWS session and create a handler for HTTP
+// and WebSocket events from AWS API Gateway.
+func NewHandler(sess *session.Session) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 	_ = dynamodb.New(sess)
 	_ = apigatewaymanagementapi.New(sess)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "Hello world!")
+		io.WriteString(w, "\"Hello world!\"")
 	})
 
 	httpHandler := httpadapter.New(http.DefaultServeMux).ProxyWithContext
 
-	lambda.Start(func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
+	return func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 		var ws events.APIGatewayWebsocketProxyRequest
-		if err := json.Unmarshal(event, &ws); err == nil {
-			log.Println("Received WebSocket event")
+		if err := json.Unmarshal(event, &ws); err == nil && ws.RequestContext.ConnectionID != "" {
+			log.Println("received WebSocket event")
 			return events.APIGatewayProxyResponse{}, nil
 		}
 
@@ -44,5 +42,15 @@ func main() {
 		}
 
 		return events.APIGatewayProxyResponse{}, fmt.Errorf("received unknown message: %s", event)
-	})
+	}
+}
+
+func main() {
+	// Create session from AWS lambda environment.
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	// Start handling events.
+	lambda.Start(NewHandler(sess))
 }
