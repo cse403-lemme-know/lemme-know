@@ -9,6 +9,9 @@ require (
 )
 
 require (
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/guregu/dynamo v1.21.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	golang.org/x/sync v0.4.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 )

@@ -1,47 +1,47 @@
-package db
+package main
 
-import {
-	"fmt"
-	"reflect"
+import (
+	"github.com/guregu/dynamo"
+)
+
+type UserID = uint64
+
+type Database struct {
+	groups	dynamo.Table
+	users	dynamo.Table
 }
 
-type Tables struct {
-	groups	Table
-	users	Table
-
-}
-
-func initializeTables(db reflect.Type) {
-	Tables.groups := db.Table("Groups")
-	Tables.users := db.Table("Users")
+func initializeNewDatabase(db *dynamo.DB) *Database{
+	return &Database{
+		groups: db.Table("Groups"),
+		users: db.Table("Users"),
+	}
 }	
 
-func insertNewUser(user userInfo) {
-	err := Tables.users.Put(userInfo).Run()
+func (database *Database) InsertNewUser(userInfo User) error {
+	return database.users.Put(userInfo).Run()
 }
 
-func insertNewGroup(group groupInfo) {
-	err := Tables.groups.Put(groupInfo).Run()
+func (database *Database) InsertNewGroup(groupInfo Group) error {
+	return database.groups.Put(groupInfo).Run()
 }
 
-func insertNewSchedule(string userID, schedule scheduleInfo) {
-	err = Tables.users.Update("UserID", userID)
-					  .Append("Schedules", scheduleInfo)
-					  .Run()
+func (database *Database) InsertNewSchedule(userID UserID, scheduleInfo Schedule) error {
+	return database.users.Update("UserID", userID).Append("Schedules", scheduleInfo).Run()
 } 
 
-func updateUserInfo(string userID, map[string]string newInfo) {
-
+func (database *Database) UpdateUserInfo(userID UserID, newInfo map[string]string) error {
+	return nil
 }
 
-func updateGroup() {
-
+func (database *Database) updateGroup() error {
+	return nil
 }
 
-func deleteUserFromGroup(user userInfo, group groupInfo) {
-
+func (database *Database) deleteUserFromGroup(userInfo User, groupInfo Group) error {
+	return nil
 } 
 
-func deleteGroup(group groupIndo) {
-
+func (database *Database) deleteGroup(groupInfo Group) error {
+	return nil
 }

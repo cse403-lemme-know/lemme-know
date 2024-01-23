@@ -7,13 +7,13 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"reflect"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	//"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/guregu/dynamo"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 )
@@ -23,8 +23,8 @@ func main() {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	db = dynamo.New(sess, &aws.Config{Region: aws.String("us-west-2")})
-	initializeTables(reflect.TypeOf(db)) //Initializing new tables -- redundant code
+	var db = dynamo.New(sess, &aws.Config{Region: aws.String("us-west-2")})
+	_ = initializeNewDatabase(db) //Initializing new tables -- redundant code
 
 	_ = apigatewaymanagementapi.New(sess)
 
