@@ -13,6 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/guregu/dynamo"
+	"db/database"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 )
 
@@ -21,7 +23,7 @@ func main() {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	_ = dynamodb.New(sess)
+	db = dynamo.New(sess, &aws.Config{Region: aws.String("us-west-2")})
 	_ = apigatewaymanagementapi.New(sess)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
