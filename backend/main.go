@@ -11,15 +11,17 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/guregu/dynamo"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 )
 
 // Take an authenticated AWS session and create a handler for HTTP
 // and WebSocket events from AWS API Gateway.
 func NewHandler(sess *session.Session) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
-	_ = dynamodb.New(sess)
+	var db = dynamo.New(sess, &aws.Config{Region: aws.String("us-west-2")})
+	_ = initializeNewDatabase(db)
 	_ = apigatewaymanagementapi.New(sess)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
