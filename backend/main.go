@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"
@@ -23,5 +28,21 @@ func main() {
 		io.WriteString(w, "Hello world!")
 	})
 
-	lambda.Start(httpadapter.New(http.DefaultServeMux).ProxyWithContext)
+	httpHandler := httpadapter.New(http.DefaultServeMux).ProxyWithContext
+
+	lambda.Start(func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
+		var ws events.APIGatewayWebsocketProxyRequest
+		if err := json.Unmarshal(event, &ws); err == nil {
+			log.Println("Received WebSocket event")
+			return events.APIGatewayProxyResponse{}, nil
+		}
+
+		var http events.APIGatewayProxyRequest
+		if err := json.Unmarshal(event, &http); err == nil {
+			log.Println("received HTTP request")
+			return httpHandler(context, http)
+		}
+
+		return events.APIGatewayProxyResponse{}, fmt.Errorf("received unknown message: %s", event)
+	})
 }
