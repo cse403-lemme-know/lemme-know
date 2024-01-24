@@ -65,16 +65,6 @@ func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
 	return err
 }
 
-func (dynamoDB *DynamoDB) InsertNewUser(userInfo User) error {
-	err := dynamoDB.users.Put(userInfo).Run()
-	return err
-}
-
-func (dynamoDB *DynamoDB) InsertNewGroup(groupInfo Group) error {
-	err := dynamoDB.groups.Put(groupInfo).Run()
-	return err
-}
-
 func (dynamoDB *DynamoDB) InsertNewSchedule(userID UserID, scheduleInfo Schedule) error {
 	err := dynamoDB.users.Update("UserID", userID).Append("Schedules", scheduleInfo).Run()
 	return err
@@ -93,11 +83,6 @@ func (dynamoDB *DynamoDB) UpdateUserInfo(userID UserID, newInfo User) error {
 func (dynamoDB *DynamoDB) deleteUserFromGroup(userInfo User, groupID GroupID) error {
 	//Check if group exists, check if user exists
 	err := dynamoDB.groups.Update("GroupID", groupID).DeleteFromSet("Users", userInfo).Run()
-	return err
-}
-
-func (dynamoDB *DynamoDB) deleteGroup(groupInfo Group) error {
-	err := dynamoDB.groups.Delete("GroupID", groupInfo.GroupID).Run()
 	return err
 }
 
