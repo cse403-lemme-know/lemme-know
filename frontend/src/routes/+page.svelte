@@ -1,11 +1,11 @@
 <script>
-    export let name = 'LemmeKnow';
+    let name = 'LemmeKnow';
 </script>
 
 <header>
     <h1>{name}</h1>
     <nav>
-        <a href="https:/www.w3schools.com">FEATURES</a>
+        <a href="#">FEATURES</a>
         <a href="#">PRIVACY</a>
         <a href="#">DEV TEAM</a>
     </nav>
@@ -100,6 +100,7 @@
         align-items: center;
         justify-content: center;
         margin: 1rem;
+        border-color: white;
         color: white;
     }
 
@@ -109,9 +110,15 @@
         width: 80%;
         max-width: 300px;
         text-align: center;
-        color: blue;
+        font-size: 1rem;
         background-color: #EEDAF4;
         border-radius: 15px;
+        border: 2px solid transparent;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: black;
     }
 
     button {
@@ -119,15 +126,16 @@
         background-color: #879DB7;
         color: white;
         border: none;
-        border-radius: 0.25rem;
+        font-size: 1rem;
+        border-radius: 1rem;
         cursor: pointer;
-        border-radius: 15px;
     }
 
     button:hover {
-        background-color: black;
+        background-color: gray;
         color: white;
     }
+
     @media (min-width: 640px) {
         .images, .container, .input-container {
             max-width: 100%;
