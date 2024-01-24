@@ -1,8 +1,15 @@
-name: Go
-on: [push]
+name: Build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+  merge_group:
 
 jobs:
   backend:
+    name: Backend
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -14,9 +21,10 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.20.x'
-      - name: Install dependencies
-        run: go mod tidy
       - name: Build
         run: go build
       - name: Test
         run: go test
+      - name: Format
+        # https://stackoverflow.com/a/42510278
+        run: diff -u <(echo -n) <(gofmt -d ./)
