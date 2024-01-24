@@ -10,11 +10,11 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"
-	"github.com/guregu/dynamo"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
+	"github.com/guregu/dynamo"
 )
 
 // Take an authenticated AWS session and create a handler for HTTP

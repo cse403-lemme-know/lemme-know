@@ -1,23 +1,23 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/guregu/dynamo"
-	"encoding/json"
 )
 
 type UserID = uint64
 type GroupID = uint64
 
 type Database struct {
-	groups	dynamo.Table
-	users	dynamo.Table
+	groups dynamo.Table
+	users  dynamo.Table
 }
 
-func initializeNewDatabase(db *dynamo.DB) *Database{
+func initializeNewDatabase(db *dynamo.DB) *Database {
 	return &Database{
 		groups: db.Table("Groups"),
-		users: db.Table("Users"),
+		users:  db.Table("Users"),
 	}
 }
 
@@ -34,7 +34,7 @@ func (database *Database) InsertNewGroup(groupInfo Group) error {
 func (database *Database) InsertNewSchedule(userID UserID, scheduleInfo Schedule) error {
 	err := database.users.Update("UserID", userID).Append("Schedules", scheduleInfo).Run()
 	return err
-} 
+}
 
 func (database *Database) UpdateGroupInfo(groupID GroupID, newInfo Group) error {
 	err := database.groups.Update("GroupID", groupID).Set("Group", newInfo).Run()
@@ -50,7 +50,7 @@ func (database *Database) deleteUserFromGroup(userInfo User, groupID GroupID) er
 	//Check if group exists, check if user exists
 	err := database.groups.Update("GroupID", groupID).DeleteFromSet("Users", userInfo).Run()
 	return err
-} 
+}
 
 func (database *Database) deleteGroup(groupInfo Group) error {
 	err := database.groups.Delete("GroupID", groupInfo.GroupID).Run()
