@@ -6,8 +6,7 @@ import (
 	"github.com/guregu/dynamo"
 )
 
-type UserID = uint64
-type GroupID = uint64
+type ID = uint64
 
 type Database struct {
 	groups dynamo.Table
@@ -31,22 +30,22 @@ func (database *Database) InsertNewGroup(groupInfo Group) error {
 	return err
 }
 
-func (database *Database) InsertNewSchedule(userID UserID, scheduleInfo Schedule) error {
+func (database *Database) InsertNewSchedule(userID ID, scheduleInfo Schedule) error {
 	err := database.users.Update("UserID", userID).Append("Schedules", scheduleInfo).Run()
 	return err
 }
 
-func (database *Database) UpdateGroupInfo(groupID GroupID, newInfo Group) error {
+func (database *Database) UpdateGroupInfo(groupID ID, newInfo Group) error {
 	err := database.groups.Update("GroupID", groupID).Set("Group", newInfo).Run()
 	return err
 }
 
-func (database *Database) UpdateUserInfo(userID UserID, newInfo User) error {
+func (database *Database) UpdateUserInfo(userID ID, newInfo User) error {
 	err := database.users.Update("UserID", userID).Set("User", newInfo).Run()
 	return err
 }
 
-func (database *Database) deleteUserFromGroup(userInfo User, groupID GroupID) error {
+func (database *Database) deleteUserFromGroup(userInfo User, groupID ID) error {
 	//Check if group exists, check if user exists
 	err := database.groups.Update("GroupID", groupID).DeleteFromSet("Users", userInfo).Run()
 	return err
