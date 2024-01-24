@@ -1,15 +1,18 @@
-name: Build
+name: Backend
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+    paths: 
+      - 'backend/**'
   pull_request:
-  merge_group:
+    paths: 
+      - 'backend/**'
 
 jobs:
-  backend:
-    name: Backend
+  build:
+    name: Build and test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -25,6 +28,19 @@ jobs:
         run: go build
       - name: Test
         run: go test
-      - name: Format
+  format:
+    name: Check format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.x'
+      - name: Check format
         # https://stackoverflow.com/a/42510278
         run: diff -u <(echo -n) <(gofmt -d ./)
