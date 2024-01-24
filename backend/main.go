@@ -24,11 +24,16 @@ func NewHandler(sess *session.Session) func(context context.Context, event json.
 	_ = initializeNewDatabase(db)
 	_ = apigatewaymanagementapi.New(sess)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	// This path won't be reachable via Cloudfront.
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "\"Hello world!\"")
 	})
 
-	httpHandler := httpadapter.New(http.DefaultServeMux).ProxyWithContext
+	AddMux(mux, "/api", Api())
+
+	httpHandler := httpadapter.New(mux).ProxyWithContext
 
 	return func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 		var ws events.APIGatewayWebsocketProxyRequest
