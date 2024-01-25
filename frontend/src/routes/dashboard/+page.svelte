@@ -1,12 +1,12 @@
 <script>
-    let availability = {};
     let membersOnline = false;
     let chatMessages = [
         { user: "brooklyn", content: "running late" },
         { user: "zohar", content: "I hurt my foot"},
         { user: "finn", content: "just pushed more changes"}
     ];
-    let tasks = [];
+
+
     let poll = {
         question: "Where to go for lunch?",
         options: [
@@ -18,10 +18,11 @@
         active: true
     };
 
+    let tasks = [];
+    let availability = {};
     function toggleMembers() {
         membersOnline = !membersOnline;
     }
-
 </script>
 
 <header>
@@ -30,6 +31,11 @@
             <img src="../menubar.png" alt="menu bar" class="hamburger-icon" >
             <span class="logo">LemmeKnow</span>
         </button>
+        <button on:click={toggleMembers} class="menu-button">
+            <img src="../users.png" alt="menu bar" class="hamburger-icon" >
+            <span class="members-title">Members</span>
+        </button>
+
     </div>
 </header>
 
@@ -41,7 +47,7 @@
 
 <style>
     .menu-bar {
-        position: absolute;
+        position: relative;
         display: flex;
         flex-direction: column;
         top: 0;
@@ -68,8 +74,8 @@
         margin-left: 25%;
     }
 
-    hamburger-icon {
-        width: 100%;
+    .hamburger-icon {
+        width: 20%;
     }
 
     .logo {
@@ -78,6 +84,16 @@
         font-family: "Baloo Bhai 2";
         font-weight: bolder;
         color: #73a0e7;
+    }
+
+    .members-title {
+        text-align: center;
+        font-size: 1.5rem;
+        margin-top: 0.25rem;
+        margin-left: 1rem;
+        font-family: "Baloo Bhai 2";
+        font-weight: bolder;
+        color: black;
     }
 
     .menu-button:hover .hamburger-icon {
