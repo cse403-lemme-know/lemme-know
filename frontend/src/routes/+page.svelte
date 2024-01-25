@@ -5,9 +5,9 @@
 <header>
     <h1>{name}</h1>
     <nav>
-        <a href="#">FEATURES</a>
-        <a href="#">PRIVACY</a>
-        <a href="#">DEV TEAM</a>
+        <a href="/features/">FEATURES</a>
+        <a href="/privacy">PRIVACY</a>
+        <a href="/devteam">DEV TEAM</a>
     </nav>
 </header>
 
