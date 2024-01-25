@@ -1,4 +1,8 @@
 <script>
+    import { goto } from '$app/navigation';
+    function handleButtonClick() {
+        goto("/dashboard");
+    }
     let name = 'LemmeKnow';
 </script>
 
@@ -21,7 +25,7 @@
         </div>
         <div class="input-container">
             <input type="text" placeholder="Enter Group name..">
-            <button>Let me know!</button>
+            <button on:click={handleButtonClick}>Let me know!</button>
         </div>
         <div class="container">
             <img src="/road.png" alt="group of friends driving in the car">
