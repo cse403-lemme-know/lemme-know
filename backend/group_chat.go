@@ -14,7 +14,7 @@ func RestGroupChatAPI(router *mux.Router, database Database) {
 		switch r.Method {
 		case http.MethodGet:
 			group := r.Context().Value(GroupKey).(*Group)
-			startTimeString := r.URL.Query().Get("start")
+			startTimeString := r.URL.Query().Get("startTime")
 			startTime, err := strconv.ParseUint(startTimeString, 10, 64)
 			if err != nil {
 				startTime = 0
