@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -40,8 +39,7 @@ func RestUserAPI(router *mux.Router, database Database) {
 				Path:     "/",
 			})
 		}
-		w.Header().Add("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(user)
+		WriteJSON(w, user)
 	})
 }
 

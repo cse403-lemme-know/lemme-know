@@ -28,7 +28,7 @@ func TestHandler(t *testing.T) {
 	tests := []Case{
 		{
 			request:  MustMarshal(&events.APIGatewayProxyRequest{HTTPMethod: http.MethodGet, Path: "/"}),
-			response: json.RawMessage("\"Hello world!\""),
+			response: json.RawMessage("\"Hello world!\"\n"),
 			err:      nil,
 		},
 	}
@@ -41,7 +41,7 @@ func TestHandler(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		response, err := NewLambdaHandler(database, notification)(context, json)
+		response, err := newLambdaHandler(database, notification)(context, json)
 		assert.IsType(t, test.err, err)
 		assert.Equal(t, string(test.response), response.Body)
 	}

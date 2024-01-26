@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -30,9 +29,7 @@ func RestGroupAPI(router *mux.Router, database Database) {
 			http.Error(w, "could not create group", http.StatusInternalServerError)
 			return
 		}
-		w.Header().Add("Content-Type", "application/json")
-		w.Header().Add("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(group)
+		WriteJSON(w, group)
 	})
 }
 
@@ -68,17 +65,15 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 			next.ServeHTTP(w, rWithContext)
 		})
 	})
+	RestChatAPI(AddHandler(router, "/chat"), database)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_ = r.Context().Value(UserKey).(*User)
-		w.Header().Add("Content-Type", "application/json")
 		switch r.Method {
 		case http.MethodGet:
 			group := r.Context().Value(GroupKey).(*Group)
-			w.Header().Add("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(group)
+			WriteJSON(w, group)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
-
 	})
 }
