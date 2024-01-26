@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -18,8 +18,7 @@ func RestRoot(router *mux.Router, database Database, _notification Notification)
 			http.Error(w, "Must use GET", http.StatusMethodNotAllowed)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		io.WriteString(w, "\"Hello world!\"")
+		WriteJSON(w, "Hello world!")
 	})
 }
 
@@ -32,6 +31,12 @@ func RestApi(router *mux.Router, database Database) {
 // Adds a nested multiplexer at a relative path prefix.
 func AddHandler(router *mux.Router, prefix string) *mux.Router {
 	return router.PathPrefix(prefix).Subrouter()
+}
+
+// Write HTTP response consisting of JSON.
+func WriteJSON(w http.ResponseWriter, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(data)
 }
 
 // WebSocket event (connect or disconnect) handler.

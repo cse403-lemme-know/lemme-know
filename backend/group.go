@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -9,15 +9,39 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// API's related to groups.
 func RestGroupAPI(router *mux.Router, database Database) {
-	AddHandler(router, "/{groupID}").HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router.Use(AuthenticateMiddleware(database))
+	RestSpecificGroupAPI(AddHandler(router, "/{groupID}"), database)
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 		user := Authenticate(w, r, database)
 		if user == nil {
 			return
 		}
-		w.Header().Add("Content-Type", "application/json")
-		switch r.Method {
-		case http.MethodGet:
+		group := Group{
+			GroupID: rand.Uint64(),
+		}
+		if err := database.CreateGroup(group); err != nil {
+			http.Error(w, "could not create group", http.StatusInternalServerError)
+			return
+		}
+		WriteJSON(w, group)
+	})
+}
+
+type GroupKeyType struct{}
+
+// Used for looking up group out of request context.
+var GroupKey = GroupKeyType(struct{}{})
+
+// API's related to a specific group.
+func RestSpecificGroupAPI(router *mux.Router, database Database) {
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			groupIDString, ok := mux.Vars(r)["groupID"]
 			if !ok {
 				http.Error(w, "missing group id", http.StatusBadRequest)
@@ -37,31 +61,19 @@ func RestGroupAPI(router *mux.Router, database Database) {
 				http.Error(w, "no such group", http.StatusNotFound)
 				return
 			}
-			w.Header().Add("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(group)
+			rWithContext := r.WithContext(context.WithValue(r.Context(), GroupKey, group))
+			next.ServeHTTP(w, rWithContext)
+		})
+	})
+	RestGroupChatAPI(AddHandler(router, "/chat"), database)
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_ = r.Context().Value(UserKey).(*User)
+		switch r.Method {
+		case http.MethodGet:
+			group := r.Context().Value(GroupKey).(*Group)
+			WriteJSON(w, group)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
-
-	})
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		user := Authenticate(w, r, database)
-		if user == nil {
-			return
-		}
-		group := Group{
-			GroupID: rand.Uint64(),
-		}
-		if err := database.CreateGroup(group); err != nil {
-			http.Error(w, "could not create group", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Add("Content-Type", "application/json")
-		w.Header().Add("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(group)
 	})
 }
