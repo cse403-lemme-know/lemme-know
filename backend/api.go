@@ -5,13 +5,13 @@ import (
 )
 
 // API multiplexer.
-func Api() *http.ServeMux {
+func Api(database Database) *http.ServeMux {
 	mux := http.NewServeMux()
-	AddMux(mux, "/session", SessionApi())
+	mux.HandleFunc("/session", SessionApi(database))
 	return mux
 }
 
 // Adds a nested multiplexer at a relative path prefix.
 func AddMux(mux *http.ServeMux, prefix string, subMux *http.ServeMux) {
-	mux.Handle(prefix, http.StripPrefix(prefix, subMux))
+	mux.Handle(prefix+"/", http.StripPrefix(prefix, subMux))
 }
