@@ -46,7 +46,7 @@ func TestHandler(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		response, err := NewHandler(database, notification)(context, json)
+		response, err := NewLambdaHandler(database, notification)(context, json)
 		assert.IsType(t, test.err, err)
 		assert.Equal(t, string(test.response), response.Body)
 	}
