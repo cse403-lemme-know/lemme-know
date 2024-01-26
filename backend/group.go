@@ -11,7 +11,6 @@ import (
 
 func RestGroupAPI(router *mux.Router, database Database) {
 	AddHandler(router, "/{groupID}").HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		println("bar")
 		user := Authenticate(w, r, database)
 		if user == nil {
 			return
@@ -40,19 +39,29 @@ func RestGroupAPI(router *mux.Router, database Database) {
 			}
 			w.Header().Add("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(group)
-		case http.MethodPut:
-			group := Group{
-				GroupID: rand.Uint64(),
-			}
-			if err := database.CreateGroup(group); err != nil {
-				http.Error(w, "could not create group", http.StatusInternalServerError)
-				return
-			}
-			w.Header().Add("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(group)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 
+	})
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		user := Authenticate(w, r, database)
+		if user == nil {
+			return
+		}
+		group := Group{
+			GroupID: rand.Uint64(),
+		}
+		if err := database.CreateGroup(group); err != nil {
+			http.Error(w, "could not create group", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Add("Content-Type", "application/json")
+		w.Header().Add("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(group)
 	})
 }
