@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -40,71 +39,15 @@ func TestHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		database := NewMockDatabase()
-		notification := &MockNotification{}
+		database := NewMemoryDatabase()
+		notification := NewLocalNotification()
 		context := context.Background()
 		json, err := json.Marshal(test.request)
 		if err != nil {
 			panic(err)
 		}
-		response, err := NewHandler(database, notification)(context, json)
+		response, err := NewLambdaHandler(database, notification)(context, json)
 		assert.IsType(t, test.err, err)
 		assert.Equal(t, string(test.response), response.Body)
 	}
-}
-
-type MockDatabase struct {
-	users  map[UserID]User
-	groups map[GroupID]Group
-}
-
-func NewMockDatabase() *MockDatabase {
-	return &MockDatabase{
-		users:  make(map[UserID]User),
-		groups: make(map[GroupID]Group),
-	}
-}
-
-func (mockDatabase *MockDatabase) CreateUser(user User) error {
-	mockDatabase.users[user.UserID] = user
-	return nil
-}
-
-func (mockDatabase *MockDatabase) ReadUser(userID UserID) (*User, error) {
-	user, ok := mockDatabase.users[userID]
-	if ok {
-		return &user, nil
-	} else {
-		return nil, nil
-	}
-}
-
-func (mockDatabase *MockDatabase) DeleteUser(userID UserID) error {
-	delete(mockDatabase.users, userID)
-	return nil
-}
-
-func (mockDatabase *MockDatabase) CreateGroup(group Group) error {
-	mockDatabase.groups[group.GroupID] = group
-	return nil
-}
-
-func (mockDatabase *MockDatabase) ReadGroup(groupId GroupID) (*Group, error) {
-	group, ok := mockDatabase.groups[groupId]
-	if ok {
-		return &group, nil
-	} else {
-		return nil, nil
-	}
-}
-
-func (mockDatabase *MockDatabase) DeleteGroup(groupID GroupID) error {
-	delete(mockDatabase.groups, groupID)
-	return nil
-}
-
-type MockNotification struct{}
-
-func (mockNotification *MockNotification) Notify(connectionID ConnectionID, data any) error {
-	return fmt.Errorf("mock notification")
 }

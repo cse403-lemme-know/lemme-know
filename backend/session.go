@@ -27,8 +27,12 @@ func SessionApi(database Database) func(w http.ResponseWriter, r *http.Request) 
 				return
 			}
 			http.SetCookie(w, &http.Cookie{
-				Name:  "userID",
-				Value: strconv.FormatUint(user.UserID, 36),
+				Name:     "userID",
+				Value:    strconv.FormatUint(user.UserID, 10),
+				MaxAge:   365 * 24 * 3600,
+				Secure:   true,
+				SameSite: http.SameSiteStrictMode,
+				HttpOnly: true,
 			})
 		}
 		w.Header().Add("Content-Type", "application/json")
@@ -41,7 +45,7 @@ func CheckCookie(r *http.Request, database Database) (*User, error) {
 	if err != nil {
 		return nil, nil
 	}
-	userID, err := strconv.ParseUint(cookie.Value, 36, 64)
+	userID, err := strconv.ParseUint(cookie.Value, 10, 64)
 	if err != nil {
 		return nil, nil
 	}
