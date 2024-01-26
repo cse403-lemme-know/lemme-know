@@ -1,6 +1,6 @@
 1. Add AWS credentials to `~/.aws/credentials`
 ```toml
-[cse453]
+[cse403]
 aws_access_key_id = {your AWS access key id}
 aws_secret_access_key = {your AWS secret access key}
 ```
