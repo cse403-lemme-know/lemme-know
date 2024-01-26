@@ -11,6 +11,7 @@ import (
 
 type UserID = uint64
 type GroupID = uint64
+type UnixMillis = uint64
 
 // A service capable of persisting data.
 type Database interface {
@@ -38,6 +39,11 @@ type Database interface {
 	// Returns a nil `*Group` if no such group exists. Returns
 	// an error if the operation could not be completed.
 	ReadGroup(GroupID) (*Group, error)
+	// Reads group chat messagses, on or after startTime, from the database.
+	//
+	// May not return all messages. If returns at least one message, should call again with
+	// startTime set to the latest timestamp of the returned messages.
+	ReadGroupChat(GroupID, startTime UnixMillis) ([]Message, error)
 	// Deletes a group from the database, if it exists.
 	//
 	// Returns an error if the operation could not be completed.
@@ -80,6 +86,11 @@ func (dynamoDB *DynamoDB) CreateGroup(groupInfo Group) error {
 }
 
 func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
+	// TODO: unimplemented.
+	return nil, nil
+}
+
+func (dynamoDB *DynamoDB) ReadGroupChat(groupID GroupID, startTime UnixMillis) ([]Message, error) {
 	// TODO: unimplemented.
 	return nil, nil
 }
@@ -166,6 +177,11 @@ func (memoryDatabase *MemoryDatabase) ReadGroup(groupId GroupID) (*Group, error)
 	} else {
 		return nil, nil
 	}
+}
+
+func (memoryDatabase *MemoryDatabase) ReadGroupChat(groupID GroupID, startTime UnixMillis) ([]Message, error) {
+	// TODO: unimplemented.
+	return nil, nil
 }
 
 func (memoryDatabase *MemoryDatabase) DeleteGroup(groupID GroupID) error {

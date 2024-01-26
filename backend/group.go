@@ -65,7 +65,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 			next.ServeHTTP(w, rWithContext)
 		})
 	})
-	RestChatAPI(AddHandler(router, "/chat"), database)
+	RestGroupChatAPI(AddHandler(router, "/chat"), database)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_ = r.Context().Value(UserKey).(*User)
 		switch r.Method {
