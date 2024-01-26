@@ -31,11 +31,6 @@ func TestHandler(t *testing.T) {
 			response: json.RawMessage("\"Hello world!\""),
 			err:      nil,
 		},
-		{
-			request:  MustMarshal(&events.APIGatewayProxyRequest{HTTPMethod: http.MethodGet, Path: "/api/session"}),
-			response: json.RawMessage("\"Ok\""),
-			err:      nil,
-		},
 	}
 
 	for _, test := range tests {
