@@ -11,7 +11,7 @@
 ```sh
 make
 ```
-2. Open https://localhost:8080
+2. Open http://localhost:8080
 
 ## Deploying to AWS lambda
 

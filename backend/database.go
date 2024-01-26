@@ -33,7 +33,7 @@ type Database interface {
 	// Returns an error if a group with the same `GroupIP`
 	// already exists, or if the operation may have failed.
 	CreateGroup(Group) error
-	// Reads a gropu from the database.
+	// Reads a group from the database.
 	//
 	// Returns a nil `*Group` if no such group exists. Returns
 	// an error if the operation could not be completed.

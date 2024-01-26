@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-lambda-go v1.45.0
 	github.com/aws/aws-sdk-go v1.50.0
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.0
+	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.1
 	github.com/guregu/dynamo v1.21.0
 	github.com/stretchr/testify v1.7.2

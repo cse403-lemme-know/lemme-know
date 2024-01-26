@@ -13,12 +13,14 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
 func NewLambdaHandler(database Database, notification Notification) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
-	mux := Root(database, notification)
-	httpHandler := httpadapter.New(mux).ProxyWithContext
+	router := mux.NewRouter()
+	RestRoot(router, database, notification)
+	httpHandler := httpadapter.New(router).ProxyWithContext
 
 	return func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 		var http events.APIGatewayProxyRequest
@@ -69,10 +71,10 @@ func RunLocalService() {
 	database := NewMemoryDatabase()
 	notification := NewLocalNotification()
 
-	mux := Root(database, notification)
+	router := mux.NewRouter()
 	upgrader := websocket.Upgrader{} // use default options
 
-	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
@@ -95,6 +97,8 @@ func RunLocalService() {
 		}()
 	})
 
+	RestRoot(router, database, notification)
+
 	// Run `Cron` every hour.
 	go func() {
 		now := time.Now()
@@ -105,7 +109,7 @@ func RunLocalService() {
 
 	s := &http.Server{
 		Addr:           fmt.Sprintf(":%d", port),
-		Handler:        mux,
+		Handler:        router,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 10,

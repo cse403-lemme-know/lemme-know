@@ -1,14 +1,16 @@
 package main
 
 import (
-	"io"
+	"encoding/json"
 	"math/rand"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
-func SessionApi(database Database) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func RestUserAPI(router *mux.Router, database Database) {
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Must use GET", http.StatusMethodNotAllowed)
 			return
@@ -19,10 +21,10 @@ func SessionApi(database Database) func(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		if user == nil {
-			user := User{
+			user = &User{
 				UserID: rand.Uint64(),
 			}
-			if err := database.CreateUser(user); err != nil {
+			if err := database.CreateUser(*user); err != nil {
 				http.Error(w, "could not create user", http.StatusInternalServerError)
 				return
 			}
@@ -33,11 +35,12 @@ func SessionApi(database Database) func(w http.ResponseWriter, r *http.Request) 
 				Secure:   true,
 				SameSite: http.SameSiteStrictMode,
 				HttpOnly: true,
+				Path:     "/",
 			})
 		}
 		w.Header().Add("Content-Type", "application/json")
-		io.WriteString(w, "\"Ok\"")
-	}
+		json.NewEncoder(w).Encode(user)
+	})
 }
 
 func CheckCookie(r *http.Request, database Database) (*User, error) {
@@ -54,4 +57,17 @@ func CheckCookie(r *http.Request, database Database) (*User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+// If returns nil, an error has been sent and must return from handler.
+func Authenticate(w http.ResponseWriter, r *http.Request, database Database) *User {
+	user, err := CheckCookie(r, database)
+	if err != nil {
+		http.Error(w, "invalid cookie", http.StatusInternalServerError)
+		return nil
+	}
+	if user == nil {
+		http.Error(w, "missing cookie or invalid user", http.StatusUnauthorized)
+	}
+	return user
 }
