@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -27,14 +28,19 @@ func TestHandler(t *testing.T) {
 
 	tests := []Case{
 		{
-			request:  MustMarshal(&events.APIGatewayProxyRequest{Body: "Hi"}),
+			request:  MustMarshal(&events.APIGatewayProxyRequest{HTTPMethod: http.MethodGet, Path: "/"}),
 			response: json.RawMessage("\"Hello world!\""),
+			err:      nil,
+		},
+		{
+			request:  MustMarshal(&events.APIGatewayProxyRequest{HTTPMethod: http.MethodGet, Path: "/api/session"}),
+			response: json.RawMessage("\"Ok\""),
 			err:      nil,
 		},
 	}
 
 	for _, test := range tests {
-		database := &MockDatabase{}
+		database := NewMockDatabase()
 		notification := &MockNotification{}
 		context := context.Background()
 		json, err := json.Marshal(test.request)
@@ -50,6 +56,13 @@ func TestHandler(t *testing.T) {
 type MockDatabase struct {
 	users  map[UserID]User
 	groups map[GroupID]Group
+}
+
+func NewMockDatabase() *MockDatabase {
+	return &MockDatabase{
+		users:  make(map[UserID]User),
+		groups: make(map[GroupID]Group),
+	}
 }
 
 func (mockDatabase *MockDatabase) CreateUser(user User) error {

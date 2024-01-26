@@ -22,24 +22,35 @@ func NewHandler(database Database, _notification Notification) func(context cont
 
 	// This path won't be reachable via Cloudfront.
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Must use GET", http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
 		io.WriteString(w, "\"Hello world!\"")
 	})
 
-	AddMux(mux, "/api", Api())
+	AddMux(mux, "/api", Api(database))
 
 	httpHandler := httpadapter.New(mux).ProxyWithContext
 
 	return func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
+		var http events.APIGatewayProxyRequest
+		if err := json.Unmarshal(event, &http); err == nil && http.HTTPMethod != "" {
+			log.Printf("received HTTP request: %s\n", http.Path)
+			return httpHandler(context, http)
+		}
+
 		var ws events.APIGatewayWebsocketProxyRequest
 		if err := json.Unmarshal(event, &ws); err == nil && ws.RequestContext.ConnectionID != "" {
-			log.Println("received WebSocket event")
+			log.Printf("received WebSocket event: %s\n", ws.Path)
 			return events.APIGatewayProxyResponse{}, nil
 		}
 
-		var http events.APIGatewayProxyRequest
-		if err := json.Unmarshal(event, &http); err == nil {
-			log.Println("received HTTP request")
-			return httpHandler(context, http)
+		var cron events.EventBridgeEvent
+		if err := json.Unmarshal(event, &cron); err == nil && cron.DetailType != "" {
+			log.Println("received EventBridge event")
+			return events.APIGatewayProxyResponse{}, nil
 		}
 
 		return events.APIGatewayProxyResponse{}, fmt.Errorf("received unknown message: %s", event)
