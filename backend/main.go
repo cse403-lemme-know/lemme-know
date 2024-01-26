@@ -17,18 +17,25 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func NewLambdaHandler(database Database, notification Notification) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
+// Creates a function that can handle JSON events from AWS services.
+func newLambdaHandler(database Database, notification Notification) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 	router := mux.NewRouter()
+
+	// Expose the entire Rest API.
 	RestRoot(router, database, notification)
+
+	// Convert Go http handler to AWS Lambda http handler.
 	httpHandler := httpadapter.New(router).ProxyWithContext
 
 	return func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
+		// Check if the event is an AWS API Gateway HTTP Rest request.
 		var http events.APIGatewayProxyRequest
 		if err := json.Unmarshal(event, &http); err == nil && http.HTTPMethod != "" {
 			log.Printf("received HTTP request: %s\n", http.Path)
 			return httpHandler(context, http)
 		}
 
+		// Check if the event is an AWS API Gateway HTTP WebSocket event.
 		var ws events.APIGatewayWebsocketProxyRequest
 		if err := json.Unmarshal(event, &ws); err == nil && ws.RequestContext.ConnectionID != "" {
 			isConnect := ws.RequestContext.EventType == "Connect"
@@ -40,6 +47,7 @@ func NewLambdaHandler(database Database, notification Notification) func(context
 			return events.APIGatewayProxyResponse{}, err
 		}
 
+		// Check if the event is an AWS EventBridge cron event.
 		var cron events.EventBridgeEvent
 		if err := json.Unmarshal(event, &cron); err == nil && cron.DetailType != "" {
 			log.Println("received EventBridge event")
@@ -51,7 +59,8 @@ func NewLambdaHandler(database Database, notification Notification) func(context
 	}
 }
 
-func RunLambdaService() {
+// Handle events forever within AWS Lambda with a non-volatile database.
+func runLambdaService() {
 	log.Println("starting AWS lambda service")
 	// Create session from AWS lambda environment.
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
@@ -61,11 +70,12 @@ func RunLambdaService() {
 	database := NewDynamoDB(sess)
 	notification := NewApiGateway(sess)
 
-	// Start handling events.
-	lambda.Start(NewLambdaHandler(database, notification))
+	// Start handling events forever.
+	lambda.Start(newLambdaHandler(database, notification))
 }
 
-func RunLocalService() {
+// Handle events forever on localhost with a volatile database.
+func runLocalService() {
 	port := 8080
 	log.Printf("starting localhost service at http://localhost:%d\n", port)
 	database := NewMemoryDatabase()
@@ -74,6 +84,7 @@ func RunLocalService() {
 	router := mux.NewRouter()
 	upgrader := websocket.Upgrader{} // use default options
 
+	// In addition to the Rest API, expose WebSocket capabilities.
 	router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -97,9 +108,10 @@ func RunLocalService() {
 		}()
 	})
 
+	// Expose the Rest API.
 	RestRoot(router, database, notification)
 
-	// Run `Cron` every hour.
+	// Run cron job every hour.
 	go func() {
 		now := time.Now()
 		sleep := 60 - now.Minute()
@@ -114,17 +126,20 @@ func RunLocalService() {
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 10,
 	}
+
+	// Serve HTTP until it encounters an error.
 	log.Fatal(s.ListenAndServe())
 }
 
-func IsOnLambda() bool {
+// Returns true if and only if executing in an AWS Lambda function.
+func isOnLambda() bool {
 	return os.Getenv("LAMBDA_TASK_ROOT") != ""
 }
 
 func main() {
-	if IsOnLambda() {
-		RunLambdaService()
+	if isOnLambda() {
+		runLambdaService()
 	} else {
-		RunLocalService()
+		runLocalService()
 	}
 }
