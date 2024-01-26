@@ -7,22 +7,47 @@ import (
 	"strconv"
 )
 
-func SessionApi() *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/session", func(w http.ResponseWriter, r *http.Request) {
+func SessionApi(database Database) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Must use GET", http.StatusMethodNotAllowed)
 			return
 		}
-		// TODO: check session with database.
-		_, err := r.Cookie("session")
+		user, err := CheckCookie(r, database)
 		if err != nil {
+			http.Error(w, "could not check cookie", http.StatusInternalServerError)
+			return
+		}
+		if user == nil {
+			user := User{
+				UserID: rand.Uint64(),
+			}
+			if err := database.CreateUser(user); err != nil {
+				http.Error(w, "could not create user", http.StatusInternalServerError)
+				return
+			}
 			http.SetCookie(w, &http.Cookie{
-				Name:  "session",
-				Value: strconv.FormatUint(rand.Uint64(), 36),
+				Name:  "userID",
+				Value: strconv.FormatUint(user.UserID, 36),
 			})
 		}
-		io.WriteString(w, "OK")
-	})
-	return mux
+		w.Header().Add("Content-Type", "application/json")
+		io.WriteString(w, "\"Ok\"")
+	}
+}
+
+func CheckCookie(r *http.Request, database Database) (*User, error) {
+	cookie, err := r.Cookie("userID")
+	if err != nil {
+		return nil, nil
+	}
+	userID, err := strconv.ParseUint(cookie.Value, 36, 64)
+	if err != nil {
+		return nil, nil
+	}
+	user, err := database.ReadUser(userID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
