@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"math/rand"
 	"net/http"
@@ -70,4 +71,21 @@ func Authenticate(w http.ResponseWriter, r *http.Request, database Database) *Us
 		http.Error(w, "missing cookie or invalid user", http.StatusUnauthorized)
 	}
 	return user
+}
+
+type UserKeyType struct{}
+
+var UserKey = UserKeyType(struct{}{})
+
+func AuthenticateMiddleware(database Database) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user := Authenticate(w, r, database)
+			if user == nil {
+				return
+			}
+			rWithContext := r.WithContext(context.WithValue(r.Context(), UserKey, user))
+			next.ServeHTTP(w, rWithContext)
+		})
+	}
 }

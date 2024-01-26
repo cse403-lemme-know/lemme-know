@@ -9,12 +9,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func RestGroupAPI(router *mux.Router, database Database) {
-	AddHandler(router, "/{groupID}").HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		user := Authenticate(w, r, database)
-		if user == nil {
-			return
-		}
+func RestSpecificGroupAPI(router *mux.Router, database Database) {
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_ = r.Context().Value(UserKey)
 		w.Header().Add("Content-Type", "application/json")
 		switch r.Method {
 		case http.MethodGet:
@@ -44,6 +41,11 @@ func RestGroupAPI(router *mux.Router, database Database) {
 		}
 
 	})
+}
+
+func RestGroupAPI(router *mux.Router, database Database) {
+	router.Use(AuthenticateMiddleware(database))
+	RestSpecificGroupAPI(AddHandler(router, "/{groupID}"), database)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
