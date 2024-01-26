@@ -4,34 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
+	"github.com/gorilla/websocket"
 )
 
-// Take an authenticated AWS session and create a handler for HTTP
-// and WebSocket events from AWS API Gateway.
-func NewHandler(database Database, _notification Notification) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
-
-	mux := http.NewServeMux()
-
-	// This path won't be reachable via Cloudfront.
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Must use GET", http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		io.WriteString(w, "\"Hello world!\"")
-	})
-
-	AddMux(mux, "/api", Api(database))
-
+func NewLambdaHandler(database Database, notification Notification) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
+	mux := Root(database, notification)
 	httpHandler := httpadapter.New(mux).ProxyWithContext
 
 	return func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
@@ -43,21 +29,28 @@ func NewHandler(database Database, _notification Notification) func(context cont
 
 		var ws events.APIGatewayWebsocketProxyRequest
 		if err := json.Unmarshal(event, &ws); err == nil && ws.RequestContext.ConnectionID != "" {
-			log.Printf("received WebSocket event: %s\n", ws.Path)
-			return events.APIGatewayProxyResponse{}, nil
+			isConnect := ws.RequestContext.EventType == "Connect"
+			isDisconnect := ws.RequestContext.EventType == "Disconnect"
+			var err error
+			if isConnect || isDisconnect {
+				err = WebSocket(database, ws.RequestContext.ConnectionID, isConnect)
+			}
+			return events.APIGatewayProxyResponse{}, err
 		}
 
 		var cron events.EventBridgeEvent
 		if err := json.Unmarshal(event, &cron); err == nil && cron.DetailType != "" {
 			log.Println("received EventBridge event")
-			return events.APIGatewayProxyResponse{}, nil
+			err := Cron()
+			return events.APIGatewayProxyResponse{}, err
 		}
 
 		return events.APIGatewayProxyResponse{}, fmt.Errorf("received unknown message: %s", event)
 	}
 }
 
-func main() {
+func RunLambdaService() {
+	log.Println("starting AWS lambda service")
 	// Create session from AWS lambda environment.
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
@@ -67,5 +60,67 @@ func main() {
 	notification := NewApiGateway(sess)
 
 	// Start handling events.
-	lambda.Start(NewHandler(database, notification))
+	lambda.Start(NewLambdaHandler(database, notification))
+}
+
+func RunLocalService() {
+	port := 8080
+	log.Printf("starting localhost service at http://localhost:%d\n", port)
+	database := NewMemoryDatabase()
+	notification := NewLocalNotification()
+
+	mux := Root(database, notification)
+	upgrader := websocket.Upgrader{} // use default options
+
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+
+		connectionID := notification.add(c)
+
+		WebSocket(database, connectionID, true)
+
+		go func() {
+			defer c.Close()
+			defer notification.remove(connectionID)
+			defer WebSocket(database, connectionID, false)
+			for {
+				messageType, _, err := c.ReadMessage()
+				if err != nil || messageType == websocket.CloseMessage {
+					break
+				}
+			}
+		}()
+	})
+
+	// Run `Cron` every hour.
+	go func() {
+		now := time.Now()
+		sleep := 60 - now.Minute()
+		time.Sleep(time.Duration(int64(sleep) * int64(time.Minute)))
+		Cron()
+	}()
+
+	s := &http.Server{
+		Addr:           fmt.Sprintf(":%d", port),
+		Handler:        mux,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 10,
+	}
+	log.Fatal(s.ListenAndServe())
+}
+
+func IsOnLambda() bool {
+	return os.Getenv("LAMBDA_TASK_ROOT") != ""
+}
+
+func main() {
+	if IsOnLambda() {
+		RunLambdaService()
+	} else {
+		RunLocalService()
+	}
 }
