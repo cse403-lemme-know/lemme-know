@@ -4,14 +4,16 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 // HTTP multiplexer for the root path.
-func Root(database Database, _notification Notification) *http.ServeMux {
-	mux := http.NewServeMux()
+func RestRoot(router *mux.Router, database Database, _notification Notification) {
+	RestApi(AddHandler(router, "/api"), database)
 
 	// This path won't be reachable via Cloudfront.
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Must use GET", http.StatusMethodNotAllowed)
 			return
@@ -19,22 +21,17 @@ func Root(database Database, _notification Notification) *http.ServeMux {
 		w.Header().Set("Content-Type", "application/json")
 		io.WriteString(w, "\"Hello world!\"")
 	})
-
-	AddMux(mux, "/api", Api(database))
-
-	return mux
 }
 
 // HTTP multiplexer for the API.
-func Api(database Database) *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/session", SessionApi(database))
-	return mux
+func RestApi(router *mux.Router, database Database) {
+	RestUserAPI(AddHandler(router, "/user"), database)
+	RestGroupAPI(AddHandler(router, "/group"), database)
 }
 
 // Adds a nested multiplexer at a relative path prefix.
-func AddMux(mux *http.ServeMux, prefix string, subMux *http.ServeMux) {
-	mux.Handle(prefix+"/", http.StripPrefix(prefix, subMux))
+func AddHandler(router *mux.Router, prefix string) *mux.Router {
+	return router.PathPrefix(prefix).Subrouter()
 }
 
 // WebSocket event (connect or disconnect) handler.
