@@ -14,7 +14,7 @@ func RestGroupAPI(router *mux.Router, database Database) {
 	router.Use(AuthenticateMiddleware(database))
 	RestSpecificGroupAPI(AddHandler(router, "/{groupID}"), database)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut {
+		if r.Method != http.MethodPatch {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
