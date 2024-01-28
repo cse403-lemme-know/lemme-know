@@ -15,7 +15,7 @@ async function createGroup(name) {
             body: JSON.stringify({name})
         });
         const result = await response.json();
-        return result.GroupID;
+        return result.groupId;
     } catch (e) {
         return null;
     }
