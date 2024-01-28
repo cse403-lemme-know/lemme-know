@@ -27,8 +27,10 @@ func newLambdaHandler(database Database, notification Notification) func(context
 	// Expose the entire Rest API.
 	RestRoot(router, database, notification)
 
+	handler := applyCors(router)
+
 	// Convert Go http handler to AWS Lambda http handler.
-	httpHandler := httpadapter.New(router).ProxyWithContext
+	httpHandler := httpadapter.New(handler).ProxyWithContext
 
 	return func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 		// Check if the event is an AWS API Gateway HTTP Rest request.
@@ -150,11 +152,9 @@ func runLocalService() {
 		Cron()
 	}()
 
-	handler := handlers.CORS(handlers.AllowedOrigins([]string{"*"}), handlers.AllowCredentials(), handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"}))(router)
-
 	s := &http.Server{
 		Addr:           fmt.Sprintf(":%d", port),
-		Handler:        handler,
+		Handler:        applyCors(router),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 10,
@@ -162,6 +162,11 @@ func runLocalService() {
 
 	// Serve HTTP until it encounters an error.
 	log.Fatal(s.ListenAndServe())
+}
+
+// Allow exotic HTTP methods, credentials.
+func applyCors(handler http.Handler) http.Handler {
+	return handlers.CORS(handlers.AllowCredentials(), handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"}))(handler)
 }
 
 // Returns true if and only if executing in an AWS Lambda function.
