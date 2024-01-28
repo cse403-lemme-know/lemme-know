@@ -28,7 +28,7 @@ func TestHandler(t *testing.T) {
 	tests := []Case{
 		{
 			request:  MustMarshal(&events.APIGatewayProxyRequest{HTTPMethod: http.MethodGet, Path: "/"}),
-			response: json.RawMessage("\"Hello world!\"\n"),
+			response: json.RawMessage("404 page not found\n"),
 			err:      nil,
 		},
 	}
