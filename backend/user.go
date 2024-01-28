@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -9,37 +10,66 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// User sent over JSON.
+type GetUserResponse struct {
+	UserID UserID    `json:"userId"`
+	Name   string    `json:"name,omitempty"`
+	Status string    `json:"status"`
+	Groups []GroupID `json:"groups,omitempty"`
+}
+
+// User edit sent over JSON.
+type PatchUserRequest struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
 // User-related API's.
 func RestUserAPI(router *mux.Router, database Database) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Must use GET", http.StatusMethodNotAllowed)
-			return
-		}
 		user, err := CheckCookie(r, database)
 		if err != nil {
 			http.Error(w, "could not check cookie", http.StatusInternalServerError)
 			return
 		}
-		if user == nil {
-			user = &User{
-				UserID: rand.Uint64(),
+		switch r.Method {
+		case http.MethodGet:
+			if user == nil {
+				user = &User{
+					UserID: rand.Uint64(),
+				}
+				if err := database.CreateUser(*user); err != nil {
+					http.Error(w, "could not create user", http.StatusInternalServerError)
+					return
+				}
+				http.SetCookie(w, &http.Cookie{
+					Name:     "userID",
+					Value:    strconv.FormatUint(user.UserID, 10),
+					MaxAge:   365 * 24 * 3600,
+					Secure:   true,
+					SameSite: http.SameSiteStrictMode,
+					HttpOnly: true,
+					Path:     "/",
+				})
 			}
-			if err := database.CreateUser(*user); err != nil {
-				http.Error(w, "could not create user", http.StatusInternalServerError)
+			WriteJSON(w, GetUserResponse{
+				UserID: user.UserID,
+				Name:   user.Name,
+				Groups: user.Groups,
+				Status: "online",
+			})
+		case http.MethodPatch:
+			var request PatchUserRequest
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return
 			}
-			http.SetCookie(w, &http.Cookie{
-				Name:     "userID",
-				Value:    strconv.FormatUint(user.UserID, 10),
-				MaxAge:   365 * 24 * 3600,
-				Secure:   true,
-				SameSite: http.SameSiteStrictMode,
-				HttpOnly: true,
-				Path:     "/",
-			})
+			// TODO: save changes to database
+			_ = request
+			WriteJSON(w, nil)
+		default:
+			http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 		}
-		WriteJSON(w, user)
 	})
 }
 

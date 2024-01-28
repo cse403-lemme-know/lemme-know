@@ -9,6 +9,40 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Group sent over JSON.
+type GetGroupResponse struct {
+	GroupID        GroupID                        `json:"groupId"`
+	Name           string                         `json:"name"`
+	Members        []UserID                       `json:"members,omitempty"`
+	Poll           *GetGroupResponsePoll          `json:"poll"`
+	Availabilities []GetGroupResponseAvailability `json:"availabilities"`
+	Activities     []GetGroupResponseActivity     `json:"activities"`
+	CalendarMode   string                         `json:"calendarMode"`
+}
+
+// Poll sent over JSON.
+type GetGroupResponsePoll struct {
+	Options map[string][]UserID `json:"options"`
+}
+
+// Availability sent over JSON.
+type GetGroupResponseAvailability struct {
+	AvailabilityID uint64 `json:"availabilityId"`
+	UserID         UserID `json:"userId"`
+	Date           string `json:"date"`
+	Start          string `json:"start"`
+	End            string `json:"end"`
+}
+
+// Activity sent over JSON.
+type GetGroupResponseActivity struct {
+	ActivityId uint64   `json:"activityId"`
+	Date       string   `json:"date"`
+	Start      string   `json:"start"`
+	End        string   `json:"end"`
+	Confirmed  []UserID `json:"confirmed"`
+}
+
 // API's related to groups.
 func RestGroupAPI(router *mux.Router, database Database) {
 	router.Use(AuthenticateMiddleware(database))
@@ -71,7 +105,15 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 		switch r.Method {
 		case http.MethodGet:
 			group := r.Context().Value(GroupKey).(*Group)
-			WriteJSON(w, group)
+			WriteJSON(w, GetGroupResponse{
+				GroupID: group.GroupID,
+				Name:    group.Name,
+				Members: group.Members,
+				// TODO
+				Poll:           nil,
+				Availabilities: []GetGroupResponseAvailability{},
+				Activities:     []GetGroupResponseActivity{},
+			})
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
