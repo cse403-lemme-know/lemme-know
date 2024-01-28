@@ -23,8 +23,6 @@ make deploy
 ```
 
 ## API
-- Request: `GET /`
-  - Response: `"Hello World"`
 - Open WebSocket: `/ws/`
   - Precondition: authentication cookie
   - Effect: creates a new WebSocket connection
