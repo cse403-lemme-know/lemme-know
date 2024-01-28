@@ -5,18 +5,19 @@
 1. Install `go` v1.20 or higher.
 2. Install `make`.
 
-## Running local service
+## Running local backend
 
-1. Run local service:
+1. Run local backend:
 ```sh
 make
 ```
+2. Run the development frontend (see [../frontend/README.md](../frontend/README.md))
 2. Open http://localhost:8080.
 
-## Deploying to AWS lambda
+## Deploying backend to AWS lambda
 
-1. Run Terraform to get credentials.
-2. Deploy serverless service:
+1. Apply Terraform to get credentials.
+2. Deploy serverless backend:
 ```sh
 make deploy
 ```
@@ -49,7 +50,7 @@ make deploy
 ### Group
 - Request: `GET /api/group/1234/`
   - Precondition: authentication cookie of user in group `1234`
-  - Response: `{GroupID: 1234, Poll: {Options: [{"a": [1234], ..}]}, Availabilities: [{AvailabilityID: 5678, UserID: 5678, Date: "9999-12-31", Start: "8:00", End: "11:00"}], Activites: [{ActivityID: 5678, Title: "abc", Date: "9999-12-31", Start: "9:00", End: "10:30"}, ...], ...}`
+  - Response: `{GroupID: 1234, Poll: {Options: [{"a": [1234], ..}]}, Availabilities: [{AvailabilityID: 5678, UserID: 5678, Date: "9999-12-31", Start: "8:00", End: "11:00"}], Activities: [{ActivityID: 5678, Title: "abc", Date: "9999-12-31", Start: "9:00", End: "10:30"}, ...], ...}`
 - Request: `PATCH /api/group/1234/ {Name: "Best Friends", CalendarTitle: "Hikes", CalendarMode: "date" | "dayOfWeek"}`
   - Precondition: authentication cookie of user in group `1234`.
   - Effect: updates any group `1234` setting(s) passed in object.
@@ -81,13 +82,13 @@ make deploy
 
 #### Availability
 - Request: `PATCH /api/group/1234/availability/ {Title: "abc", Date: "9999-12-31", Start: "9:00", End: "10:30"}`
-  - Precondition: authentication cookie.
+  - Precondition: authentication cookie of user in group `1234`.
   - Effect: Create new scheduled activity.
 - Request: `DELETE /api/group/1234/activity/5678/`
-  - Precondition: authentication cookie.
+  - Precondition: authentication cookie of user in group `1234`.
   - Effect: Delete scheduled availability by ID.
 
-#### Actitivty
+#### Activity
 - Request: `PATCH /api/group/1234/activity/ {Title: "abc", Date: "9999-12-31", Start: "9:00", End: "10:30"}`
   - Precondition: authentication cookie of user in group `1234`, activity doesn't overlap with others.
   - Effect: Create new scheduled activity.

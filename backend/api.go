@@ -11,15 +11,6 @@ import (
 // HTTP multiplexer for the root path.
 func RestRoot(router *mux.Router, database Database, _notification Notification) {
 	RestApi(AddHandler(router, "/api"), database)
-
-	// This path won't be reachable via Cloudfront.
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Must use GET", http.StatusMethodNotAllowed)
-			return
-		}
-		WriteJSON(w, "Hello world!")
-	})
 }
 
 // HTTP multiplexer for the API.
