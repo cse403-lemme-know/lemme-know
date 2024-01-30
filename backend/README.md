@@ -11,7 +11,11 @@
 ```sh
 make
 ```
-2. Run the development frontend (see [../frontend/README.md](../frontend/README.md))
+2. Run the development frontend:
+```sh
+cd ../frontend
+npm run build && npm run preview
+```
 2. Open http://localhost:8080.
 
 ## Deploying backend to AWS lambda
