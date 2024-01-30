@@ -1,4 +1,34 @@
 <script>
+
+    import { goto } from '$app/navigation';
+    import { Datepicker } from 'svelte-calendar';
+    import dayjs from 'dayjs';
+    import { writable } from 'svelte/store';
+    import { startDate, endDate, groupName } from '$lib/stores';
+
+    let name = 'LemmeKnow';
+    // let start = writable(undefined);
+    // let endDate = writable(undefined);
+    let errorMsg = writable("");
+    // let groupName = writable(undefined);
+
+    function handleButtonClick() {
+        if ($startDate && $endDate) {
+            if (dayjs($startDate).isAfter($endDate)) {
+                $errorMsg = "Start date must be before the end date"
+            } else {
+                $errorMsg = "";
+                if (!$groupName || $groupName.trim().length == 0) {
+                    $errorMsg = "Please enter a group name";
+                } else {
+                    startDate.set($startDate);
+                    endDate.set($endDate);
+                    groupName.set($groupName);
+                    goto("/dashboard");
+                }
+            }
+        }
+    }
     import * as model from '$lib/model.js';
     let name = 'LemmeKnow';
 </script>
@@ -6,9 +36,11 @@
 <header>
     <h1>{name}</h1>
     <nav>
-        <a href="#">FEATURES</a>
-        <a href="#">PRIVACY</a>
-        <a href="#">DEV TEAM</a>
+
+        <a href="/features/">FEATURES</a>
+        <a href="/privacy">PRIVACY</a>
+        <a href="/devteam">DEV TEAM</a>
+
     </nav>
 </header>
 
@@ -20,9 +52,17 @@
             <img src="/cal.png" alt="family of four sharing their calendars">
 
         </div>
+        <div class="date-picker-container">
+            <label>Start Date:</label>
+            <Datepicker bind:selected={$startDate}/>
+            <label >End Date:</label>
+            <Datepicker bind:selected={$endDate}/>
+        </div>
         <div class="input-container">
-            <input id="groupName" type="text" placeholder="Enter Group name..">
-            <button on:click={_ => model.createGroup(document.getElementById("groupName").value)}>Let me know!</button>
+            <input type="text" bind:value={$groupName} placeholder="Enter Group name..">
+            <button on:click={handleButtonClick}>Let me know!</button>
+            <span class="errorMsg">{$errorMsg}</span>
+
         </div>
         <div class="container">
             <img src="/road.png" alt="group of friends driving in the car">
@@ -50,6 +90,13 @@
         align-items: center;
         padding: 1rem 0;
     }
+
+
+    .errorMsg {
+        color: red;
+        margin-top: 0.5rem;
+    }
+
 
     nav a {
         text-decoration: none;
@@ -136,6 +183,22 @@
         background-color: gray;
         color: white;
     }
+
+    .date-picker-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 10;
+        position: relative;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        font-size: 1rem;
+        color: black;
+    }
+
 
     @media (min-width: 640px) {
         .images, .container, .input-container {
