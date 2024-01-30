@@ -3,12 +3,13 @@
     import { Datepicker } from 'svelte-calendar';
     import dayjs from 'dayjs';
     import { writable } from 'svelte/store';
+    import { startDate, endDate, groupName } from '$lib/stores';
 
     let name = 'LemmeKnow';
-    let startDate = writable(undefined);
-    let endDate = writable(undefined);
+    // let start = writable(undefined);
+    // let endDate = writable(undefined);
     let errorMsg = writable("");
-    let groupName = writable(undefined);
+    // let groupName = writable(undefined);
 
     function handleButtonClick() {
         if ($startDate && $endDate) {
@@ -19,6 +20,9 @@
                 if (!$groupName || $groupName.trim().length == 0) {
                     $errorMsg = "Please enter a group name";
                 } else {
+                    startDate.set($startDate);
+                    endDate.set($endDate);
+                    groupName.set($groupName);
                     goto("/dashboard");
                 }
             }
