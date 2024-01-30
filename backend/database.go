@@ -40,9 +40,9 @@ func (dynamoDB *DynamoDB) CreateUser(userInfo User) error {
 	return err
 }
 
-func (dynamoDB *DynamoDB) ReadUser(userId UserID) (*User, error) {
-	// TODO: unimplemented.
-	return nil, nil
+func (dynamoDB *DynamoDB) ReadUser(userId UserID) (*User, error) User {
+	err := dynamoDB.users.Get("UserID", userID).Run()
+	return err
 }
 
 func (dynamoDB *DynamoDB) DeleteUser(userID UserID) error {
@@ -55,9 +55,9 @@ func (dynamoDB *DynamoDB) CreateGroup(groupInfo Group) error {
 	return err
 }
 
-func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
-	// TODO: unimplemented.
-	return nil, nil
+func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) Group {
+	err := dynamoDB.groups.Get("GroupID", groupID).Run()
+	return err
 }
 
 func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
@@ -80,7 +80,7 @@ func (dynamoDB *DynamoDB) UpdateUserInfo(userID UserID, newInfo User) error {
 	return err
 }
 
-func (dynamoDB *DynamoDB) deleteUserFromGroup(userInfo User, groupID GroupID) error {
+func (dynamoDB *DynamoDB) DeleteUserFromGroup(userInfo User, groupID GroupID) error {
 	//Check if group exists, check if user exists
 	err := dynamoDB.groups.Update("GroupID", groupID).DeleteFromSet("Users", userInfo).Run()
 	return err
