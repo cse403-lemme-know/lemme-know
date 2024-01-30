@@ -7,6 +7,10 @@
     let end;
 
     let availability = writable({});
+    let tasks = writable([]);
+    let taskInput = '';
+    let assignedInput = '';
+
     onMount (() => {
         start = get(startDate);
         end = get(endDate);
@@ -26,10 +30,41 @@
         initializeAvailability(dayjs(start), dayjs(end));
     });
 
+    /** @param {number} day
+     * @param {number} hour
+     */
     function toggleSlot(day, hour) {
         availability.update(a => {
             a[day][hour] = !a[day][hour]
             return a;
+        });
+    }
+
+    /** @param {string} taskDescription
+     * @param {string} assigneeName
+     */
+    function addTask(taskDescription, assigneeName) {
+        tasks.update(currentTasks => {
+            const newTask = {
+                id: currentTasks.length + 1,
+                description: taskDescription,
+                assignedTo: assigneeName,
+                completed: false
+            };
+            return [...currentTasks, newTask]
+        });
+        taskInput = '';
+        assignedInput = '';
+    }
+
+    /** @param {number} taskId */
+    function toggleCompletion(taskId) {
+        tasks.update(currentTasks => {
+            const index = currentTasks.findIndex(t => t.id === taskId);
+            if (index !== -1) {
+                currentTasks[index].completed = !currentTasks[index].completed;
+            }
+            return currentTasks;
         });
     }
 
@@ -67,6 +102,20 @@
                             </div>
                         {/each}
                     </div>
+                </div>
+            {/each}
+            <form on:submit|preventDefault={() => addTask(taskInput, assignedInput)}>
+                <input type="text" bind:value={taskInput} placeholder="Enter task description (50 characters max)" maxlength="50">
+                <input type="text" bind:value={assignedInput} placeholder="Enter assignee name (50 characters max)" maxlength="50">
+                <button type="submit" disabled={!taskInput.trim() || !assignedInput.trim()}>Add Task</button>
+            </form>
+            {#each $tasks as task (task.id)}
+                <div class="task-item">
+                    <input type="checkbox" bind:checked={task.completed} on:click={() => toggleCompletion(task.id)}>
+                    <span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
+                    {#if task.assignedTo}
+                        <span>Assigned to: {task.assignedTo}</span>
+                    {/if}
                 </div>
             {/each}
         </div>
@@ -194,5 +243,68 @@
 
     .slot.available {
         background-color: #a9e1a9;
+    }
+
+    input {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        margin-top: 0.5rem;
+        width: 80%;
+        max-width: 15rem;
+        text-align: center;
+        font-size: 1rem;
+        background-color: #c9e7e7;
+        border-radius: 15px;
+        border: 2px solid transparent;
+    }
+
+    button {
+        padding: 0.5rem 1rem;
+        background-color: #2774d0;
+        color: white;
+        border: none;
+        align-items: center;
+        font-size: 1rem;
+        border-radius: 1rem;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: black;
+        color: white;
+    }
+
+    .task-item {
+        display: flex;
+        margin-bottom: 1rem;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background-color: #f9f9f9;
+        border-raius: 0.2rem;
+        font-family: "Baloo Bhai 2";
+        align-items: center;
+        font-size: 1.25rem;
+    }
+
+    .task-item input[type="checkbox"] {
+        accent-color: #879DB7;
+        transform: scale(1.5);
+        cursor: pointer;
+    }
+
+    .task-item .completed-task {
+        text-decoration: line-through;
+        color: #879DB7;
+    }
+
+    .task-item span {
+        margin-left: 1rem;
+        color: #333;
+        font-weight: bold;
+    }
+
+    button[type="submit"]:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
     }
 </style>

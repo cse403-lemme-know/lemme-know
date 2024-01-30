@@ -32,6 +32,7 @@
 	"type": "module",
 	"dependencies": {
 		"dayjs": "^1.11.10",
+		"jest": "^29.7.0",
 		"svelte-datepicker": "^1.0.0",
 		"svelte-picker": "^0.1.0"
 	}
