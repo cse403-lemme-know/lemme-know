@@ -199,14 +199,10 @@
     }
 
     .menu-button:hover .hamburger-icon {
-        background-color: #d3d3d3;
-        border-radius: 0.5rem;
         transform: scale(1.2);
     }
 
     .menu-button:hover .user-icon {
-        background-color: #d3d3d3;
-        border-radius: 0.5rem;
         transform: scale(1.2);
     }
 
@@ -270,7 +266,7 @@
     }
 
     button:hover {
-        background-color: black;
+        background-color: gray;
         color: white;
     }
 
