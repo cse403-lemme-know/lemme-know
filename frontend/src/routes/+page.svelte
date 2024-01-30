@@ -5,7 +5,7 @@
     import dayjs from 'dayjs';
     import { writable } from 'svelte/store';
     import { startDate, endDate, groupName } from '$lib/stores';
-
+    import * as model from '$lib/model.js';
     let name = 'LemmeKnow';
     // let start = writable(undefined);
     // let endDate = writable(undefined);
@@ -29,8 +29,6 @@
             }
         }
     }
-    import * as model from '$lib/model.js';
-    let name = 'LemmeKnow';
 </script>
 
 <header>
