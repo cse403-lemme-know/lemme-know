@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,21 +27,21 @@ func TestHandler(t *testing.T) {
 
 	tests := []Case{
 		{
-			request:  MustMarshal(&events.APIGatewayProxyRequest{Body: "Hi"}),
-			response: json.RawMessage("\"Hello world!\""),
+			request:  MustMarshal(&events.APIGatewayProxyRequest{HTTPMethod: http.MethodGet, Path: "/"}),
+			response: json.RawMessage("404 page not found\n"),
 			err:      nil,
 		},
 	}
 
-	// Need deprecated API to avoid missing credential error.
-	sess := session.New()
-	context := context.Background()
 	for _, test := range tests {
+		database := NewMemoryDatabase()
+		notification := NewLocalNotification()
+		context := context.Background()
 		json, err := json.Marshal(test.request)
 		if err != nil {
 			panic(err)
 		}
-		response, err := NewHandler(sess)(context, json)
+		response, err := newLambdaHandler(database, notification)(context, json)
 		assert.IsType(t, test.err, err)
 		assert.Equal(t, string(test.response), response.Body)
 	}

@@ -1,0 +1,59 @@
+name: Backend
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths: 
+      - 'backend/**'
+  pull_request:
+    paths: 
+      - 'backend/**'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.x'
+      - name: Build
+        run: go build
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.x'
+      - name: Test
+        run: go test
+  format:
+    name: Check format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.x'
+      - name: Check format
+        # https://stackoverflow.com/a/42510278
+        run: diff -u <(echo -n) <(gofmt -d ./)

@@ -1,0 +1,26 @@
+name: Terraform
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths: 
+      - 'terraform/**'
+  pull_request:
+    paths: 
+      - 'terraform/**'
+
+jobs:
+  format:
+    name: Check format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Check format
+        run: terraform fmt -check

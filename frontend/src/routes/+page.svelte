@@ -1,4 +1,5 @@
 <script>
+
     import { goto } from '$app/navigation';
     import { Datepicker } from 'svelte-calendar';
     import dayjs from 'dayjs';
@@ -28,14 +29,18 @@
             }
         }
     }
+    import * as model from '$lib/model.js';
+    let name = 'LemmeKnow';
 </script>
 
 <header>
     <h1>{name}</h1>
     <nav>
+
         <a href="/features/">FEATURES</a>
         <a href="/privacy">PRIVACY</a>
         <a href="/devteam">DEV TEAM</a>
+
     </nav>
 </header>
 
@@ -45,6 +50,7 @@
         <div class="container">
             <img src="/highfive.png" alt="3 people trying to figure out their collective availability">
             <img src="/cal.png" alt="family of four sharing their calendars">
+
         </div>
         <div class="date-picker-container">
             <label>Start Date:</label>
@@ -56,6 +62,7 @@
             <input type="text" bind:value={$groupName} placeholder="Enter Group name..">
             <button on:click={handleButtonClick}>Let me know!</button>
             <span class="errorMsg">{$errorMsg}</span>
+
         </div>
         <div class="container">
             <img src="/road.png" alt="group of friends driving in the car">
@@ -84,10 +91,12 @@
         padding: 1rem 0;
     }
 
+
     .errorMsg {
         color: red;
         margin-top: 0.5rem;
     }
+
 
     nav a {
         text-decoration: none;
@@ -189,6 +198,7 @@
         font-size: 1rem;
         color: black;
     }
+
 
     @media (min-width: 640px) {
         .images, .container, .input-container {
