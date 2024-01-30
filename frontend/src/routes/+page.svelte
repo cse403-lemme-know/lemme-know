@@ -1,4 +1,5 @@
 <script>
+    import * as model from '$lib/model.js';
     let name = 'LemmeKnow';
 </script>
 
@@ -20,8 +21,8 @@
 
         </div>
         <div class="input-container">
-            <input type="text" placeholder="Enter Group name..">
-            <button>Let me know!</button>
+            <input id="groupName" type="text" placeholder="Enter Group name..">
+            <button on:click={_ => model.createGroup(document.getElementById("groupName").value)}>Let me know!</button>
         </div>
         <div class="container">
             <img src="/road.png" alt="group of friends driving in the car">

@@ -5,41 +5,40 @@
 1. Install `go` v1.20 or higher.
 2. Install `make`.
 
-## Running local service
+## Running local backend
 
-1. Run local service:
+1. Run local backend:
 ```sh
 make
 ```
+2. Run the development frontend (see [../frontend/README.md](../frontend/README.md))
 2. Open http://localhost:8080.
 
-## Deploying to AWS lambda
+## Deploying backend to AWS lambda
 
-1. Run Terraform to get credentials.
-2. Deploy serverless service:
+1. Apply Terraform to get credentials.
+2. Deploy serverless backend:
 ```sh
 make deploy
 ```
 
 ## API
-- Request: `GET /`
-  - Response: `"Hello World"`
 - Open WebSocket: `/ws/`
   - Precondition: authentication cookie
   - Effect: creates a new WebSocket connection
   - Messages:
-    - `{GroupID: 1234}`
+    - `{group: {groupId: 1234}}`
       - Meaning: means the group was updated and should be redownloaded.
-    - `{Message: {GroupID: 1234, Timestamp: 123456789, Sender: 5678, Message: "hello", ...}`
+    - `{message: {groupId: 1234, timestamp: 123456789, sender: 5678, content: "hello", ...}`
       - Meaning: delivers a chat message.
-    - `{UserID: 5678, Name: "Alex", Status: "online" | "busy" | "offline"}`
+    - `{user: {userId: 5678, name: "Alex", status: "online" | "busy" | "offline"}}`
       - Meaning: a user profile changed.
 
 ### User
 - Request: `GET /api/user/`
   - Effect: creates a new user and sets authentication cookie unless already authenticated.
-  - Response: `{UserID: 1234, Name: "Alex", GroupIDs: [1234], ...}`
-- Request: `PATCH /api/user/ {Name: "Alex", Status: "online" | "busy" | "offline"}`
+  - Response: `{userId: 1234, name: "Alex", groups: [1234], ...}`
+- Request: `PATCH /api/user/ {name: "Alex", status: "online" | "busy" | "offline"}`
   - Precondition: authentication cookie.
   - Effect: overwrites whichever profile settings were sent in the object.
 - Request: `DELETE /api/user/`
@@ -49,30 +48,30 @@ make deploy
 ### Group
 - Request: `GET /api/group/1234/`
   - Precondition: authentication cookie of user in group `1234`
-  - Response: `{GroupID: 1234, Poll: {Options: [{"a": [1234], ..}]}, Availabilities: [{AvailabilityID: 5678, UserID: 5678, Date: "9999-12-31", Start: "8:00", End: "11:00"}], Activites: [{ActivityID: 5678, Title: "abc", Date: "9999-12-31", Start: "9:00", End: "10:30"}, ...], ...}`
-- Request: `PATCH /api/group/1234/ {Name: "Best Friends", CalendarTitle: "Hikes", CalendarMode: "date" | "dayOfWeek"}`
+  - Response: `{groupId: 1234, poll: {options: [{"a": [1234], ..}]}, availabilities: [{availabilityId: 5678, UserId: 5678, date: "9999-12-31", start: "8:00", end: "11:00"}], activities: [{activityId: 5678, Title: "abc", date: "9999-12-31", start: "9:00", end: "10:30", confirmed: [5678]}, ...], ...}`
+- Request: `PATCH /api/group/1234/ {name: "Best Friends", calendarMode: "date" | "dayOfWeek"}`
   - Precondition: authentication cookie of user in group `1234`.
   - Effect: updates any group `1234` setting(s) passed in object.
-  - Response: `{GroupID: 1234}`.
-- Request: `PATCH /api/group/ {Name: "Friends"}`
+  - Response: `{groupId: 1234}`.
+- Request: `PATCH /api/group/ {name: "Friends"}`
   - Precondition: authentication cookie.
   - Effect: creates a new group with the specified name.
-  - Response: `{GroupID: 1234}`.
+  - Response: `{groupId: 1234}`.
 
 #### Chat
 - Request: `GET /api/group/1234/chat/?Start=123456789&End=123456789` gets group chat messages starting at a Unix millisecond time (inclusive) and ending at a Unix millisecond time (inclusive).
   - Precondition: authentication cookie of user in group `1234`.
-  - Response: `{Messages: [{Sender: 5678, Timestamp: 123456789, Message: "hello", ...}, {...}], End: 123456789}`
-    - Note: `response.End` may be less than `request.End` for pagination purposes.
-- Request: `PATCH /api/group/1234/chat/ {Message: "hello"}`
+  - Response: `{Messages: [{sender: 5678, timestamp: 123456789, message: "hello", ...}, {...}], continue: true}`
+    - Note: If `continue` is true, should request again (with higher start time) for more messages.
+- Request: `PATCH /api/group/1234/chat/ {message: "hello"}`
   - Precondition: authentication cookie of user in group `1234`.
   - Effect: Send a chat message in group `1234`.
 
 #### Poll
-- Request: `PUT /api/group/1234/poll/ {Title: "abc?", Options: ["a", "b", "c"]}`
+- Request: `PUT /api/group/1234/poll/ {title: "abc?", options: ["a", "b", "c"]}`
   - Precondition: authentication cookie of user in group `1234`
   - Effect: Create/replace poll in group `1234`.
-- Request: `PATCH /api/group/1234/poll/ {Votes: ["b"]}`
+- Request: `PATCH /api/group/1234/poll/ {votes: ["b"]}`
   - Precondition: authentication cookie of user in group `1234`.
   - Effect: cast vote(s) for option(s) in poll in group `1234`, replacing earlier vote(s)
 - Request: `DELETE /api/group/1234/poll/`
@@ -80,15 +79,15 @@ make deploy
   - Effect: Dismiss poll in group `1234` to chat (immutable).
 
 #### Availability
-- Request: `PATCH /api/group/1234/availability/ {Title: "abc", Date: "9999-12-31", Start: "9:00", End: "10:30"}`
-  - Precondition: authentication cookie.
+- Request: `PATCH /api/group/1234/availability/ {title: "abc", date: "9999-12-31", start: "9:00", end: "10:30"}`
+  - Precondition: authentication cookie of user in group `1234`.
   - Effect: Create new scheduled activity.
 - Request: `DELETE /api/group/1234/activity/5678/`
-  - Precondition: authentication cookie.
+  - Precondition: authentication cookie of user in group `1234`.
   - Effect: Delete scheduled availability by ID.
 
-#### Actitivty
-- Request: `PATCH /api/group/1234/activity/ {Title: "abc", Date: "9999-12-31", Start: "9:00", End: "10:30"}`
+#### Activity
+- Request: `PATCH /api/group/1234/activity/ {title: "abc", date: "9999-12-31", start: "9:00", end: "10:30"}`
   - Precondition: authentication cookie of user in group `1234`, activity doesn't overlap with others.
   - Effect: Create new scheduled activity.
 - Request: `DELETE /api/group/1234/activity/5678/`

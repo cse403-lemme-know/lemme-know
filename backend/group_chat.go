@@ -8,6 +8,19 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Chat sent over JSON.
+type GetChatResponse struct {
+	Messages []GetChatResponseMessage `json:"messages"`
+	Continue bool                     `json:"continue"`
+}
+
+// Message sent over JSON.
+type GetChatResponseMessage struct {
+	Sender    UserID `json:"sender"`
+	Timestamp uint64 `json:"timestamp"`
+	Content   string `json:"content"`
+}
+
 // API's related to chat within a group.
 func RestGroupChatAPI(router *mux.Router, database Database) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -26,8 +39,19 @@ func RestGroupChatAPI(router *mux.Router, database Database) {
 				return
 			}
 
-			json.NewEncoder(w).Encode(messages)
-		case http.MethodPut:
+			var chat GetChatResponse
+
+			chat.Messages = []GetChatResponseMessage{}
+			for _, message := range messages {
+				chat.Messages = append(chat.Messages, GetChatResponseMessage{
+					Sender:    message.Sender,
+					Timestamp: message.Timestamp,
+					Content:   message.Content,
+				})
+			}
+
+			json.NewEncoder(w).Encode(chat)
+		case http.MethodPatch:
 			http.Error(w, "not implemented", http.StatusNotImplemented)
 		}
 	})

@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
@@ -24,8 +27,10 @@ func newLambdaHandler(database Database, notification Notification) func(context
 	// Expose the entire Rest API.
 	RestRoot(router, database, notification)
 
+	handler := applyCors(router)
+
 	// Convert Go http handler to AWS Lambda http handler.
-	httpHandler := httpadapter.New(router).ProxyWithContext
+	httpHandler := httpadapter.New(handler).ProxyWithContext
 
 	return func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 		// Check if the event is an AWS API Gateway HTTP Rest request.
@@ -85,7 +90,7 @@ func runLocalService() {
 	upgrader := websocket.Upgrader{} // use default options
 
 	// In addition to the Rest API, expose WebSocket capabilities.
-	router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/ws/", func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
@@ -111,6 +116,34 @@ func runLocalService() {
 	// Expose the Rest API.
 	RestRoot(router, database, notification)
 
+	// In addition to the Rest API, reverse proxy to the development client's origin server.
+	clientOrigin, err := url.Parse("http://localhost:5173/")
+	if err != nil {
+		panic(err)
+	}
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// set req Host, URL and Request URI to forward a request to the origin server
+		r.Host = clientOrigin.Host
+		r.URL.Host = clientOrigin.Host
+		r.URL.Scheme = clientOrigin.Scheme
+		r.RequestURI = ""
+
+		originServerResponse, err := http.DefaultClient.Do(r)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = fmt.Fprint(w, err)
+			return
+		}
+
+		for name, values := range originServerResponse.Header {
+			for _, value := range values {
+				w.Header().Add(name, value)
+			}
+		}
+		w.WriteHeader(originServerResponse.StatusCode)
+		io.Copy(w, originServerResponse.Body)
+	})
+
 	// Run cron job every hour.
 	go func() {
 		now := time.Now()
@@ -121,7 +154,7 @@ func runLocalService() {
 
 	s := &http.Server{
 		Addr:           fmt.Sprintf(":%d", port),
-		Handler:        router,
+		Handler:        applyCors(router),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 10,
@@ -129,6 +162,11 @@ func runLocalService() {
 
 	// Serve HTTP until it encounters an error.
 	log.Fatal(s.ListenAndServe())
+}
+
+// Allow exotic HTTP methods, credentials.
+func applyCors(handler http.Handler) http.Handler {
+	return handlers.CORS(handlers.AllowCredentials(), handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"}))(handler)
 }
 
 // Returns true if and only if executing in an AWS Lambda function.
