@@ -1,9 +1,29 @@
 <script>
     import { goto } from '$app/navigation';
-    function handleButtonClick() {
-        goto("/dashboard");
-    }
+    import { Datepicker } from 'svelte-calendar';
+    import dayjs from 'dayjs';
+    import { writable } from 'svelte/store';
+
     let name = 'LemmeKnow';
+    let startDate = writable(undefined);
+    let endDate = writable(undefined);
+    let errorMsg = writable("");
+    let groupName = writable(undefined);
+
+    function handleButtonClick() {
+        if ($startDate && $endDate) {
+            if (dayjs($startDate).isAfter($endDate)) {
+                $errorMsg = "Start date must be before the end date"
+            } else {
+                $errorMsg = "";
+                if (!$groupName || $groupName.trim().length == 0) {
+                    $errorMsg = "Please enter a group name";
+                } else {
+                    goto("/dashboard");
+                }
+            }
+        }
+    }
 </script>
 
 <header>
@@ -21,11 +41,17 @@
         <div class="container">
             <img src="/highfive.png" alt="3 people trying to figure out their collective availability">
             <img src="/cal.png" alt="family of four sharing their calendars">
-
+        </div>
+        <div class="date-picker-container">
+            <label>Start Date:</label>
+            <Datepicker bind:selected={$startDate}/>
+            <label >End Date:</label>
+            <Datepicker bind:selected={$endDate}/>
         </div>
         <div class="input-container">
-            <input type="text" placeholder="Enter Group name..">
+            <input type="text" bind:value={$groupName} placeholder="Enter Group name..">
             <button on:click={handleButtonClick}>Let me know!</button>
+            <span class="errorMsg">{$errorMsg}</span>
         </div>
         <div class="container">
             <img src="/road.png" alt="group of friends driving in the car">
@@ -52,6 +78,11 @@
         justify-content: space-between;
         align-items: center;
         padding: 1rem 0;
+    }
+
+    .errorMsg {
+        color: red;
+        margin-top: 0.5rem;
     }
 
     nav a {
@@ -138,6 +169,21 @@
     button:hover {
         background-color: gray;
         color: white;
+    }
+
+    .date-picker-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 10;
+        position: relative;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        font-size: 1rem;
+        color: black;
     }
 
     @media (min-width: 640px) {
