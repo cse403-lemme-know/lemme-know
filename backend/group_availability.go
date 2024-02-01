@@ -7,25 +7,24 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// New activity sent over JSON.
-type PatchActivityRequest struct {
-	Title string `json:"title"`
+// New availability sent over JSON.
+type PatchAvailabilityRequest struct {
 	Date  string `json:"date"`
 	Start string `json:"start"`
 	End   string `json:"end"`
 }
 
 // API's related tWriteJSON(w, nil)o activities within a group.
-func RestGroupActivityAPI(router *mux.Router, database Database) {
-	router.HandleFunc("/{activityID}/", func(w http.ResponseWriter, r *http.Request) {
-		_, ok := ParseUint64PathParameter(w, r, "activityID")
+func RestGroupAvailabilityAPI(router *mux.Router, database Database) {
+	router.HandleFunc("/{availabilityID}/", func(w http.ResponseWriter, r *http.Request) {
+		_, ok := ParseUint64PathParameter(w, r, "availabilityID")
 		if !ok {
 			return
 		}
 
 		switch r.Method {
 		case http.MethodPatch:
-			var request PatchActivityRequest
+			var request PatchAvailabilityRequest
 			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return

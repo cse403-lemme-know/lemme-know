@@ -83,10 +83,10 @@ make deploy
   - Effect: Dismiss poll in group `1234` to chat (immutable).
 
 #### Availability
-- Request: `PATCH /api/group/1234/availability/ {title: "abc", date: "9999-12-31", start: "9:00", end: "10:30"}`
+- Request: `PATCH /api/group/1234/availability/ {date: "9999-12-31", start: "9:00", end: "10:30"}`
   - Precondition: authentication cookie of user in group `1234`.
-  - Effect: Create new scheduled activity.
-- Request: `DELETE /api/group/1234/activity/5678/`
+  - Effect: Create new scheduled availability in group.
+- Request: `DELETE /api/group/1234/availability/5678/`
   - Precondition: authentication cookie of user in group `1234`.
   - Effect: Delete scheduled availability by ID.
 
