@@ -127,21 +127,30 @@ func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
 	return err
 }
 
+// Inserts a new schedule to the database, if it does not exist
+	// Returns an error if schedule already exists in database
 func (dynamoDB *DynamoDB) InsertNewSchedule(userID UserID, scheduleInfo Schedule) error {
 	err := dynamoDB.users.Update("UserID", userID).Append("Schedules", scheduleInfo).Run()
 	return err
 }
 
+// Updates the group information in the database, if it exist
+	// Returns an error if group does not exist in database
 func (dynamoDB *DynamoDB) UpdateGroupInfo(groupID GroupID, newInfo Group) error {
 	err := dynamoDB.groups.Update("GroupID", groupID).Set("Group", newInfo).Run()
 	return err
 }
 
+// Updates the user information in the database, if it exist
+	// Returns an error if user does not exist in database
 func (dynamoDB *DynamoDB) UpdateUserInfo(userID UserID, newInfo User) error {
 	err := dynamoDB.users.Update("UserID", userID).Set("User", newInfo).Run()
 	return err
 }
 
+// Deletes a user from the group database, if the user exists in that group.
+	//
+	// Returns an error if the operation could not be completed.
 func (dynamoDB *DynamoDB) DeleteUserFromGroup(userInfo User, groupID GroupID) error {
 	//Check if group exists, check if user exists
 	err := dynamoDB.groups.Update("GroupID", groupID).DeleteFromSet("Users", userInfo).Run()
@@ -219,8 +228,9 @@ func (memoryDatabase *MemoryDatabase) DeleteGroup(groupID GroupID) error {
 func GetRegion() string {
 	var region = os.Getenv("AWS_REGION")
 
-	if region == "":
+	if region == "" {
 		return "us-east-1"
+	}
 	
 	return region
 }
