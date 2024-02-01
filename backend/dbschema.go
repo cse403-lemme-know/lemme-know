@@ -4,15 +4,14 @@ import (
 	"time"
 )
 
-type Group struct {
-	GroupID GroupID `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
-	//Time   time.Time // Range key, a.k.a. sort key
+type Group struct {	
+	GroupID     int       		     `dynamo:"ID,hash"`	  // Hash key, a.k.a. partition key
+	//Time      time.Time // Range key, a.k.a. sort key
 
-	Name string
-	//Count int                 		 `dynamo:",omitempty"` // Omits if zero value
-	Polls    []Poll             `dynamo:",set"`
-	Members  []UserID           `dynamo:",set"`
-	Messages map[string]Message `dynamo:",set"`
+	Name   	    string
+	//Count     int                  `dynamo:",omitempty"` // Omits if zero value
+	Polls  	    []Poll            	 `dynamo:",set"`
+	Users  	    map[string]User		 `dynamo:",set"`
 }
 
 type User struct {
@@ -31,10 +30,10 @@ type Poll struct {
 }
 
 type Message struct {
-	MessageId int    `dynamo:"MessageID,hash"` //Hash key
-	Timestamp uint64 `dynamo:"Timestamp,range"`
-	Sender    UserID
-	Content   string `dynamo:"Message"`
+	GroupID 	GroupID  		`dynamo:"ID,hash"` //Hash key
+	Timestamp 	time.Time		`dynamo:",range"`
+	Content   	string			`dynamo:"Message"`
+	UserID	  	int
 }
 
 type PollResult struct {
