@@ -17,7 +17,7 @@ func TestInsertUser(t *testing.T) {
 		SharedConfigState: session.SharedConfigEnable,
 	})))
 
-	int UserID = 42
+	var UserID int = 42
 
 	item := User{
 		UserID: UserID,
@@ -41,7 +41,7 @@ func TestDeleteUser(t *testing.T) {
 		SharedConfigState: session.SharedConfigEnable,
 	})))
 
-	int UserID = 42
+	var UserID int = 42
 
 	item := User{
 		UserID: UserID,
@@ -72,7 +72,7 @@ func TestReadUser(t *testing.T) {
 		SharedConfigState: session.SharedConfigEnable,
 	})))
 
-	int UserID = 42
+	var UserID int = 42
 
 	item := User{
 		UserID: UserID,
@@ -103,7 +103,7 @@ func TestInsertGroup(t *testing.T) {
 		SharedConfigState: session.SharedConfigEnable,
 	})))
 
-	int UserID = 42
+	var UserID int = 42
 
 	item := User{
 		UserID: UserID,
@@ -127,7 +127,7 @@ func TestDeleteGroup(t *testing.T) {
 		SharedConfigState: session.SharedConfigEnable,
 	})))
 
-	int UserID = 42
+	var UserID int = 42
 
 	item := User{
 		UserID: UserID,
@@ -151,7 +151,7 @@ func TestReadGroup(t *testing.T) {
 		SharedConfigState: session.SharedConfigEnable,
 	})))
 
-	int UserID = 42
+	var UserID int = 42
 
 	item := User{
 		UserID: UserID,
