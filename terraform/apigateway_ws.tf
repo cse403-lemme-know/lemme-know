@@ -1,0 +1,16 @@
+/*
+TODO: add the following resources.
+
+aws_iam_policy_document
+aws_iam_policy
+aws_iam_role
+aws_apigatewayv2_api
+aws_apigatewayv2_integration
+aws_apigatewayv2_integration_response
+aws_apigatewayv2_route
+aws_apigatewayv2_route_response
+aws_apigatewayv2_route (x3)
+aws_apigatewayv2_route_response (x3)
+aws_apigatewayv2_stage
+aws_lambda_permission
+*/
