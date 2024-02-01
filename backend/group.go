@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/rand"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -76,14 +75,8 @@ var GroupKey = GroupKeyType(struct{}{})
 func RestSpecificGroupAPI(router *mux.Router, database Database) {
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			groupIDString, ok := mux.Vars(r)["groupID"]
+			groupID, ok := ParseUint64PathParameter(w, r, "groupID")
 			if !ok {
-				http.Error(w, "missing group id", http.StatusBadRequest)
-				return
-			}
-			groupID, err := strconv.ParseUint(groupIDString, 10, 64)
-			if err != nil {
-				http.Error(w, "invalid group id", http.StatusBadRequest)
 				return
 			}
 			group, err := database.ReadGroup(groupID)
