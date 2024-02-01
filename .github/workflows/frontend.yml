@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '16' # Set this to the node version used in your project
+          node-version: '20'
 
       - name: Cache Node modules
         uses: actions/cache@v3
