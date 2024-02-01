@@ -24,7 +24,7 @@ func TestInsertUser(t *testing.T) {
 		Username: "Bob",
 		GroupIDs: []*string{},
 		WebSocketIDs, []*string{},
-		Schedules: map[string]Schedule{}
+		Schedules: map[string]Schedule{},
 	}
 
 	err := table.CreateUser(item)
@@ -48,7 +48,7 @@ func TestDeleteUser(t *testing.T) {
 		Username: "Bob",
 		GroupIDs: []*string{},
 		WebSocketIDs, []*string{},
-		Schedules: map[string]Schedule{}
+		Schedules: map[string]Schedule{},
 	}
 
 	err := table.CreateUser(item)
@@ -79,7 +79,7 @@ func TestReadUser(t *testing.T) {
 		Username: "Bob",
 		GroupIDs: []*string{},
 		WebSocketIDs, []*string{},
-		Schedules: map[string]Schedule{}
+		Schedules: map[string]Schedule{},
 	}
 
 	err := table.CreateUser(item)
@@ -110,7 +110,7 @@ func TestInsertGroup(t *testing.T) {
 		Username: "Bob",
 		GroupIDs: []*string{},
 		WebSocketIDs, []*string{},
-		Schedules: map[string]Schedule{}
+		Schedules: map[string]Schedule{},
 	}
 
 	err := table.CreateUser(item)
@@ -134,7 +134,7 @@ func TestDeleteGroup(t *testing.T) {
 		Username: "Bob",
 		GroupIDs: []*string{},
 		WebSocketIDs, []*string{},
-		Schedules: map[string]Schedule{}
+		Schedules: map[string]Schedule{},
 	}
 
 	err := table.CreateUser(item)
@@ -158,7 +158,7 @@ func TestReadGroup(t *testing.T) {
 		Username: "Bob",
 		GroupIDs: []*string{},
 		WebSocketIDs, []*string{},
-		Schedules: map[string]Schedule{}
+		Schedules: map[string]Schedule{},
 	}
 
 	err := table.CreateUser(item)
