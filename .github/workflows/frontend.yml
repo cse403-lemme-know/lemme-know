@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
       - brooklyn_add_autotest
     paths:
       - 'frontend/**'
