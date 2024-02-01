@@ -15,7 +15,7 @@ type PatchActivityRequest struct {
 	End   string `json:"end"`
 }
 
-// API's related tWriteJSON(w, nil)o activities within a group.
+// API's related to activities within a group.
 func RestGroupActivityAPI(router *mux.Router, database Database) {
 	router.HandleFunc("/{activityID}/", func(w http.ResponseWriter, r *http.Request) {
 		_, ok := ParseUint64PathParameter(w, r, "activityID")
