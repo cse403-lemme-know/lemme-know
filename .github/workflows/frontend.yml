@@ -1,10 +1,9 @@
 name: Frontend
-
 on:
   workflow_dispatch:
   push:
     branches:
-      - brooklyn_add_autotest
+      - main
     paths:
       - 'frontend/**'
   pull_request:
