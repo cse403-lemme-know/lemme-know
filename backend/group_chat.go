@@ -21,6 +21,11 @@ type GetChatResponseMessage struct {
 	Content   string `json:"content"`
 }
 
+// New chat sent over JSON.
+type PatchChatRequest struct {
+	Message string `json:"message"`
+}
+
 // API's related to chat within a group.
 func RestGroupChatAPI(router *mux.Router, database Database) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +57,15 @@ func RestGroupChatAPI(router *mux.Router, database Database) {
 
 			json.NewEncoder(w).Encode(chat)
 		case http.MethodPatch:
-			http.Error(w, "not implemented", http.StatusNotImplemented)
+			var request PatchChatRequest
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				http.Error(w, "could not decode body", http.StatusBadRequest)
+				return
+			}
+			// TODO: database
+			_ = request
+
+			WriteJSON(w, nil)
 		}
 	})
 }
