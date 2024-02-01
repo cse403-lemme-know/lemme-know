@@ -30,9 +30,6 @@
         initializeAvailability(dayjs(start), dayjs(end));
     });
 
-    /** @param {number} day
-     * @param {number} hour
-     */
     function toggleSlot(day, hour) {
         availability.update(a => {
             a[day][hour] = !a[day][hour]
@@ -40,9 +37,6 @@
         });
     }
 
-    /** @param {string} taskDescription
-     * @param {string} assigneeName
-     */
     function addTask(taskDescription, assigneeName) {
         tasks.update(currentTasks => {
             const newTask = {
@@ -135,7 +129,7 @@
                     <h3>{day}</h3>
                     <div class="slots">
                         {#each $availability[day] as available, hour}
-                            <div class="slot {available ? 'available' : ''}" on:click={() => toggleSlot(day, hour)}>
+                            <div class="slot {available ? 'available' : ''}" on:click={() => toggleSlot(day, hour)} on:keypress={() => toggleSlot(day, hour)}>
                                 {hour}:00
                             </div>
                         {/each}
@@ -310,7 +304,7 @@
         margin-top: 0.5rem;
         padding: 0.5rem;
         background-color: #f9f9f9;
-        border-raius: 0.2rem;
+        border-radius: 0.2rem;
         font-family: "Baloo Bhai 2";
         align-items: center;
         font-size: 1.25rem;

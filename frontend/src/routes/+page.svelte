@@ -5,12 +5,8 @@
     import dayjs from 'dayjs';
     import { writable } from 'svelte/store';
     import { startDate, endDate, groupName } from '$lib/stores';
-    import * as model from '$lib/model.js';
     let name = 'LemmeKnow';
-    // let start = writable(undefined);
-    // let endDate = writable(undefined);
     let errorMsg = writable("");
-    // let groupName = writable(undefined);
 
     function handleButtonClick() {
         if ($startDate && $endDate) {
@@ -51,9 +47,9 @@
 
         </div>
         <div class="date-picker-container">
-            <label>Start Date:</label>
+            <label for="startDate">Start Date:</label>
             <Datepicker bind:selected={$startDate}/>
-            <label >End Date:</label>
+            <label for="endDate">End Date:</label>
             <Datepicker bind:selected={$endDate}/>
         </div>
         <div class="input-container">
