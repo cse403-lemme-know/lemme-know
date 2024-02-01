@@ -67,6 +67,28 @@
             return currentTasks;
         });
     }
+    // for chat box
+    let messages = [];
+    let newMessage = "";
+    /**
+     * Send a message to the chat.
+     */
+    function sendMessage() {
+        if (newMessage.trim() !== "") {
+            messages = [...messages, { text: newMessage, sender: "user" }];
+            newMessage = "";
+        // add logic here to handle the response from a server or another user.
+        }
+    }
+    /**
+     * send message if hit enter
+     * @param event
+     */
+    function handleKeyPress(event) {
+    if (event.key === "Enter") {
+      sendMessage();
+    }
+  }
 
 </script>
 
@@ -86,10 +108,26 @@
                 <span class="members-title">Members</span>
             </button>
         </div>
-        <div>
-            <img src="../chat.png" alt="chat" class="placeholder_images">
-            <img src="../chat.png" alt="chat" class="placeholder_images">
+
+        <div class="chatbox">
+            <div class="messages">
+                {#each messages as message (message.text)}
+                  <div class:message class:message.sender={message.sender}>
+                    {#if message.sender === "user"}
+                      <strong class="user-message">You:</strong> {message.text}
+                    {:else if message.sender === "system"}
+                      <em class="system-message">{message.text}</em>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            
+              <div class="input-bar">
+                <input class="input" bind:value={newMessage} placeholder="Type your message..." on:keydown={handleKeyPress}/>
+                <button on:click={sendMessage}>Send Message</button>
+              </div>
         </div>
+
         <div class="calendar-container">
             <span class="calendar-title">AVAILABILITY CALENDAR</span>
             {#each Object.keys($availability) as day}
@@ -123,10 +161,6 @@
 </main>
 
 <style>
-    placeholder_images {
-        margin-top: 1rem;
-    }
-
     .calendar-title {
         display: flex;
         align-items: flex-start;
@@ -302,5 +336,63 @@
     button[type="submit"]:disabled {
         background-color: #ccc;
         cursor: not-allowed;
+    }
+    /* chatbox style */
+    .chatbox {
+        display: flex;
+        flex-direction: column;
+        border: 2px solid #ccc;
+        padding: 10px;
+        width: 700px;
+        height: 700px;
+        margin: auto;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        overflow-y: auto; /* Add scrollbar when content exceeds the height */
+    }
+
+    .messages {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column-reverse; /* Reverse the order of messages */
+    }
+
+    .message {
+        margin: 8px 0;
+        padding: 8px;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+    }
+
+    .user-message {
+        background-color: #e6f7ff;
+        text-align: right;
+    }
+
+    .system-message {
+        color: #888;
+        font-style: italic;
+    }
+
+    .input-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    input {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        width: 80%;
+        max-width: 300px;
+        text-align: center;
+        font-size: 1rem;
+        background-color: #EEDAF4;
+        border-radius: 15px;
+        border: 2px solid transparent;
+    }
+
+    button {
+        flex-shrink: 0;
     }
 </style>
