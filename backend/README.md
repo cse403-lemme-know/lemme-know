@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-1. Install `go` v1.20 or higher.
+1. Install `go` v1.21 or higher.
 2. Install `make`.
 
 ## Running local backend
