@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - brooklyn_add_autotest
     paths:
       - 'frontend/**'
   pull_request:
