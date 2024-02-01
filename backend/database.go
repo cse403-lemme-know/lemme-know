@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"errors"
 	"os"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -78,10 +79,14 @@ func (dynamoDB *DynamoDB) CreateUser(userInfo User) error {
 	//
 	// Returns a nil `*User` if no such user exists. Returns
 	// an error if the operation could not be completed.
-func (dynamoDB *DynamoDB) ReadUser(userId UserID) (*User, error) {
+func (dynamoDB *DynamoDB) ReadUser(userID UserID) (*User, error) {
 	var user User
-	err := dynamoDB.users.Get("UserID", userID).Out(&user)
-	return user, err
+	err := dynamoDB.users.Get("UserID", userID).One(&user)
+
+	if errors.Is(err, dynamo.ErrNotFound) {
+		return nil, nil
+	}
+	return &user, err
 }
 
 // Deletes a user from the database, if it exists.
@@ -105,8 +110,12 @@ func (dynamoDB *DynamoDB) CreateGroup(groupInfo Group) error {
 	// an error if the operation could not be completed.
 func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
 	var group Group
-	group, err := dynamoDB.groups.Get("GroupID", groupID).One(&group)
-	return group, err
+	err := dynamoDB.groups.Get("GroupID", groupID).One(&group)
+
+	if errors.Is(err, dynamo.ErrNotFound) {
+		return nil, nil
+	}
+	return &group, err
 }
 
 // Reads group chat messagses, on or after startTime, from the database.
@@ -114,9 +123,9 @@ func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
 	// May not return all messages. If returns at least one message, should call again with
 	// startTime set to the latest timestamp of the returned messages.
 func (dynamoDB *DynamoDB) ReadGroupChat(groupID GroupID, startTime UnixMillis) ([]Message, error) {
-	// TODO: unimplemented.
 	var messages []Message
-	return dynamoDB.messages.Get("GroupID", groupID).Range("Timestamp", "GE", startTime).All(&messages)
+	err := dynamoDB.messages.Get("GroupID", groupID).Range("Timestamp", "GE", startTime).All(&messages)
+	return messages, err
 }
 
 // Deletes a group from the database, if it exists.
