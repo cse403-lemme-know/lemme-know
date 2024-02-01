@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/aws/aws-lambda-go v1.46.0
-	github.com/aws/aws-sdk-go v1.50.0
+	github.com/aws/aws-sdk-go v1.50.8
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.1
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
