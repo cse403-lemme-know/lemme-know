@@ -1,18 +1,13 @@
 package main
 
-import (
-	"time"
-)
-
 type Group struct {
 	GroupID GroupID `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
-	//Time   time.Time // Range key, a.k.a. sort key
+	//Time      time.Time // Range key, a.k.a. sort key
 
 	Name string
-	//Count int                 		 `dynamo:",omitempty"` // Omits if zero value
-	Polls    []Poll             `dynamo:",set"`
-	Members  []UserID           `dynamo:",set"`
-	Messages map[string]Message `dynamo:",set"`
+	//Count     int                  `dynamo:",omitempty"` // Omits if zero value
+	Poll    *Poll
+	Members []UserID
 }
 
 type User struct {
@@ -24,23 +19,22 @@ type User struct {
 }
 
 type Poll struct {
-	PollID     int                   `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
-	Timestamp  time.Time             `dynamo:",range"`  // Range key, a.k.a. sort key
-	PollResult map[string]PollResult `dynamo:",set"`
-	DoneFlag   bool
+	Title     string
+	Timestamp uint64
+	Options   []PollOption
+	DoneFlag  bool
 }
 
 type Message struct {
-	MessageId int    `dynamo:"MessageID,hash"` //Hash key
-	Timestamp uint64 `dynamo:"Timestamp,range"`
+	GroupID   GroupID `dynamo:"ID,hash"`
+	Timestamp uint64  `dynamo:",range"`
+	Content   string
 	Sender    UserID
-	Content   string `dynamo:"Message"`
 }
 
-type PollResult struct {
-	pollResultID int `dynamo:"ID,hash"` //Hash key
-	Option       string
-	userIDVoted  []int `dynamo:",set"`
+type PollOption struct {
+	Name  string
+	Votes []UserID `dynamo:",set"`
 }
 
 type Schedule struct {

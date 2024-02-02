@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-1. Install `go` v1.20 or higher.
+1. Install `go` v1.21 or higher.
 2. Install `make`.
 
 ## Running local backend
@@ -52,7 +52,7 @@ make deploy
 ### Group
 - Request: `GET /api/group/1234/`
   - Precondition: authentication cookie of user in group `1234`
-  - Response: `{groupId: 1234, poll: {options: [{"a": [1234], ..}]}, availabilities: [{availabilityId: 5678, UserId: 5678, date: "9999-12-31", start: "8:00", end: "11:00"}], activities: [{activityId: 5678, Title: "abc", date: "9999-12-31", start: "9:00", end: "10:30", confirmed: [5678]}, ...], ...}`
+  - Response: `{poll: {options: [{"a": [1234], ..}]}, availabilities: [{availabilityId: 5678, UserId: 5678, date: "9999-12-31", start: "8:00", end: "11:00"}], activities: [{activityId: 5678, Title: "abc", date: "9999-12-31", start: "9:00", end: "10:30", confirmed: [5678]}, ...], ...}`
 - Request: `PATCH /api/group/1234/ {name: "Best Friends", calendarMode: "date" | "dayOfWeek"}`
   - Precondition: authentication cookie of user in group `1234`.
   - Effect: updates any group `1234` setting(s) passed in object.
@@ -65,9 +65,9 @@ make deploy
 #### Chat
 - Request: `GET /api/group/1234/chat/?Start=123456789&End=123456789` gets group chat messages starting at a Unix millisecond time (inclusive) and ending at a Unix millisecond time (inclusive).
   - Precondition: authentication cookie of user in group `1234`.
-  - Response: `{Messages: [{sender: 5678, timestamp: 123456789, message: "hello", ...}, {...}], continue: true}`
+  - Response: `{Messages: [{sender: 5678, timestamp: 123456789, content: "hello", ...}, {...}], continue: true}`
     - Note: If `continue` is true, should request again (with higher start time) for more messages.
-- Request: `PATCH /api/group/1234/chat/ {message: "hello"}`
+- Request: `PATCH /api/group/1234/chat/ {content: "hello"}`
   - Precondition: authentication cookie of user in group `1234`.
   - Effect: Send a chat message in group `1234`.
 
@@ -83,10 +83,10 @@ make deploy
   - Effect: Dismiss poll in group `1234` to chat (immutable).
 
 #### Availability
-- Request: `PATCH /api/group/1234/availability/ {title: "abc", date: "9999-12-31", start: "9:00", end: "10:30"}`
+- Request: `PATCH /api/group/1234/availability/ {date: "9999-12-31", start: "9:00", end: "10:30"}`
   - Precondition: authentication cookie of user in group `1234`.
-  - Effect: Create new scheduled activity.
-- Request: `DELETE /api/group/1234/activity/5678/`
+  - Effect: Create new scheduled availability in group.
+- Request: `DELETE /api/group/1234/availability/5678/`
   - Precondition: authentication cookie of user in group `1234`.
   - Effect: Delete scheduled availability by ID.
 
