@@ -168,7 +168,7 @@
 						type="checkbox"
 						bind:checked={task.completed}
 						on:click={() => toggleCompletion(task.id)}
-                        on:keypress={() => toggleCompletion(task.id)}
+						on:keypress={() => toggleCompletion(task.id)}
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
 					{#if task.assignedTo}
