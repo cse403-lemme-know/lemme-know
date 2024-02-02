@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"sync"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
-	"os"
 )
 
 type UserID = uint64
@@ -45,10 +47,27 @@ type Database interface {
 	// May not return all messages. If returns at least one message, should call again with
 	// startTime set to the latest timestamp of the returned messages.
 	ReadGroupChat(GroupID, startTime UnixMillis) ([]Message, error)
+	// Creates a new poll in the group, replacing the old one (if any).
+	//
+	// Returns an error if the operation could not be completed.
+	CreatePoll(GroupID, Poll) error
+	// Deletes the active poll in a group, if one exists.
+	//
+	// Returns an error if the operation could not be completed.
+	DeletePoll(GroupID) error
+	// Creates an availability for a user in a group.
+	CreateAvailability(GroupID /*, Activity*/) error
+	// Creates an activity in a group.
+	CreateActivity(GroupID /*, Activity*/) error
 	// Deletes a group from the database, if it exists.
 	//
 	// Returns an error if the operation could not be completed.
 	DeleteGroup(GroupID) error
+	// Creates a new chat message in the group.
+	//
+	// Returns an error if the `message.GroupID` and `message.Timestamp` are not
+	// unique, or if the operation could not be completed.
+	CreateMessage(Message) error
 }
 
 // An AWS non-volatile database service.
@@ -166,6 +185,26 @@ func (dynamoDB *DynamoDB) DeleteUserFromGroup(userInfo User, groupID GroupID) er
 	return err
 }
 
+func (dynamoDB *DynamoDB) CreateActivity(groupID GroupID /*, activity Activity*/) error {
+	return fmt.Errorf("unimplemented")
+}
+
+func (dynamoDB *DynamoDB) CreateAvailability(groupID GroupID /*, availability Availability*/) error {
+	return fmt.Errorf("unimplemented")
+}
+
+func (dynamoDB *DynamoDB) CreatePoll(groupID GroupID, poll Poll) error {
+	return fmt.Errorf("unimplemented")
+}
+
+func (dynamoDB *DynamoDB) DeletePoll(groupID GroupID) error {
+	return fmt.Errorf("unimplemented")
+}
+
+func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
+	return fmt.Errorf("unimplemented")
+}
+
 func printDatabase(database Database) error {
 	out, err := json.Marshal(database)
 	fmt.Println(string(out))
@@ -174,8 +213,15 @@ func printDatabase(database Database) error {
 
 // An in-memory volatile database.
 type MemoryDatabase struct {
-	users  map[UserID]User
-	groups map[GroupID]Group
+	users    map[UserID]User
+	groups   map[GroupID]Group
+	messages map[memoryMessageID]Message
+	mu       sync.Mutex
+}
+
+type memoryMessageID struct {
+	GroupID   GroupID
+	Timestamp uint64
 }
 
 func NewMemoryDatabase() *MemoryDatabase {
@@ -186,6 +232,8 @@ func NewMemoryDatabase() *MemoryDatabase {
 }
 
 func (memoryDatabase *MemoryDatabase) CreateUser(user User) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
 	if _, ok := memoryDatabase.users[user.UserID]; ok {
 		return fmt.Errorf("user already exists")
 	}
@@ -194,6 +242,8 @@ func (memoryDatabase *MemoryDatabase) CreateUser(user User) error {
 }
 
 func (memoryDatabase *MemoryDatabase) ReadUser(userID UserID) (*User, error) {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
 	user, ok := memoryDatabase.users[userID]
 	if ok {
 		return &user, nil
@@ -203,11 +253,15 @@ func (memoryDatabase *MemoryDatabase) ReadUser(userID UserID) (*User, error) {
 }
 
 func (memoryDatabase *MemoryDatabase) DeleteUser(userID UserID) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
 	delete(memoryDatabase.users, userID)
 	return nil
 }
 
 func (memoryDatabase *MemoryDatabase) CreateGroup(group Group) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
 	if _, ok := memoryDatabase.groups[group.GroupID]; ok {
 		return fmt.Errorf("group already exists")
 	}
@@ -216,6 +270,8 @@ func (memoryDatabase *MemoryDatabase) CreateGroup(group Group) error {
 }
 
 func (memoryDatabase *MemoryDatabase) ReadGroup(groupId GroupID) (*Group, error) {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
 	group, ok := memoryDatabase.groups[groupId]
 	if ok {
 		return &group, nil
@@ -225,12 +281,66 @@ func (memoryDatabase *MemoryDatabase) ReadGroup(groupId GroupID) (*Group, error)
 }
 
 func (memoryDatabase *MemoryDatabase) ReadGroupChat(groupID GroupID, startTime UnixMillis) ([]Message, error) {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
 	// TODO: unimplemented.
 	return nil, nil
 }
 
+func (memoryDatabase *MemoryDatabase) CreateActivity(groupID GroupID /*, activity Activity*/) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	// TODO: unimplemented.
+	return nil
+}
+
+func (memoryDatabase *MemoryDatabase) CreateAvailability(groupID GroupID /*, availability Availability*/) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	// TODO: unimplemented.
+	return nil
+}
+
+func (memoryDatabase *MemoryDatabase) CreatePoll(groupID GroupID, poll Poll) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	group, ok := memoryDatabase.groups[groupID]
+	if !ok {
+		return fmt.Errorf("group not found")
+	}
+	group.Poll = &poll
+	return nil
+}
+
+func (memoryDatabase *MemoryDatabase) DeletePoll(groupID GroupID) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	group, ok := memoryDatabase.groups[groupID]
+	if !ok {
+		return fmt.Errorf("group not found")
+	}
+	group.Poll = nil
+	return nil
+}
+
 func (memoryDatabase *MemoryDatabase) DeleteGroup(groupID GroupID) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
 	delete(memoryDatabase.groups, groupID)
+	return nil
+}
+
+func (memoryDatabase *MemoryDatabase) CreateMessage(message Message) error {
+	id := memoryMessageID{
+		GroupID:   message.GroupID,
+		Timestamp: message.Timestamp,
+	}
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	if _, ok := memoryDatabase.messages[id]; ok {
+		return fmt.Errorf("message already exists")
+	}
+	memoryDatabase.messages[id] = message
 	return nil
 }
 

@@ -174,6 +174,11 @@ func isOnLambda() bool {
 	return os.Getenv("LAMBDA_TASK_ROOT") != ""
 }
 
+// Returns Unix time in milliseconds.
+func unixMillis() uint64 {
+	return uint64(time.Now().UnixMilli())
+}
+
 func main() {
 	if isOnLambda() {
 		runLambdaService()
