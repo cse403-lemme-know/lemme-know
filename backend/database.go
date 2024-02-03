@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
 )
@@ -81,8 +83,30 @@ type DynamoDB struct {
 	messages dynamo.Table
 }
 
+type localConfigProvider struct{}
+
+func (p localConfigProvider) ClientConfig(serviceName string, cfgs ...*aws.Config) client.Config {
+
+	return client.Config{Endpoint: "http://localhost:8000", Config: aws.NewConfig()}
+}
+
+// Passing a `nil` session means use DynamoDB local (default port).
 func NewDynamoDB(sess *session.Session) *DynamoDB {
-	db := dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
+	var db *dynamo.DB
+	if sess == nil {
+		// localConfigProvider(struct{}{})
+		endpoint := "http://localhost:8000"
+		sess, err := session.NewSession(
+			&aws.Config{Region: aws.String(GetRegion()), Endpoint: &endpoint},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		db = dynamo.New(sess)
+	} else {
+		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
+	}
+
 	return &DynamoDB{
 		groups:   db.Table("Groups"),
 		users:    db.Table("Users"),

@@ -3,16 +3,12 @@ package main
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestInsertUser(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
 	var userID UserID = 42
 
@@ -33,11 +29,8 @@ func TestInsertUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
 	var userID UserID = 42
 
@@ -65,11 +58,8 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestReadUser(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
 	var userID UserID = 42
 
@@ -97,11 +87,8 @@ func TestReadUser(t *testing.T) {
 }
 
 func TestInsertGroup(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
 	var userID UserID = 42
 
@@ -122,11 +109,8 @@ func TestInsertGroup(t *testing.T) {
 }
 
 func TestDeleteGroup(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
 	var userID UserID = 42
 
@@ -147,11 +131,8 @@ func TestDeleteGroup(t *testing.T) {
 }
 
 func TestReadGroup(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
 	var userID UserID = 42
 
