@@ -46,7 +46,7 @@ func RestUserAPI(router *mux.Router, database Database) {
 					Name:     "userID",
 					Value:    strconv.FormatUint(user.UserID, 10),
 					MaxAge:   365 * 24 * 3600,
-					Secure:   true,
+					Secure:   isOnLambda(),
 					SameSite: http.SameSiteStrictMode,
 					HttpOnly: true,
 					Path:     "/",

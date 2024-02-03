@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -80,9 +82,9 @@ func runLambdaService() {
 }
 
 // Handle events forever on localhost with a volatile database.
-func runLocalService() {
-	port := 8080
-	log.Printf("starting localhost service at http://localhost:%d\n", port)
+//
+// Returns errors except if they were due to ctx being canceled.
+func runLocalService(port uint16, ctx context.Context) error {
 	database := NewMemoryDatabase()
 	notification := NewLocalNotification()
 
@@ -144,24 +146,35 @@ func runLocalService() {
 		io.Copy(w, originServerResponse.Body)
 	})
 
-	// Run cron job every hour.
-	go func() {
-		now := time.Now()
-		sleep := 60 - now.Minute()
-		time.Sleep(time.Duration(int64(sleep) * int64(time.Minute)))
-		Cron()
-	}()
-
 	s := &http.Server{
 		Addr:           fmt.Sprintf(":%d", port),
 		Handler:        applyCors(router),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 10,
+		BaseContext:    func(net.Listener) context.Context { return ctx },
 	}
 
-	// Serve HTTP until it encounters an error.
-	log.Fatal(s.ListenAndServe())
+	// Run cron job every hour. If ctx cancelled, shut down the server.
+	go func() {
+		now := time.Now()
+		sleep := 60 - now.Minute()
+		select {
+		case <-ctx.Done():
+			// ctx cancelled
+			_ = s.Close()
+			return
+		case <-time.After(time.Duration(int64(sleep) * int64(time.Minute))):
+			Cron()
+		}
+	}()
+
+	// Serve HTTP until it encounters an error or the context is canceled.
+	err = s.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
 }
 
 // Allow exotic HTTP methods, credentials.
@@ -183,6 +196,8 @@ func main() {
 	if isOnLambda() {
 		runLambdaService()
 	} else {
-		runLocalService()
+		const port = 8080
+		log.Printf("starting localhost service at http://localhost:%d\n", port)
+		runLocalService(port, context.Background())
 	}
 }

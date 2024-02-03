@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"math/rand"
 	"net/http"
 
@@ -10,7 +11,6 @@ import (
 
 // Group sent over JSON.
 type GetGroupResponse struct {
-	GroupID        GroupID                        `json:"groupId"`
 	Name           string                         `json:"name"`
 	Members        []UserID                       `json:"members,omitempty"`
 	Poll           *GetGroupResponsePoll          `json:"poll"`
@@ -36,10 +36,22 @@ type GetGroupResponseAvailability struct {
 // Activity sent over JSON.
 type GetGroupResponseActivity struct {
 	ActivityId uint64   `json:"activityId"`
+	Title      string   `json:"title"`
 	Date       string   `json:"date"`
 	Start      string   `json:"start"`
 	End        string   `json:"end"`
 	Confirmed  []UserID `json:"confirmed"`
+}
+
+// Group properties sent over JSON, used to create or update group.
+type PatchGroupRequest struct {
+	Name         string `json:"name"`
+	CalendarMode string `json:"calendarMode"`
+}
+
+// Group ID sent over JSON.
+type PatchGroupResponse struct {
+	GroupID GroupID `json:"groupId"`
 }
 
 // API's related to groups.
@@ -51,18 +63,24 @@ func RestGroupAPI(router *mux.Router, database Database) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		user := Authenticate(w, r, database)
-		if user == nil {
+		user := r.Context().Value(UserKey).(*User)
+		var request PatchGroupRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			http.Error(w, "could not decode body", http.StatusBadRequest)
 			return
 		}
 		group := Group{
 			GroupID: rand.Uint64(),
+			Name:    request.Name,
+			Members: []UserID{user.UserID},
 		}
 		if err := database.CreateGroup(group); err != nil {
 			http.Error(w, "could not create group", http.StatusInternalServerError)
 			return
 		}
-		WriteJSON(w, group)
+		WriteJSON(w, PatchGroupResponse{
+			GroupID: group.GroupID,
+		})
 	})
 }
 
@@ -98,11 +116,10 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 	RestGroupChatAPI(AddHandler(router, "/poll"), database)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_ = r.Context().Value(UserKey).(*User)
+		group := r.Context().Value(GroupKey).(*Group)
 		switch r.Method {
 		case http.MethodGet:
-			group := r.Context().Value(GroupKey).(*Group)
 			WriteJSON(w, GetGroupResponse{
-				GroupID: group.GroupID,
 				Name:    group.Name,
 				Members: group.Members,
 				// TODO
@@ -110,6 +127,17 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 				Availabilities: []GetGroupResponseAvailability{},
 				Activities:     []GetGroupResponseActivity{},
 			})
+		case http.MethodPatch:
+			var request PatchGroupRequest
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				http.Error(w, "could not decode body", http.StatusBadRequest)
+				return
+			}
+
+			database.UpdateGroupName(group.GroupID, request.Name)
+			// TODO: calendarMode
+
+			WriteJSON(w, nil)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
