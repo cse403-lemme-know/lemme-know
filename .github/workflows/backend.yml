@@ -48,8 +48,8 @@ jobs:
           java-version: '11'
       - name: Install DynamoDB Local
         run:
-          wget https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.zip
-          unzip dynamodb_local_latest.zip
+          wget https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.zip &&
+          unzip dynamodb_local_latest.zip &&
           (cd dynamodb_local_latest ; java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory -disableTelemetry)
       - name: Test
         run: go test
