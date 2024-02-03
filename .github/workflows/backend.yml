@@ -50,8 +50,9 @@ jobs:
         run:
           wget https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.zip &&
           unzip -q dynamodb_local_latest.zip &&
-          nohup java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory -disableTelemetry & &&
-          sleep 1
+          nohup java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory -disableTelemetry &
+      - name: Wait for DynamoDB to start up
+        run: sleep 2
       - name: Test
         run: go test
   format:
