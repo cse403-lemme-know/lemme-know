@@ -36,6 +36,7 @@ type GetGroupResponseAvailability struct {
 // Activity sent over JSON.
 type GetGroupResponseActivity struct {
 	ActivityId uint64   `json:"activityId"`
+	Title      string   `json:"title"`
 	Date       string   `json:"date"`
 	Start      string   `json:"start"`
 	End        string   `json:"end"`

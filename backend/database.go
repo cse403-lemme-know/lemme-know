@@ -42,11 +42,11 @@ type Database interface {
 	// Returns a nil `*Group` if no such group exists. Returns
 	// an error if the operation could not be completed.
 	ReadGroup(GroupID) (*Group, error)
-	// Reads group chat messagses, on or after startTime, from the database.
+	// Reads group chat messagses, on or after startTime and on or before endTime, from the database.
 	//
-	// May not return all messages. If returns at least one message, should call again with
-	// startTime set to the latest timestamp of the returned messages.
-	ReadGroupChat(GroupID, startTime UnixMillis) ([]Message, error)
+	// May not return all messages. If the returned `bool` is true, there may be
+	// messages remaining (set `startTime` to the latest `message.Timestamp` and try again).
+	ReadMessages(GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error)
 	// Creates a new poll in the group, replacing the old one (if any).
 	//
 	// Returns an error if the operation could not be completed.
@@ -137,14 +137,11 @@ func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
 	return &group, err
 }
 
-// Reads group chat messagses, on or after startTime, from the database.
-//
-// May not return all messages. If returns at least one message, should call again with
-// startTime set to the latest timestamp of the returned messages.
-func (dynamoDB *DynamoDB) ReadGroupChat(groupID GroupID, startTime UnixMillis) ([]Message, error) {
+func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error) {
 	var messages []Message
-	err := dynamoDB.messages.Get("GroupID", groupID).Range("Timestamp", "GE", startTime).All(&messages)
-	return messages, err
+	const limit = 5
+	err := dynamoDB.messages.Get("GroupID", groupID).Range("Timestamp", "BETWEEN", startTime, endTime).Limit(limit).All(&messages)
+	return messages, len(messages) >= limit, err
 }
 
 // Deletes a group from the database, if it exists.
@@ -280,11 +277,23 @@ func (memoryDatabase *MemoryDatabase) ReadGroup(groupId GroupID) (*Group, error)
 	}
 }
 
-func (memoryDatabase *MemoryDatabase) ReadGroupChat(groupID GroupID, startTime UnixMillis) ([]Message, error) {
+func (memoryDatabase *MemoryDatabase) ReadMessages(groupID GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error) {
 	memoryDatabase.mu.Lock()
 	defer memoryDatabase.mu.Unlock()
-	// TODO: unimplemented.
-	return nil, nil
+	var messages []Message
+	var more bool
+	// Okay to do inefficient linear table scan on mock database.
+	for _, message := range memoryDatabase.messages {
+		if message.GroupID != groupID || message.Timestamp < startTime || message.Timestamp > endTime {
+			continue
+		}
+		if len(messages) >= 5 {
+			more = true
+			break
+		}
+		messages = append(messages, message)
+	}
+	return messages, more, nil
 }
 
 func (memoryDatabase *MemoryDatabase) CreateActivity(groupID GroupID /*, activity Activity*/) error {
@@ -297,7 +306,11 @@ func (memoryDatabase *MemoryDatabase) CreateActivity(groupID GroupID /*, activit
 func (memoryDatabase *MemoryDatabase) CreateAvailability(groupID GroupID /*, availability Availability*/) error {
 	memoryDatabase.mu.Lock()
 	defer memoryDatabase.mu.Unlock()
-	// TODO: unimplemented.
+	_, ok := memoryDatabase.groups[groupID]
+	if !ok {
+		return fmt.Errorf("group not found")
+	}
+	//group.Availabilities = append(group.Availabilities, availability)
 	return nil
 }
 
@@ -309,6 +322,7 @@ func (memoryDatabase *MemoryDatabase) CreatePoll(groupID GroupID, poll Poll) err
 		return fmt.Errorf("group not found")
 	}
 	group.Poll = &poll
+	memoryDatabase.groups[groupID] = group
 	return nil
 }
 
@@ -320,6 +334,7 @@ func (memoryDatabase *MemoryDatabase) DeletePoll(groupID GroupID) error {
 		return fmt.Errorf("group not found")
 	}
 	group.Poll = nil
+	memoryDatabase.groups[groupID] = group
 	return nil
 }
 

@@ -79,10 +79,8 @@ func runLambdaService() {
 	lambda.Start(newLambdaHandler(database, notification))
 }
 
-// Handle events forever on localhost with a volatile database.
-func runLocalService() {
-	port := 8080
-	log.Printf("starting localhost service at http://localhost:%d\n", port)
+// A handler capable of routing local host requests.
+func newLocalHandler() http.Handler {
 	database := NewMemoryDatabase()
 	notification := NewLocalNotification()
 
@@ -152,9 +150,18 @@ func runLocalService() {
 		Cron()
 	}()
 
+	return applyCors(router)
+}
+
+// Handle events forever on localhost with a volatile database.
+func runLocalService() {
+	port := 8080
+	log.Printf("starting localhost service at http://localhost:%d\n", port)
+	handler := newLocalHandler()
+
 	s := &http.Server{
 		Addr:           fmt.Sprintf(":%d", port),
-		Handler:        applyCors(router),
+		Handler:        handler,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 10,

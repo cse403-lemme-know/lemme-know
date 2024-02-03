@@ -18,7 +18,42 @@ func MustMarshal(t any) json.RawMessage {
 	return json
 }
 
-func TestHandler(t *testing.T) {
+type LocalResponseWriter struct {
+	response http.Response
+	body []byte
+}
+
+func (localResponseWriter *LocalResponseWriter) Header() http.Header {
+	return localResponseWriter.response.Header
+}
+
+func (localResponseWriter LocalResponseWriter) Write(data []byte) (int, error) {
+	if localResponseWriter.response.StatusCode == 0 {
+		localResponseWriter.WriteHeader
+	}
+	localResponseWriter.body = append(localResponseWriter.body, ...data)
+	return len(data), nil
+}
+
+type LocalTransport struct {
+	service http.Handler
+}
+
+func (localTransport LocalTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	var w LocalResponseWriter
+	localTransport.service.ServeHTTP(&w, r)
+	return &w.response, nil
+}
+
+func TestRestAPI(t *testing.T) {
+	service := newLocalHandler()
+
+	client := http.Client{
+		Transport: LocalTransport{service},
+	}
+}
+
+func TestLambdaHandler(t *testing.T) {
 	type Case struct {
 		request  json.RawMessage
 		response json.RawMessage
