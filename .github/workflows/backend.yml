@@ -48,7 +48,7 @@ jobs:
           java-version: '11'
       - name: Run DynamoDB Local
         run:
-          wget https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.zip &&
+          wget -q https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.zip &&
           unzip -q dynamodb_local_latest.zip &&
           nohup java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory -disableTelemetry &
       - name: Wait for DynamoDB Local to start up

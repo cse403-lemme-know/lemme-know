@@ -95,7 +95,6 @@ func (p localConfigProvider) ClientConfig(serviceName string, cfgs ...*aws.Confi
 func NewDynamoDB(sess *session.Session) *DynamoDB {
 	var db *dynamo.DB
 	if sess == nil {
-		// localConfigProvider(struct{}{})
 		endpoint := "http://localhost:8000"
 		sess, err := session.NewSession(
 			&aws.Config{Region: aws.String(GetRegion()), Endpoint: &endpoint, Credentials: credentials.NewCredentials(&credentials.StaticProvider{credentials.Value{
@@ -109,14 +108,20 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 			log.Fatal(err)
 		}
 		db = dynamo.New(sess)
-		if err := db.CreateTable("Groups", Group{}).Run(); err != nil {
+		list, err := db.ListTables().All()
+		if err != nil {
 			log.Fatal(err)
 		}
-		if err := db.CreateTable("Users", User{}).Run(); err != nil {
-			log.Fatal(err)
-		}
-		if err := db.CreateTable("Messages", Message{}).Run(); err != nil {
-			log.Fatal(err)
+		if len(list) == 0 {
+			if err := db.CreateTable("Groups", Group{}).Run(); err != nil {
+				log.Fatal(err)
+			}
+			if err := db.CreateTable("Users", User{}).Run(); err != nil {
+				log.Fatal(err)
+			}
+			if err := db.CreateTable("Messages", Message{}).Run(); err != nil {
+				log.Fatal(err)
+			}
 		}
 	} else {
 		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
