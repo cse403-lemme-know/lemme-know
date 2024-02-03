@@ -9,8 +9,6 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
@@ -85,13 +83,6 @@ type DynamoDB struct {
 	messages dynamo.Table
 }
 
-type localConfigProvider struct{}
-
-func (p localConfigProvider) ClientConfig(serviceName string, cfgs ...*aws.Config) client.Config {
-
-	return client.Config{Endpoint: "http://localhost:8000", Config: aws.NewConfig()}
-}
-
 // Passing a `nil` session means use DynamoDB local (default port).
 func NewDynamoDB(sess *session.Session) *DynamoDB {
 	var db *dynamo.DB
@@ -109,23 +100,11 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 			log.Fatal(err)
 		}
 		db = dynamo.New(sess)
-		isFatal := func(error) bool {
-			if awsErr, ok := err.(awserr.Error); ok {
-				if awsErr.Code() == "ResourceInUseException" {
-					return false
-				}
-			}
-			return true
-		}
-		if err := db.CreateTable("Groups", Group{}).Run(); err != nil && isFatal(err) {
-			log.Fatal(err)
-		}
-		if err := db.CreateTable("Users", User{}).Run(); err != nil && isFatal(err) {
-			log.Fatal(err)
-		}
-		if err := db.CreateTable("Messages", Message{}).Run(); err != nil && isFatal(err) {
-			log.Fatal(err)
-		}
+
+		// Ingnore errors (e.g. duplicate table)
+		_ = db.CreateTable("Groups", Group{}).Run()
+		_ = db.CreateTable("Users", User{}).Run()
+		_ = db.CreateTable("Messages", Message{}).Run()
 	} else {
 		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
 	}
