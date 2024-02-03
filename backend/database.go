@@ -109,6 +109,15 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 			log.Fatal(err)
 		}
 		db = dynamo.New(sess)
+		if err := db.CreateTable("Groups", Group{}).Run(); err != nil {
+			log.Fatal(err)
+		}
+		if err := db.CreateTable("Users", User{}).Run(); err != nil {
+			log.Fatal(err)
+		}
+		if err := db.CreateTable("Messages", Message{}).Run(); err != nil {
+			log.Fatal(err)
+		}
 	} else {
 		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
 	}
