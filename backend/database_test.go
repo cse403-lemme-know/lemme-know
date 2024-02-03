@@ -2,12 +2,24 @@ package main
 
 import (
 	"math/rand"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func isInCI() bool {
+	return os.Getenv("GITHUB_ACTIONS") != ""
+}
+
+func maybeSkip(t *testing.T) {
+	if !isInCI() {
+		t.Skip("skipping outside of CI")
+	}
+}
+
 func TestInsertUser(t *testing.T) {
+	maybeSkip(t)
 	//Insert user
 	table := NewDynamoDB(nil)
 
@@ -30,6 +42,7 @@ func TestInsertUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
+	maybeSkip(t)
 	//Insert user
 	table := NewDynamoDB(nil)
 
@@ -59,6 +72,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestReadUser(t *testing.T) {
+	maybeSkip(t)
 	//Insert user
 	table := NewDynamoDB(nil)
 
@@ -88,6 +102,7 @@ func TestReadUser(t *testing.T) {
 }
 
 func TestInsertGroup(t *testing.T) {
+	maybeSkip(t)
 	//Insert user
 	table := NewDynamoDB(nil)
 
@@ -110,6 +125,7 @@ func TestInsertGroup(t *testing.T) {
 }
 
 func TestDeleteGroup(t *testing.T) {
+	maybeSkip(t)
 	//Insert user
 	table := NewDynamoDB(nil)
 
@@ -132,6 +148,7 @@ func TestDeleteGroup(t *testing.T) {
 }
 
 func TestReadGroup(t *testing.T) {
+	maybeSkip(t)
 	//Insert user
 	table := NewDynamoDB(nil)
 
