@@ -1,11 +1,11 @@
 export function mockPageFunction() {
-    return true;
+	return true;
 }
 
 export function navigate(url) {
-    return `Navigated to ${url}`;
+	return `Navigated to ${url}`;
 }
 
 export function checkInput(input) {
-    return input && input.trim() !== '';
+	return input && input.trim() !== '';
 }

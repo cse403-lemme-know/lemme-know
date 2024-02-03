@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/svelte';
-import { mockPageFunction, navigate, checkInput } from './__mocks__/MockPage'
+import { mockPageFunction, navigate, checkInput } from './__mocks__/MockPage';
 
 describe('Mocking page.svelte', () => {
 	it('adds 1 + 2 to equal 3', () => {
