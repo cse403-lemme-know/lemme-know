@@ -9,10 +9,10 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/guregu/dynamo"
 )
 
@@ -109,13 +109,21 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 			log.Fatal(err)
 		}
 		db = dynamo.New(sess)
-		if err := db.CreateTable("Groups", Group{}).Run(); err != nil && !errors.Is(err, &dynamodb.ResourceInUseException{}) {
+		isFatal := func(error) bool {
+			if awsErr, ok := err.(awserr.Error); ok {
+				if awsErr.Code() == "ResourceInUseException" {
+					return false
+				}
+			}
+			return true
+		}
+		if err := db.CreateTable("Groups", Group{}).Run(); err != nil && isFatal(err) {
 			log.Fatal(err)
 		}
-		if err := db.CreateTable("Users", User{}).Run(); err != nil && !errors.Is(err, &dynamodb.ResourceInUseException{}) {
+		if err := db.CreateTable("Users", User{}).Run(); err != nil && isFatal(err) {
 			log.Fatal(err)
 		}
-		if err := db.CreateTable("Messages", Message{}).Run(); err != nil && !errors.Is(err, &dynamodb.ResourceInUseException{}) {
+		if err := db.CreateTable("Messages", Message{}).Run(); err != nil && isFatal(err) {
 			log.Fatal(err)
 		}
 	} else {
