@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +11,7 @@ func TestInsertUser(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -32,7 +33,7 @@ func TestDeleteUser(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -61,7 +62,7 @@ func TestReadUser(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -90,7 +91,7 @@ func TestInsertGroup(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -112,7 +113,7 @@ func TestDeleteGroup(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -134,7 +135,7 @@ func TestReadGroup(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
