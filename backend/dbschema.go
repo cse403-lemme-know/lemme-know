@@ -1,7 +1,7 @@
 package main
 
 type Group struct {
-	GroupID GroupID `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
+	GroupID GroupID `dynamo:",hash"` // Hash key, a.k.a. partition key
 	//Time      time.Time // Range key, a.k.a. sort key
 
 	Name string
@@ -11,7 +11,7 @@ type Group struct {
 }
 
 type User struct {
-	UserID      UserID `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
+	UserID      UserID `dynamo:",hash"` // Hash key, a.k.a. partition key
 	Name        string
 	Groups      []GroupID           `dynamo:",set"`
 	Connections []ConnectionID      `dynamo:",set"`
@@ -26,7 +26,7 @@ type Poll struct {
 }
 
 type Message struct {
-	GroupID   GroupID `dynamo:"ID,hash"`
+	GroupID   GroupID `dynamo:",hash"`
 	Timestamp uint64  `dynamo:",range"`
 	Content   string
 	Sender    UserID
@@ -38,7 +38,7 @@ type PollOption struct {
 }
 
 type Schedule struct {
-	ScheduleID int `dynamo:"ID,hash"`
+	ScheduleID int `dynamo:",hash"`
 	Year       int
 	Month      int
 	Day        int
@@ -46,7 +46,7 @@ type Schedule struct {
 }
 
 type Task struct {
-	TaskID    int `dynamo:"ID,hash"`
+	TaskID    int `dynamo:",hash"`
 	TaskName  string
 	StartTime string //HHMM format string
 	EndTime   string //HHMM format string
