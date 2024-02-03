@@ -74,6 +74,9 @@ jobs:
           path: frontend/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
 
+      - name: Playwright Install
+        run: npx playwright install
+
       - name: Unit Tests
         run: npm run test:unit
       
