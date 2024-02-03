@@ -34,7 +34,7 @@ type Database interface {
 	DeleteUser(UserID) error
 	// Creates a new group in the database.
 	//
-	// Returns an error if a group with the same `GroupIP`
+	// Returns an error if a group with the same `GroupID`
 	// already exists, or if the operation may have failed.
 	CreateGroup(Group) error
 	// Reads a group from the database.
@@ -42,6 +42,10 @@ type Database interface {
 	// Returns a nil `*Group` if no such group exists. Returns
 	// an error if the operation could not be completed.
 	ReadGroup(GroupID) (*Group, error)
+	// Updates the name of the group.
+	//
+	// Returns an error if the operation could not be completed.
+	UpdateGroupName(GroupID, string) error
 	// Reads group chat messagses, on or after startTime and on or before endTime, from the database.
 	//
 	// May not return all messages. If the returned `bool` is true, there may be
@@ -135,6 +139,10 @@ func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
 		return nil, nil
 	}
 	return &group, err
+}
+
+func (dynamoDB *DynamoDB) UpdateGroupName(groupID GroupID, name string) error {
+	panic("unimplemented")
 }
 
 func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error) {
@@ -275,6 +283,18 @@ func (memoryDatabase *MemoryDatabase) ReadGroup(groupId GroupID) (*Group, error)
 	} else {
 		return nil, nil
 	}
+}
+
+func (memoryDatabase *MemoryDatabase) UpdateGroupName(groupID GroupID, name string) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	group, ok := memoryDatabase.groups[groupID]
+	if !ok {
+		return fmt.Errorf("group not found")
+	}
+	group.Name = name
+	memoryDatabase.groups[groupID] = group
+	return nil
 }
 
 func (memoryDatabase *MemoryDatabase) ReadMessages(groupID GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error) {

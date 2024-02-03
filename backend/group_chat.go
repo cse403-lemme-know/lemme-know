@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -37,8 +38,13 @@ func RestGroupChatAPI(router *mux.Router, database Database) {
 			if err != nil {
 				startTime = 0
 			}
+			endTimeString := r.URL.Query().Get("endTime")
+			endTime, err := strconv.ParseUint(endTimeString, 10, 64)
+			if err != nil {
+				endTime = math.MaxUint64
+			}
 
-			messages, err := database.ReadGroupChat(group.GroupID, startTime)
+			messages, more, err := database.ReadMessages(group.GroupID, startTime, endTime)
 			if err != nil {
 				http.Error(w, "could not read chat", http.StatusInternalServerError)
 				return
@@ -54,6 +60,7 @@ func RestGroupChatAPI(router *mux.Router, database Database) {
 					Content:   message.Content,
 				})
 			}
+			chat.Continue = more
 
 			json.NewEncoder(w).Encode(chat)
 		case http.MethodPatch:
