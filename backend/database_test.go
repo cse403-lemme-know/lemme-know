@@ -1,20 +1,17 @@
 package main
 
 import (
+	"math/rand"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestInsertUser(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -33,13 +30,10 @@ func TestInsertUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -65,13 +59,10 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestReadUser(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -97,13 +88,10 @@ func TestReadUser(t *testing.T) {
 }
 
 func TestInsertGroup(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -122,13 +110,10 @@ func TestInsertGroup(t *testing.T) {
 }
 
 func TestDeleteGroup(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,
@@ -147,13 +132,10 @@ func TestDeleteGroup(t *testing.T) {
 }
 
 func TestReadGroup(t *testing.T) {
-	t.Skip("no DynamoDB connection")
 	//Insert user
-	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})))
+	table := NewDynamoDB(nil)
 
-	var userID UserID = 42
+	var userID UserID = rand.Uint64()
 
 	item := User{
 		UserID:      userID,

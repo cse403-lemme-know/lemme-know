@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
 )
@@ -81,8 +83,32 @@ type DynamoDB struct {
 	messages dynamo.Table
 }
 
+// Passing a `nil` session means use DynamoDB local (default port).
 func NewDynamoDB(sess *session.Session) *DynamoDB {
-	db := dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
+	var db *dynamo.DB
+	if sess == nil {
+		endpoint := "http://localhost:8000"
+		sess, err := session.NewSession(
+			&aws.Config{Region: aws.String(GetRegion()), Endpoint: &endpoint, Credentials: credentials.NewCredentials(&credentials.StaticProvider{credentials.Value{
+				AccessKeyID:     "dummy",
+				SecretAccessKey: "dummy",
+				SessionToken:    "dummy",
+				ProviderName:    "dummy",
+			}})},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		db = dynamo.New(sess)
+
+		// Ingnore errors (e.g. duplicate table)
+		_ = db.CreateTable("Groups", Group{}).Run()
+		_ = db.CreateTable("Users", User{}).Run()
+		_ = db.CreateTable("Messages", Message{}).Run()
+	} else {
+		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
+	}
+
 	return &DynamoDB{
 		groups:   db.Table("Groups"),
 		users:    db.Table("Users"),
