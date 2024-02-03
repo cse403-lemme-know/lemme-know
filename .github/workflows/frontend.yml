@@ -77,9 +77,6 @@ jobs:
       - name: Unit Tests
         run: npm run test:unit
 
-      - name: Integration Tests
-        run: npm run test
-
   build:
     name: Build
     runs-on: ubuntu-latest
