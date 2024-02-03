@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/guregu/dynamo"
 )
 
@@ -108,20 +109,14 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 			log.Fatal(err)
 		}
 		db = dynamo.New(sess)
-		list, err := db.ListTables().All()
-		if err != nil {
+		if err := db.CreateTable("Groups", Group{}).Run(); err != nil && !errors.Is(err, &dynamodb.ResourceInUseException{}) {
 			log.Fatal(err)
 		}
-		if len(list) == 0 {
-			if err := db.CreateTable("Groups", Group{}).Run(); err != nil {
-				log.Fatal(err)
-			}
-			if err := db.CreateTable("Users", User{}).Run(); err != nil {
-				log.Fatal(err)
-			}
-			if err := db.CreateTable("Messages", Message{}).Run(); err != nil {
-				log.Fatal(err)
-			}
+		if err := db.CreateTable("Users", User{}).Run(); err != nil && !errors.Is(err, &dynamodb.ResourceInUseException{}) {
+			log.Fatal(err)
+		}
+		if err := db.CreateTable("Messages", Message{}).Run(); err != nil && !errors.Is(err, &dynamodb.ResourceInUseException{}) {
+			log.Fatal(err)
 		}
 	} else {
 		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
