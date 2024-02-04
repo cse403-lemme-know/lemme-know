@@ -15,6 +15,6 @@ LemmeKnow is a group activity planning platform with an integrated calendar to s
 
 ## Layout
 
-- `frontend/` contains the frontend website
-- `backend/` contains the backend microservice
-- `terraform/` contains infrastructure definitions
+- `frontend/` contains the frontend website (see [./frontend/README.md](./frontend/README.md) for instructions)
+- `backend/` contains the backend microservice (see [./backend/README.md](./backend/README.md) for instructions and an API reference)
+- `terraform/` contains infrastructure definitions (see [./terraform/README.md](./terraform/README.md) for instructions)

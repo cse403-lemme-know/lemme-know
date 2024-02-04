@@ -1,0 +1,24 @@
+name: Feature request
+description: Request a feature
+title: "Feature: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to fill out this feature request!
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the feature
+      description: What would you like to see?
+      placeholder: A short description of the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Can you think of any alternatives?
+      placeholder: Any alternatve solutions you considered.
+    validations:
+      required: false
