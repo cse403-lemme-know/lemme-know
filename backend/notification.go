@@ -25,7 +25,7 @@ type GroupChangedGroup struct {
 // Send a best-effort notification to all group members.
 //
 // If `data` is `nil`, then just send a group-changed notification.
-func notifyGroup(group *Group, database Database, notification Notification, data any) error {
+func notifyGroup(group *Group, database Database, notification Notification, data any) {
 	dataOrGroupChanged := data
 	if dataOrGroupChanged == nil {
 		dataOrGroupChanged = GroupChanged{
@@ -51,7 +51,6 @@ func notifyGroup(group *Group, database Database, notification Notification, dat
 		}()
 	}
 	wait.Wait()
-	return nil
 }
 
 // A service capable of notifying clients regardless of how many tab(s) they have open.

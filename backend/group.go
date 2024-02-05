@@ -213,7 +213,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				return
 			}
 
-			_ = notifyGroup(group, database, notification, nil)
+			notifyGroup(group, database, notification, nil)
 
 			WriteJSON(w, nil)
 		case http.MethodDelete:
