@@ -230,11 +230,20 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 				}
 				return nil
 			}); err != nil {
-				http.Error(w, "could not leave group", http.StatusInternalServerError)
+				http.Error(w, "could not leave group (part 1)", http.StatusInternalServerError)
+				return
+			}
+			if err := database.UpdateUser(user.UserID, func(user *User) error {
+				slices.DeleteFunc(user.Groups, func(groupID GroupID) bool { return groupID == group.GroupID })
+				return nil
+			}); err != nil {
+				http.Error(w, "could not leave group (part 2)", http.StatusInternalServerError)
 				return
 			}
 
 			// TODO: delete group if no members left
+
+			WriteJSON(w, nil)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
