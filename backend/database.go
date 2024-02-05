@@ -228,8 +228,9 @@ type memoryMessageID struct {
 
 func NewMemoryDatabase() *MemoryDatabase {
 	return &MemoryDatabase{
-		users:  make(map[UserID]User),
-		groups: make(map[GroupID]Group),
+		users:    make(map[UserID]User),
+		groups:   make(map[GroupID]Group),
+		messages: make(map[memoryMessageID]Message),
 	}
 }
 

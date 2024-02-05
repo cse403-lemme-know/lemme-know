@@ -64,7 +64,7 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database) {
 			return
 		}
 
-		user := r.Context().Value(GroupKey).(*User)
+		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
 
 		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {

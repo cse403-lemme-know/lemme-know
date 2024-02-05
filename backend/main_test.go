@@ -17,6 +17,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func _debugBody(r *http.Response) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Fatal(string(body))
+}
+
 // Integration test of HTTP service.
 func TestHTTPService(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -60,6 +68,59 @@ func TestHTTPService(t *testing.T) {
 	var patchGroupResponse PatchGroupResponse
 	MustDecode(t, response.Body, &patchGroupResponse)
 	log.Printf("got group id %d", patchGroupResponse.GroupID)
+
+	groupID := patchGroupResponse.GroupID
+
+	// Test: create poll.
+	putPollRequest := PutPollRequest{
+		Title:   "who?",
+		Options: []string{"me", "you"},
+	}
+	response, err = Put(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID), putPollRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: vote poll.
+	patchPollRequest := PatchPollRequest{
+		Votes: []string{"me"},
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID), patchPollRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: delete poll.
+	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: send chat.
+	patchChatRequest := PatchChatRequest{
+		Content: "hello",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/chat/", port, groupID), patchChatRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: create activity.
+	patchActivityRequest := PatchActivityRequest{
+		Title: "hang out",
+		Date:  "wednesday",
+		Start: "1800",
+		End:   "1900",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/activity/", port, groupID), patchActivityRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: create availability.
+	patchAvailabilityRequest := PatchAvailabilityRequest{
+		Date:  "wednesday",
+		Start: "1800",
+		End:   "1900",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/availability/", port, groupID), patchAvailabilityRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
 }
 
 // Integration test of Lambda handler.
