@@ -22,7 +22,9 @@ type GroupChangedGroup struct {
 	GroupID GroupID `json:"groupID"`
 }
 
-// / If `data` is `nil`, then just send a group-changed notification.
+// Send a best-effort notification to all group members.
+//
+// If `data` is `nil`, then just send a group-changed notification.
 func notifyGroup(group *Group, database Database, notification Notification, data any) error {
 	dataOrGroupChanged := data
 	if dataOrGroupChanged == nil {
@@ -32,21 +34,23 @@ func notifyGroup(group *Group, database Database, notification Notification, dat
 			},
 		}
 	}
-	// TODO: parallelize.
+	var wait sync.WaitGroup
 	for _, userID := range group.Members {
-		user, err := database.ReadUser(userID)
-		if err != nil {
-			return err
-		}
-		if user == nil {
-			return fmt.Errorf("no such user")
-		}
-		for _, connectionID := range user.Connections {
-			if err := notification.Notify(connectionID, dataOrGroupChanged); err != nil {
-				return err
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			user, err := database.ReadUser(userID)
+			if err != nil || user == nil {
+				// Ignore errors as notification is best-effort.
+				return
 			}
-		}
+			for _, connectionID := range user.Connections {
+				// Ignore errors as notification is best-effort.
+				_ = notification.Notify(connectionID, dataOrGroupChanged)
+			}
+		}()
 	}
+	wait.Wait()
 	return nil
 }
 
