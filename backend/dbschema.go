@@ -18,6 +18,7 @@ type Group struct {
 type User struct {
 	UserID      UserID `dynamo:",hash"` // Hash key, a.k.a. partition key
 	Name        string
+	Status      string
 	Groups      []GroupID           `dynamo:",set"`
 	Connections []ConnectionID      `dynamo:",set"`
 	Schedules   map[string]Schedule `dynamo:",set"`

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math/rand"
 	"net/http"
+	"slices"
 
 	"github.com/gorilla/mux"
 )
@@ -19,14 +20,22 @@ type PatchActivityRequest struct {
 // API's related to activities within a group.
 func RestGroupActivityAPI(router *mux.Router, database Database) {
 	router.HandleFunc("/{activityID}/", func(w http.ResponseWriter, r *http.Request) {
-		_, ok := ParseUint64PathParameter(w, r, "activityID")
+		activityID, ok := ParseUint64PathParameter(w, r, "activityID")
 		if !ok {
 			return
 		}
 
+		group := r.Context().Value(GroupKey).(*Group)
+
 		switch r.Method {
 		case http.MethodDelete:
-			// TODO: database
+			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+				slices.DeleteFunc(group.Activities, func(activity Activity) bool { return activity.ActivityID == activityID })
+				return nil
+			}); err != nil {
+				http.Error(w, "could not delete activity", http.StatusInternalServerError)
+				return
+			}
 			WriteJSON(w, nil)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

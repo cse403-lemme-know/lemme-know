@@ -64,8 +64,18 @@ func RestUserAPI(router *mux.Router, database Database) {
 				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return
 			}
-			// TODO: save changes to database
-			_ = request
+			if err := database.UpdateUser(user.UserID, func(user *User) error {
+				if request.Name != "" {
+					user.Name = request.Name
+				}
+				if request.Status != "" {
+					user.Status = request.Status
+				}
+				return nil
+			}); err != nil {
+				http.Error(w, "could not update user", http.StatusInternalServerError)
+				return
+			}
 			WriteJSON(w, nil)
 		default:
 			http.Error(w, "invalid method", http.StatusMethodNotAllowed)

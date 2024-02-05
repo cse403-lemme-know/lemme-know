@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"math/rand"
 	"net/http"
+	"slices"
 
 	"github.com/gorilla/mux"
 )
@@ -194,8 +195,12 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 			}
 
 			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
-				group.Name = request.Name
-				group.CalendarMode = request.CalendarMode
+				if request.Name != "" {
+					group.Name = request.Name
+				}
+				if request.CalendarMode != "" {
+					group.CalendarMode = request.CalendarMode
+				}
 				return nil
 			}); err != nil {
 				http.Error(w, "could not update group", http.StatusInternalServerError)
@@ -203,6 +208,18 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 			}
 
 			WriteJSON(w, nil)
+		case http.MethodDelete:
+			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+				slices.DeleteFunc(group.Members, func(member UserID) bool {
+					return member == user.UserID
+				})
+				return nil
+			}); err != nil {
+				http.Error(w, "could not leave group", http.StatusInternalServerError)
+				return
+			}
+
+			// TODO: delete group if no members left
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
