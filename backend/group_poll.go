@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/gorilla/mux"
 )
@@ -21,6 +23,7 @@ type PatchPollRequest struct {
 // API's related to polls within a group.
 func RestGroupPollAPI(router *mux.Router, database Database) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
 		switch r.Method {
 		case http.MethodPut:
@@ -36,11 +39,14 @@ func RestGroupPollAPI(router *mux.Router, database Database) {
 				options = append(options, PollOption{Name: name, Votes: []UserID{}})
 			}
 
-			if err := database.CreatePoll(group.GroupID, Poll{
-				Title:     request.Title,
-				Timestamp: unixMillis(),
-				Options:   options,
-				DoneFlag:  false,
+			if err := database.UpdateGroup(group.GroupID, func(*Group) error {
+				group.Poll = &Poll{
+					Title:     request.Title,
+					Timestamp: unixMillis(),
+					Options:   options,
+					DoneFlag:  false,
+				}
+				return nil
 			}); err != nil {
 				http.Error(w, "could not create poll", http.StatusInternalServerError)
 				return
@@ -53,12 +59,36 @@ func RestGroupPollAPI(router *mux.Router, database Database) {
 				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return
 			}
-			// TODO: database
-			_ = request
+
+			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+				if group.Poll == nil {
+					return fmt.Errorf("no such poll")
+				}
+				for _, option := range group.Poll.Options {
+					slices.DeleteFunc(option.Votes, func(o UserID) bool {
+						return o == user.UserID
+					})
+				}
+				for _, vote := range request.Votes {
+					for _, opt := range group.Poll.Options {
+						if opt.Name == vote {
+							opt.Votes = append(opt.Votes, user.UserID)
+							break
+						}
+					}
+				}
+				return nil
+			}); err != nil {
+				http.Error(w, "could not delete poll", http.StatusInternalServerError)
+				return
+			}
 
 			WriteJSON(w, nil)
 		case http.MethodDelete:
-			if err := database.DeletePoll(group.GroupID); err != nil {
+			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+				group.Poll = nil
+				return nil
+			}); err != nil {
 				http.Error(w, "could not delete poll", http.StatusInternalServerError)
 				return
 			}

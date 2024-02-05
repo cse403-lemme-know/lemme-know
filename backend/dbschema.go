@@ -4,7 +4,8 @@ type Group struct {
 	GroupID GroupID `dynamo:",hash"` // Hash key, a.k.a. partition key
 	//Time      time.Time // Range key, a.k.a. sort key
 
-	Name string
+	Name         string
+	CalendarMode string
 	//Count     int                  `dynamo:",omitempty"` // Omits if zero value
 	Poll           *Poll
 	Members        []UserID

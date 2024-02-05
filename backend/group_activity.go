@@ -46,13 +46,16 @@ func RestGroupActivityAPI(router *mux.Router, database Database) {
 
 		group := r.Context().Value(GroupKey).(*Group)
 
-		if err := database.CreateActivity(group.GroupID, Activity{
-			ActivityID: rand.Uint64(),
-			Title:      request.Title,
-			Date:       request.Date,
-			Start:      request.Start,
-			End:        request.End,
-			Confirmed:  []UserID{},
+		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			group.Activities = append(group.Activities, Activity{
+				ActivityID: rand.Uint64(),
+				Title:      request.Title,
+				Date:       request.Date,
+				Start:      request.Start,
+				End:        request.End,
+				Confirmed:  []UserID{},
+			})
+			return nil
 		}); err != nil {
 			http.Error(w, "could not create activity", http.StatusInternalServerError)
 			return

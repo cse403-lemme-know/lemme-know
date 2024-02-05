@@ -46,12 +46,15 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database) {
 		user := r.Context().Value(GroupKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
 
-		if err := database.CreateAvailability(group.GroupID, Availability{
-			AvailabilityID: rand.Uint64(),
-			UserID:         user.UserID,
-			Date:           request.Date,
-			Start:          request.Start,
-			End:            request.End,
+		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			group.Availabilities = append(group.Availabilities, Availability{
+				AvailabilityID: rand.Uint64(),
+				UserID:         user.UserID,
+				Date:           request.Date,
+				Start:          request.Start,
+				End:            request.End,
+			})
+			return nil
 		}); err != nil {
 			http.Error(w, "could not create availability", http.StatusInternalServerError)
 			return

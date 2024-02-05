@@ -122,10 +122,28 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 	RestGroupChatAPI(AddHandler(router, "/chat"), database)
 	RestGroupChatAPI(AddHandler(router, "/poll"), database)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_ = r.Context().Value(UserKey).(*User)
+		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
 		switch r.Method {
 		case http.MethodGet:
+			found := false
+			for _, member := range group.Members {
+				if member == user.UserID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+					group.Members = append(group.Members, user.UserID)
+					return nil
+				}); err != nil {
+					http.Error(w, "could not join group", http.StatusInternalServerError)
+					return
+				}
+				group.Members = append(group.Members, user.UserID)
+			}
+
 			response := GetGroupResponse{
 				Name:           group.Name,
 				Members:        group.Members,
@@ -175,8 +193,14 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 				return
 			}
 
-			database.UpdateGroupName(group.GroupID, request.Name)
-			// TODO: calendarMode
+			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+				group.Name = request.Name
+				group.CalendarMode = request.CalendarMode
+				return nil
+			}); err != nil {
+				http.Error(w, "could not update group", http.StatusInternalServerError)
+				return
+			}
 
 			WriteJSON(w, nil)
 		default:
