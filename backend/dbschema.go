@@ -5,7 +5,7 @@ import (
 )
 
 type Group struct {
-	GroupID int `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
+	GroupID uint64 `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
 	//Time      time.Time // Range key, a.k.a. sort key
 
 	Name string
