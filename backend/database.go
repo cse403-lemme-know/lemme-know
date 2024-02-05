@@ -16,6 +16,8 @@ import (
 
 type UserID = uint64
 type GroupID = uint64
+type ActivityID = uint64
+type AvailabilityID = uint64
 type UnixMillis = uint64
 
 // A service capable of persisting data.
@@ -62,9 +64,9 @@ type Database interface {
 	// Returns an error if the operation could not be completed.
 	DeletePoll(GroupID) error
 	// Creates an availability for a user in a group.
-	CreateAvailability(GroupID /*, Activity*/) error
+	CreateAvailability(GroupID, Availability) error
 	// Creates an activity in a group.
-	CreateActivity(GroupID /*, Activity*/) error
+	CreateActivity(GroupID, Activity) error
 	// Deletes a group from the database, if it exists.
 	//
 	// Returns an error if the operation could not be completed.
@@ -216,11 +218,11 @@ func (dynamoDB *DynamoDB) DeleteUserFromGroup(userInfo User, groupID GroupID) er
 	return err
 }
 
-func (dynamoDB *DynamoDB) CreateActivity(groupID GroupID /*, activity Activity*/) error {
+func (dynamoDB *DynamoDB) CreateActivity(groupID GroupID, activity Activity) error {
 	return fmt.Errorf("unimplemented")
 }
 
-func (dynamoDB *DynamoDB) CreateAvailability(groupID GroupID /*, availability Availability*/) error {
+func (dynamoDB *DynamoDB) CreateAvailability(groupID GroupID, availability Availability) error {
 	return fmt.Errorf("unimplemented")
 }
 
@@ -342,21 +344,27 @@ func (memoryDatabase *MemoryDatabase) ReadMessages(groupID GroupID, startTime Un
 	return messages, more, nil
 }
 
-func (memoryDatabase *MemoryDatabase) CreateActivity(groupID GroupID /*, activity Activity*/) error {
+func (memoryDatabase *MemoryDatabase) CreateActivity(groupID GroupID, activity Activity) error {
 	memoryDatabase.mu.Lock()
 	defer memoryDatabase.mu.Unlock()
-	// TODO: unimplemented.
-	return nil
-}
-
-func (memoryDatabase *MemoryDatabase) CreateAvailability(groupID GroupID /*, availability Availability*/) error {
-	memoryDatabase.mu.Lock()
-	defer memoryDatabase.mu.Unlock()
-	_, ok := memoryDatabase.groups[groupID]
+	group, ok := memoryDatabase.groups[groupID]
 	if !ok {
 		return fmt.Errorf("group not found")
 	}
-	//group.Availabilities = append(group.Availabilities, availability)
+	group.Activities = append(group.Activities, activity)
+	memoryDatabase.groups[groupID] = group
+	return nil
+}
+
+func (memoryDatabase *MemoryDatabase) CreateAvailability(groupID GroupID, availability Availability) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	group, ok := memoryDatabase.groups[groupID]
+	if !ok {
+		return fmt.Errorf("group not found")
+	}
+	group.Availabilities = append(group.Availabilities, availability)
+	memoryDatabase.groups[groupID] = group
 	return nil
 }
 

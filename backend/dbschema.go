@@ -6,8 +6,10 @@ type Group struct {
 
 	Name string
 	//Count     int                  `dynamo:",omitempty"` // Omits if zero value
-	Poll    *Poll
-	Members []UserID
+	Poll           *Poll
+	Members        []UserID
+	Activities     []Activity
+	Availabilities []Availability
 }
 
 type User struct {
@@ -35,6 +37,23 @@ type Message struct {
 type PollOption struct {
 	Name  string
 	Votes []UserID `dynamo:",set"`
+}
+
+type Activity struct {
+	ActivityID ActivityID
+	Title      string
+	Date       string
+	Start      string
+	End        string
+	Confirmed  []UserID `dynamo:",set"`
+}
+
+type Availability struct {
+	AvailabilityID AvailabilityID
+	UserID         UserID
+	Date           string
+	Start          string
+	End            string
 }
 
 type Schedule struct {
