@@ -39,7 +39,7 @@ func RestGroupPollAPI(router *mux.Router, database Database) {
 				options = append(options, PollOption{Name: name, Votes: []UserID{}})
 			}
 
-			if err := database.UpdateGroup(group.GroupID, func(*Group) error {
+			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
 				group.Poll = &Poll{
 					Title:     request.Title,
 					Timestamp: unixMillis(),
@@ -79,7 +79,7 @@ func RestGroupPollAPI(router *mux.Router, database Database) {
 				}
 				return nil
 			}); err != nil {
-				http.Error(w, "could not delete poll", http.StatusInternalServerError)
+				http.Error(w, "could not vote in poll", http.StatusInternalServerError)
 				return
 			}
 

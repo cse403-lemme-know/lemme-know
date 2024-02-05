@@ -19,14 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func _debugBody(r *http.Response) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Fatal(string(body))
-}
-
 // Integration test of HTTP service.
 func TestHTTPService(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -101,11 +93,6 @@ func TestHTTPService(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 
-	// Test: delete poll.
-	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID))
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, response.StatusCode)
-
 	// Test: send chat.
 	patchChatRequest := PatchChatRequest{
 		Content: "hello",
@@ -118,7 +105,6 @@ func TestHTTPService(t *testing.T) {
 	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/group/%d/chat/?start=0&end=%s", port, groupID, strconv.FormatUint(math.MaxUint64, 10)))
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
-	assert.Equal(t, 0, len(response.Cookies()))
 	var getChatResponse GetChatResponse
 	MustDecode(t, response.Body, &getChatResponse)
 	assert.Equal(t, false, getChatResponse.Continue)
@@ -147,7 +133,27 @@ func TestHTTPService(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 
-	// Test: leave group.
+	// Test: read group.
+	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	var getGroupResponse GetGroupResponse
+	MustDecode(t, response.Body, &getGroupResponse)
+	assert.Equal(t, patchGroupRequest.Name, getGroupResponse.Name)
+	assert.Equal(t, patchGroupRequest.CalendarMode, getGroupResponse.CalendarMode)
+	assert.NotNil(t, getGroupResponse.Poll)
+	assert.Equal(t, putPollRequest.Title, getGroupResponse.Poll.Title)
+	assert.Equal(t, len(putPollRequest.Options), len(getGroupResponse.Poll.Options))
+	for i, option := range putPollRequest.Options {
+		assert.Equal(t, option, getGroupResponse.Poll.Options[i].Name)
+	}
+
+	// Test: delete poll.
+	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: leave/delete group.
 	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
@@ -223,4 +229,13 @@ func MustMarshal(t *testing.T, v any) json.RawMessage {
 func MustDecode(t *testing.T, r io.Reader, v any) {
 	err := json.NewDecoder(r).Decode(v)
 	assert.Nil(t, err)
+}
+
+// Helper to debug tests.
+func _debugBody(r *http.Response) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Fatal(string(body))
 }

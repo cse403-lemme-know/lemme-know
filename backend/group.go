@@ -147,6 +147,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 
 			response := GetGroupResponse{
 				Name:           group.Name,
+				CalendarMode:   group.CalendarMode,
 				Members:        group.Members,
 				Availabilities: []GetGroupResponseAvailability{},
 				Activities:     []GetGroupResponseActivity{},
