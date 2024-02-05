@@ -228,8 +228,9 @@ type memoryMessageID struct {
 
 func NewMemoryDatabase() *MemoryDatabase {
 	return &MemoryDatabase{
-		users:  make(map[UserID]User),
-		groups: make(map[GroupID]Group),
+		users:    make(map[UserID]User),
+		groups:   make(map[GroupID]Group),
+		messages: make(map[memoryMessageID]Message),
 	}
 }
 
@@ -262,7 +263,7 @@ func (memoryDatabase *MemoryDatabase) UpdateUser(userID UserID, transaction func
 		return fmt.Errorf("user not found")
 	}
 	if err := transaction(&user); err != nil {
-		return nil
+		return err
 	}
 	memoryDatabase.users[userID] = user
 	return nil
@@ -304,7 +305,7 @@ func (memoryDatabase *MemoryDatabase) UpdateGroup(groupID GroupID, transaction f
 		return fmt.Errorf("group not found")
 	}
 	if err := transaction(&group); err != nil {
-		return nil
+		return err
 	}
 	memoryDatabase.groups[groupID] = group
 	return nil

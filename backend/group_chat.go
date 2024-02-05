@@ -33,12 +33,12 @@ func RestGroupChatAPI(router *mux.Router, database Database) {
 		switch r.Method {
 		case http.MethodGet:
 			group := r.Context().Value(GroupKey).(*Group)
-			startTimeString := r.URL.Query().Get("startTime")
+			startTimeString := r.URL.Query().Get("start")
 			startTime, err := strconv.ParseUint(startTimeString, 10, 64)
 			if err != nil {
 				startTime = 0
 			}
-			endTimeString := r.URL.Query().Get("endTime")
+			endTimeString := r.URL.Query().Get("end")
 			endTime, err := strconv.ParseUint(endTimeString, 10, 64)
 			if err != nil {
 				endTime = math.MaxUint64

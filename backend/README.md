@@ -67,7 +67,7 @@ make deploy
   - Response: `{groupId: 1234}`.
 
 #### Chat
-- Request: `GET /api/group/1234/chat/?Start=123456789&End=123456789` gets group chat messages starting at a Unix millisecond time (inclusive) and ending at a Unix millisecond time (inclusive).
+- Request: `GET /api/group/1234/chat/?start=123456789&end=123456789` gets group chat messages starting at a Unix millisecond time (inclusive) and ending at a Unix millisecond time (inclusive).
   - Precondition: authentication cookie of user in group `1234`.
   - Response: `{Messages: [{sender: 5678, timestamp: 123456789, content: "hello", ...}, {...}], continue: true}`
     - Note: If `continue` is true, should request again (with higher start time) for more messages.

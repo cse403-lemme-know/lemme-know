@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
+	"strconv"
 	"testing"
 	"time"
 
@@ -39,7 +41,9 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, 1, len(response.Cookies()))
 	var getUserResponse GetUserResponse
 	MustDecode(t, response.Body, &getUserResponse)
-	log.Printf("got user id %d", getUserResponse.UserID)
+
+	userID := getUserResponse.UserID
+	log.Printf("got user id %d", userID)
 
 	// Test: get user again (no new cookie).
 	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/user/", port))
@@ -59,7 +63,106 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	var patchGroupResponse PatchGroupResponse
 	MustDecode(t, response.Body, &patchGroupResponse)
-	log.Printf("got group id %d", patchGroupResponse.GroupID)
+
+	groupID := patchGroupResponse.GroupID
+	log.Printf("got group id %d", groupID)
+
+	// Test: edit group.
+	patchGroupRequest = PatchGroupRequest{
+		Name:         "test2",
+		CalendarMode: "weekdays",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID), patchGroupRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: create poll.
+	putPollRequest := PutPollRequest{
+		Title:   "who?",
+		Options: []string{"me", "you"},
+	}
+	response, err = Put(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID), putPollRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: vote poll.
+	patchPollRequest := PatchPollRequest{
+		Votes: []string{"me"},
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID), patchPollRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: send chat.
+	patchChatRequest := PatchChatRequest{
+		Content: "hello",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/chat/", port, groupID), patchChatRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: read chat.
+	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/group/%d/chat/?start=0&end=%s", port, groupID, strconv.FormatUint(math.MaxUint64, 10)))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	var getChatResponse GetChatResponse
+	MustDecode(t, response.Body, &getChatResponse)
+	assert.Equal(t, false, getChatResponse.Continue)
+	assert.Equal(t, 1, len(getChatResponse.Messages))
+	assert.Equal(t, userID, getChatResponse.Messages[0].Sender)
+	assert.Equal(t, patchChatRequest.Content, getChatResponse.Messages[0].Content)
+
+	// Test: create activity.
+	patchActivityRequest := PatchActivityRequest{
+		Title: "hang out",
+		Date:  "wednesday",
+		Start: "1800",
+		End:   "1900",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/activity/", port, groupID), patchActivityRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: create availability.
+	patchAvailabilityRequest := PatchAvailabilityRequest{
+		Date:  "wednesday",
+		Start: "1800",
+		End:   "1900",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/availability/", port, groupID), patchAvailabilityRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: read group.
+	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	var getGroupResponse GetGroupResponse
+	MustDecode(t, response.Body, &getGroupResponse)
+	assert.Equal(t, patchGroupRequest.Name, getGroupResponse.Name)
+	assert.Equal(t, patchGroupRequest.CalendarMode, getGroupResponse.CalendarMode)
+	assert.Equal(t, []UserID{userID}, getGroupResponse.Members)
+	assert.NotNil(t, getGroupResponse.Poll)
+	assert.Equal(t, putPollRequest.Title, getGroupResponse.Poll.Title)
+	assert.Equal(t, len(putPollRequest.Options), len(getGroupResponse.Poll.Options))
+	for i, option := range putPollRequest.Options {
+		assert.Equal(t, option, getGroupResponse.Poll.Options[i].Name)
+	}
+	assert.Equal(t, 1, len(getGroupResponse.Activities))
+	assert.Equal(t, patchActivityRequest.Title, getGroupResponse.Activities[0].Title)
+	assert.Equal(t, 1, len(getGroupResponse.Availabilities))
+	assert.Equal(t, patchAvailabilityRequest.Date, getGroupResponse.Availabilities[0].Date)
+	assert.Equal(t, userID, getGroupResponse.Availabilities[0].UserID)
+
+	// Test: delete poll.
+	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: leave/delete group.
+	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
 }
 
 // Integration test of Lambda handler.
@@ -132,4 +235,13 @@ func MustMarshal(t *testing.T, v any) json.RawMessage {
 func MustDecode(t *testing.T, r io.Reader, v any) {
 	err := json.NewDecoder(r).Decode(v)
 	assert.Nil(t, err)
+}
+
+// Helper to debug tests.
+func _debugBody(r *http.Response) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Fatal(string(body))
 }
