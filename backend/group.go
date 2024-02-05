@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"math/rand"
 	"net/http"
+	"slices"
 
 	"github.com/gorilla/mux"
 )
@@ -194,13 +195,53 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 			}
 
 			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
-				group.Name = request.Name
-				group.CalendarMode = request.CalendarMode
+				if request.Name != "" {
+					group.Name = request.Name
+				}
+				if request.CalendarMode != "" {
+					group.CalendarMode = request.CalendarMode
+				}
 				return nil
 			}); err != nil {
 				http.Error(w, "could not update group", http.StatusInternalServerError)
 				return
 			}
+
+			WriteJSON(w, nil)
+		case http.MethodDelete:
+			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+				slices.DeleteFunc(group.Members, func(member UserID) bool {
+					return member == user.UserID
+				})
+				slices.DeleteFunc(group.Availabilities, func(availability Availability) bool {
+					return availability.UserID == user.UserID
+				})
+				for _, activity := range group.Activities {
+					slices.DeleteFunc(activity.Confirmed, func(confirmed UserID) bool {
+						return confirmed == user.UserID
+					})
+				}
+				if group.Poll != nil {
+					for _, option := range group.Poll.Options {
+						slices.DeleteFunc(option.Votes, func(vote UserID) bool {
+							return vote == user.UserID
+						})
+					}
+				}
+				return nil
+			}); err != nil {
+				http.Error(w, "could not leave group (part 1)", http.StatusInternalServerError)
+				return
+			}
+			if err := database.UpdateUser(user.UserID, func(user *User) error {
+				slices.DeleteFunc(user.Groups, func(groupID GroupID) bool { return groupID == group.GroupID })
+				return nil
+			}); err != nil {
+				http.Error(w, "could not leave group (part 2)", http.StatusInternalServerError)
+				return
+			}
+
+			// TODO: delete group if no members left
 
 			WriteJSON(w, nil)
 		default:
