@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
+	"strconv"
 	"testing"
 	"time"
 
@@ -47,7 +49,9 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, 1, len(response.Cookies()))
 	var getUserResponse GetUserResponse
 	MustDecode(t, response.Body, &getUserResponse)
-	log.Printf("got user id %d", getUserResponse.UserID)
+
+	userID := getUserResponse.UserID
+	log.Printf("got user id %d", userID)
 
 	// Test: get user again (no new cookie).
 	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/user/", port))
@@ -67,9 +71,18 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	var patchGroupResponse PatchGroupResponse
 	MustDecode(t, response.Body, &patchGroupResponse)
-	log.Printf("got group id %d", patchGroupResponse.GroupID)
 
 	groupID := patchGroupResponse.GroupID
+	log.Printf("got group id %d", groupID)
+
+	// Test: edit group.
+	patchGroupRequest = PatchGroupRequest{
+		Name:         "test2",
+		CalendarMode: "weekdays",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID), patchGroupRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
 
 	// Test: create poll.
 	putPollRequest := PutPollRequest{
@@ -101,6 +114,18 @@ func TestHTTPService(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 
+	// Test: read chat.
+	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/group/%d/chat/?start=0&end=%s", port, groupID, strconv.FormatUint(math.MaxUint64, 10)))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, 0, len(response.Cookies()))
+	var getChatResponse GetChatResponse
+	MustDecode(t, response.Body, &getChatResponse)
+	assert.Equal(t, false, getChatResponse.Continue)
+	assert.Equal(t, 1, len(getChatResponse.Messages))
+	assert.Equal(t, userID, getChatResponse.Messages[0].Sender)
+	assert.Equal(t, patchChatRequest.Content, getChatResponse.Messages[0].Content)
+
 	// Test: create activity.
 	patchActivityRequest := PatchActivityRequest{
 		Title: "hang out",
@@ -119,6 +144,11 @@ func TestHTTPService(t *testing.T) {
 		End:   "1900",
 	}
 	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/availability/", port, groupID), patchAvailabilityRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: leave group.
+	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 }
