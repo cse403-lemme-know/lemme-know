@@ -12,7 +12,7 @@ import (
 )
 
 func TestInsertUser(t *testing.T) {
-	//Insert user
+
 	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})))
@@ -36,7 +36,7 @@ func TestInsertUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	//Insert user
+
 	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})))
@@ -67,7 +67,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestReadUser(t *testing.T) {
-	//Insert user
+
 	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})))
@@ -98,73 +98,84 @@ func TestReadUser(t *testing.T) {
 }
 
 func TestInsertGroup(t *testing.T) {
-	//Insert user
+
 	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})))
 
-	var UserID int = 42
+	var GroupID int = 43
 
-	item := User{
-		UserID: UserID,
-		Username: "Bob",
-		GroupIDs: []*string{},
-		WebSocketIDs, []*string{},
-		Schedules: map[string]Schedule{},
+	item := Group{
+		GroupID: GroupID,
+		Name: "Portland",
+		Polls, []*string{},
+		Users: map[string]Schedule{},
 	}
 
-	err := table.CreateUser(item)
+	err := table.CreateGroup(item)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
 
-	assertEquals(t, 1, len(table.users.primarykeys()))
+	assertEquals(t, 1, len(table.groups.primarykeys()))
 }
 
 func TestDeleteGroup(t *testing.T) {
-	//Insert user
+
 	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})))
 
-	var UserID int = 42
+	var GroupID int = 43
 
-	item := User{
-		UserID: UserID,
-		Username: "Bob",
-		GroupIDs: []*string{},
-		WebSocketIDs, []*string{},
-		Schedules: map[string]Schedule{},
+	item := Group{
+		GroupID: GroupID,
+		Name: "Portland",
+		Polls, []*string{},
+		Users: map[string]Schedule{},
 	}
 
-	err := table.CreateUser(item)
+	err := table.CreateGroup(item)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
 
-	assertEquals(t, 1, len(table.users.primarykeys()))
+	assertEquals(t, 1, len(table.groups.primarykeys()))
+
+	err := table.DeleteGroup(GroupID)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+
+	assertEquals(t, 0, len(table.groups.primarykeys()))
 }
 
 func TestReadGroup(t *testing.T) {
-	//Insert user
+
 	table := NewDynamoDB(session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})))
 
-	var UserID int = 42
+	var GroupID int = 43
 
-	item := User{
-		UserID: UserID,
-		Username: "Bob",
-		GroupIDs: []*string{},
-		WebSocketIDs, []*string{},
-		Schedules: map[string]Schedule{},
+	item := Group{
+		GroupID: GroupID,
+		Name: "Portland",
+		Polls, []*string{},
+		Users: map[string]Schedule{},
 	}
 
-	err := table.CreateUser(item)
+	err := table.CreateGroup(item)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
 
-	assertEquals(t, 1, len(table.users.primarykeys()))
+	assertEquals(t, 1, len(table.groups.primarykeys()))
+
+	group, err := table.ReadGroup(GroupID)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+
+	assertEquals(t, "Portland", group.Name)
 }
