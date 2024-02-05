@@ -14,6 +14,42 @@ import (
 
 type ConnectionID = string
 
+type GroupChanged struct {
+	Group GroupChangedGroup `json:"group"`
+}
+
+type GroupChangedGroup struct {
+	GroupID GroupID `json:"groupID"`
+}
+
+// / If `data` is `nil`, then just send a group-changed notification.
+func notifyGroup(group *Group, database Database, notification Notification, data any) error {
+	dataOrGroupChanged := data
+	if dataOrGroupChanged == nil {
+		dataOrGroupChanged = GroupChanged{
+			Group: GroupChangedGroup{
+				GroupID: group.GroupID,
+			},
+		}
+	}
+	// TODO: parallelize.
+	for _, userID := range group.Members {
+		user, err := database.ReadUser(userID)
+		if err != nil {
+			return err
+		}
+		if user == nil {
+			return fmt.Errorf("no such user")
+		}
+		for _, connectionID := range user.Connections {
+			if err := notification.Notify(connectionID, dataOrGroupChanged); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // A service capable of notifying clients regardless of how many tab(s) they have open.
 type Notification interface {
 	// Sends a JSON notification to the client with the provided connection ID.
