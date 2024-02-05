@@ -24,16 +24,27 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database) {
 			return
 		}
 
-		//user := r.Context().Value(UserKey).(*User)
+		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
 
 		switch r.Method {
 		case http.MethodDelete:
+			for _, availability := range group.Availabilities {
+				if availability.AvailabilityID != availabilityID {
+					continue
+				}
+				if availability.UserID != user.UserID {
+					http.Error(w, "cannot delete availability of other member", http.StatusUnauthorized)
+					return
+				}
+			}
 			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
-				slices.DeleteFunc(group.Availabilities, func(availability Availability) bool { return availability.AvailabilityID == availabilityID })
+				slices.DeleteFunc(group.Availabilities, func(availability Availability) bool {
+					return availability.AvailabilityID == availabilityID && availability.UserID == user.UserID
+				})
 				return nil
 			}); err != nil {
-				http.Error(w, "could not delete activity", http.StatusInternalServerError)
+				http.Error(w, "could not delete availability", http.StatusInternalServerError)
 				return
 			}
 			WriteJSON(w, nil)

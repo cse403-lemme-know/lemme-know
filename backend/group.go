@@ -213,6 +213,21 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 				slices.DeleteFunc(group.Members, func(member UserID) bool {
 					return member == user.UserID
 				})
+				slices.DeleteFunc(group.Availabilities, func(availability Availability) bool {
+					return availability.UserID == user.UserID
+				})
+				for _, activity := range group.Activities {
+					slices.DeleteFunc(activity.Confirmed, func(confirmed UserID) bool {
+						return confirmed == user.UserID
+					})
+				}
+				if group.Poll != nil {
+					for _, option := range group.Poll.Options {
+						slices.DeleteFunc(option.Votes, func(vote UserID) bool {
+							return vote == user.UserID
+						})
+					}
+				}
 				return nil
 			}); err != nil {
 				http.Error(w, "could not leave group", http.StatusInternalServerError)
