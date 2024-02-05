@@ -174,7 +174,9 @@ func (dynamoDB *DynamoDB) UpdateGroup(groupID GroupID, transaction func(*Group) 
 		}
 
 		oldCount := group.updateCount
-		transaction(group)
+		if err := transaction(group); err != nil {
+			return err
+		}
 		group.updateCount = oldCount + 1
 
 		err = dynamoDB.groups.Put(group).If("updateCount = ?", oldCount).Run()
