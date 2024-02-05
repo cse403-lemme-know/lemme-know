@@ -164,7 +164,26 @@ func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
 }
 
 func (dynamoDB *DynamoDB) UpdateGroup(groupID GroupID, transaction func(*Group) error) error {
-	panic("unimplemented")
+	for {
+		group, err := dynamoDB.ReadGroup(groupID)
+		if err != nil {
+			return err
+		}
+		if group == nil {
+			return fmt.Errorf("group not found")
+		}
+
+		oldCount := group.updateCount
+		transaction(group)
+		group.updateCount = oldCount + 1
+
+		err = dynamoDB.groups.Put(group).If("updateCount = ?", oldCount).Run()
+		if err != nil && dynamo.IsCondCheckFailed(err) {
+			// Retry the transaction.
+			continue
+		}
+		return err
+	}
 }
 
 func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error) {

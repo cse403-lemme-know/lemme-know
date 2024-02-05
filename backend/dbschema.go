@@ -11,6 +11,8 @@ type Group struct {
 	Members        []UserID
 	Activities     []Activity
 	Availabilities []Availability
+	// Counts updates to help ensure atomicity.
+	updateCount uint64
 }
 
 type User struct {
