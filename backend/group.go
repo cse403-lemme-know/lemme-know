@@ -63,9 +63,9 @@ type PatchGroupResponse struct {
 }
 
 // API's related to groups.
-func RestGroupAPI(router *mux.Router, database Database) {
+func RestGroupAPI(router *mux.Router, database Database, notification Notification) {
 	router.Use(AuthenticateMiddleware(database))
-	RestSpecificGroupAPI(AddHandler(router, "/{groupID}"), database)
+	RestSpecificGroupAPI(AddHandler(router, "/{groupID}"), database, notification)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPatch {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -98,7 +98,7 @@ type GroupKeyType struct{}
 var GroupKey = GroupKeyType(struct{}{})
 
 // API's related to a specific group.
-func RestSpecificGroupAPI(router *mux.Router, database Database) {
+func RestSpecificGroupAPI(router *mux.Router, database Database, notification Notification) {
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			groupID, ok := ParseUint64PathParameter(w, r, "groupID")
@@ -212,6 +212,8 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 				http.Error(w, "could not update group", http.StatusInternalServerError)
 				return
 			}
+
+			notifyGroup(group, database, notification, nil)
 
 			WriteJSON(w, nil)
 		case http.MethodDelete:

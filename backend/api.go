@@ -10,14 +10,14 @@ import (
 )
 
 // HTTP multiplexer for the root path.
-func RestRoot(router *mux.Router, database Database, _notification Notification) {
-	RestApi(AddHandler(router, "/api"), database)
+func RestRoot(router *mux.Router, database Database, notification Notification) {
+	RestApi(AddHandler(router, "/api"), database, notification)
 }
 
 // HTTP multiplexer for the API.
-func RestApi(router *mux.Router, database Database) {
+func RestApi(router *mux.Router, database Database, notification Notification) {
 	RestUserAPI(AddHandler(router, "/user"), database)
-	RestGroupAPI(AddHandler(router, "/group"), database)
+	RestGroupAPI(AddHandler(router, "/group"), database, notification)
 }
 
 // Adds a nested multiplexer at a relative path prefix.

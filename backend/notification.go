@@ -14,6 +14,45 @@ import (
 
 type ConnectionID = string
 
+type GroupChanged struct {
+	Group GroupChangedGroup `json:"group"`
+}
+
+type GroupChangedGroup struct {
+	GroupID GroupID `json:"groupID"`
+}
+
+// Send a best-effort notification to all group members.
+//
+// If `data` is `nil`, then just send a group-changed notification.
+func notifyGroup(group *Group, database Database, notification Notification, data any) {
+	dataOrGroupChanged := data
+	if dataOrGroupChanged == nil {
+		dataOrGroupChanged = GroupChanged{
+			Group: GroupChangedGroup{
+				GroupID: group.GroupID,
+			},
+		}
+	}
+	var wait sync.WaitGroup
+	for _, userID := range group.Members {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			user, err := database.ReadUser(userID)
+			if err != nil || user == nil {
+				// Ignore errors as notification is best-effort.
+				return
+			}
+			for _, connectionID := range user.Connections {
+				// Ignore errors as notification is best-effort.
+				_ = notification.Notify(connectionID, dataOrGroupChanged)
+			}
+		}()
+	}
+	wait.Wait()
+}
+
 // A service capable of notifying clients regardless of how many tab(s) they have open.
 type Notification interface {
 	// Sends a JSON notification to the client with the provided connection ID.
