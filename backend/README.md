@@ -51,7 +51,7 @@ make deploy
 
 ### Group
 - Request: `GET /api/group/1234/`
-  - Precondition: authentication cookie of user in group `1234`
+  - Precondition: authentication cookie.
   - Effect: user `1234` joins the group if they weren't in it already.
   - Response: `{poll: {options: [{"a": [1234], ..}]}, availabilities: [{availabilityId: 5678, UserId: 5678, date: "9999-12-31", start: "8:00", end: "11:00"}], activities: [{activityId: 5678, Title: "abc", date: "9999-12-31", start: "9:00", end: "10:30", confirmed: [5678]}, ...], ...}`
 - Request: `PATCH /api/group/1234/ {name: "Best Friends", calendarMode: "date" | "dayOfWeek"}`

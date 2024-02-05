@@ -25,7 +25,13 @@ func RestGroupActivityAPI(router *mux.Router, database Database) {
 			return
 		}
 
+		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
+
+		if !group.IsMember(user.UserID) {
+			http.Error(w, "not a member of group", http.StatusUnauthorized)
+			return
+		}
 
 		switch r.Method {
 		case http.MethodDelete:
@@ -53,7 +59,13 @@ func RestGroupActivityAPI(router *mux.Router, database Database) {
 			return
 		}
 
+		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
+
+		if !group.IsMember(user.UserID) {
+			http.Error(w, "not a member of group", http.StatusUnauthorized)
+			return
+		}
 
 		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
 			group.Activities = append(group.Activities, Activity{
