@@ -20,7 +20,7 @@ func TestInsertUser(t *testing.T) {
 	var UserID int = 42
 
 	item := User{
-		UserID: UserID,
+		UserID:   UserID,
 		Username: "Bob",
 		GroupIDs: []*string{},
 		WebSocketIDs, []*string{},
@@ -44,7 +44,7 @@ func TestDeleteUser(t *testing.T) {
 	var UserID int = 42
 
 	item := User{
-		UserID: UserID,
+		UserID:   UserID,
 		Username: "Bob",
 		GroupIDs: []*string{},
 		WebSocketIDs, []*string{},
@@ -75,7 +75,7 @@ func TestReadUser(t *testing.T) {
 	var UserID int = 42
 
 	item := User{
-		UserID: UserID,
+		UserID:   UserID,
 		Username: "Bob",
 		GroupIDs: []*string{},
 		WebSocketIDs, []*string{},
@@ -107,7 +107,7 @@ func TestInsertGroup(t *testing.T) {
 
 	item := Group{
 		GroupID: GroupID,
-		Name: "Portland",
+		Name:    "Portland",
 		Polls, []*string{},
 		Users: map[string]Schedule{},
 	}
@@ -130,7 +130,7 @@ func TestDeleteGroup(t *testing.T) {
 
 	item := Group{
 		GroupID: GroupID,
-		Name: "Portland",
+		Name:    "Portland",
 		Polls, []*string{},
 		Users: map[string]Schedule{},
 	}
@@ -160,7 +160,7 @@ func TestReadGroup(t *testing.T) {
 
 	item := Group{
 		GroupID: GroupID,
-		Name: "Portland",
+		Name:    "Portland",
 		Polls, []*string{},
 		Users: map[string]Schedule{},
 	}
