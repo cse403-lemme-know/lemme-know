@@ -154,6 +154,21 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, patchAvailabilityRequest.Date, getGroupResponse.Availabilities[0].Date)
 	assert.Equal(t, userID, getGroupResponse.Availabilities[0].UserID)
 
+	activityID := getGroupResponse.Activities[0].ActivityId
+	availabilityID := getGroupResponse.Availabilities[0].AvailabilityID
+	log.Printf("got activity id %d", activityID)
+	log.Printf("got availability id %d", availabilityID)
+
+	// Test: delete activity.
+	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/activity/%d/", port, groupID, activityID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: delete availability.
+	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/availability/%d/", port, groupID, availabilityID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
 	// Test: delete poll.
 	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID))
 	assert.Nil(t, err)

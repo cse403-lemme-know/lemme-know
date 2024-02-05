@@ -25,6 +25,12 @@ func RestGroupPollAPI(router *mux.Router, database Database) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
+
+		if !group.IsMember(user.UserID) {
+			http.Error(w, "not a member of group", http.StatusUnauthorized)
+			return
+		}
+
 		switch r.Method {
 		case http.MethodPut:
 			var request PutPollRequest

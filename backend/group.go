@@ -189,6 +189,11 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 
 			WriteJSON(w, response)
 		case http.MethodPatch:
+			if !group.IsMember(user.UserID) {
+				http.Error(w, "not a member of group", http.StatusUnauthorized)
+				return
+			}
+
 			var request PatchGroupRequest
 			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 				http.Error(w, "could not decode body", http.StatusBadRequest)
@@ -210,6 +215,10 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 
 			WriteJSON(w, nil)
 		case http.MethodDelete:
+			if !group.IsMember(user.UserID) {
+				http.Error(w, "not a member of group", http.StatusUnauthorized)
+				return
+			}
 			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
 				slices.DeleteFunc(group.Members, func(member UserID) bool {
 					return member == user.UserID
@@ -249,4 +258,14 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
+}
+
+// Helper to check if a user is a member of a group.
+func (group *Group) IsMember(userID UserID) bool {
+	for _, member := range group.Members {
+		if member == userID {
+			return true
+		}
+	}
+	return false
 }

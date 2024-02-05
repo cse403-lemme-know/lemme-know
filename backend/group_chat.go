@@ -30,9 +30,16 @@ type PatchChatRequest struct {
 // API's related to chat within a group.
 func RestGroupChatAPI(router *mux.Router, database Database) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value(UserKey).(*User)
+		group := r.Context().Value(GroupKey).(*Group)
+
+		if !group.IsMember(user.UserID) {
+			http.Error(w, "not a member of group", http.StatusUnauthorized)
+			return
+		}
+
 		switch r.Method {
 		case http.MethodGet:
-			group := r.Context().Value(GroupKey).(*Group)
 			startTimeString := r.URL.Query().Get("start")
 			startTime, err := strconv.ParseUint(startTimeString, 10, 64)
 			if err != nil {
@@ -64,9 +71,6 @@ func RestGroupChatAPI(router *mux.Router, database Database) {
 
 			json.NewEncoder(w).Encode(chat)
 		case http.MethodPatch:
-			user := r.Context().Value(UserKey).(*User)
-			group := r.Context().Value(GroupKey).(*Group)
-
 			var request PatchChatRequest
 			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 				http.Error(w, "could not decode body", http.StatusBadRequest)
