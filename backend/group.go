@@ -21,7 +21,14 @@ type GetGroupResponse struct {
 
 // Poll sent over JSON.
 type GetGroupResponsePoll struct {
-	Options map[string][]UserID `json:"options"`
+	Title   string                       `json:"title"`
+	Options []GetGroupResponsePollOption `json:"options"`
+}
+
+// Poll option sent over JSON.
+type GetGroupResponsePollOption struct {
+	Name  string   `json:"option"`
+	Votes []UserID `json:"votes"`
 }
 
 // Availability sent over JSON.
@@ -115,18 +122,70 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 	RestGroupChatAPI(AddHandler(router, "/chat"), database)
 	RestGroupChatAPI(AddHandler(router, "/poll"), database)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_ = r.Context().Value(UserKey).(*User)
+		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
 		switch r.Method {
 		case http.MethodGet:
-			WriteJSON(w, GetGroupResponse{
-				Name:    group.Name,
-				Members: group.Members,
-				// TODO
-				Poll:           nil,
+			found := false
+			for _, member := range group.Members {
+				if member == user.UserID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+					group.Members = append(group.Members, user.UserID)
+					return nil
+				}); err != nil {
+					http.Error(w, "could not join group", http.StatusInternalServerError)
+					return
+				}
+				group.Members = append(group.Members, user.UserID)
+			}
+
+			response := GetGroupResponse{
+				Name:           group.Name,
+				Members:        group.Members,
 				Availabilities: []GetGroupResponseAvailability{},
 				Activities:     []GetGroupResponseActivity{},
-			})
+			}
+
+			if group.Poll != nil {
+				response.Poll = &GetGroupResponsePoll{
+					Title:   group.Poll.Title,
+					Options: []GetGroupResponsePollOption{},
+				}
+				for _, option := range group.Poll.Options {
+					response.Poll.Options = append(response.Poll.Options, GetGroupResponsePollOption{
+						Name:  option.Name,
+						Votes: option.Votes,
+					})
+				}
+			}
+
+			for _, activity := range group.Activities {
+				response.Activities = append(response.Activities, GetGroupResponseActivity{
+					ActivityId: activity.ActivityID,
+					Title:      activity.Title,
+					Date:       activity.Date,
+					Start:      activity.Start,
+					End:        activity.End,
+					Confirmed:  activity.Confirmed,
+				})
+			}
+
+			for _, availability := range group.Availabilities {
+				response.Availabilities = append(response.Availabilities, GetGroupResponseAvailability{
+					AvailabilityID: availability.AvailabilityID,
+					UserID:         availability.UserID,
+					Date:           availability.Date,
+					Start:          availability.Start,
+					End:            availability.End,
+				})
+			}
+
+			WriteJSON(w, response)
 		case http.MethodPatch:
 			var request PatchGroupRequest
 			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -134,8 +193,14 @@ func RestSpecificGroupAPI(router *mux.Router, database Database) {
 				return
 			}
 
-			database.UpdateGroupName(group.GroupID, request.Name)
-			// TODO: calendarMode
+			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+				group.Name = request.Name
+				group.CalendarMode = request.CalendarMode
+				return nil
+			}); err != nil {
+				http.Error(w, "could not update group", http.StatusInternalServerError)
+				return
+			}
 
 			WriteJSON(w, nil)
 		default:

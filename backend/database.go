@@ -16,6 +16,8 @@ import (
 
 type UserID = uint64
 type GroupID = uint64
+type ActivityID = uint64
+type AvailabilityID = uint64
 type UnixMillis = uint64
 
 // A service capable of persisting data.
@@ -30,6 +32,10 @@ type Database interface {
 	// Returns a nil `*User` if no such user exists. Returns
 	// an error if the operation could not be completed.
 	ReadUser(UserID) (*User, error)
+	// Transactionally updates a user.
+	//
+	// Returns an error if the operation could not be completed.
+	UpdateUser(UserID, func(user *User) error) error
 	// Deletes a user from the database, if it exists.
 	//
 	// Returns an error if the operation could not be completed.
@@ -44,29 +50,15 @@ type Database interface {
 	// Returns a nil `*Group` if no such group exists. Returns
 	// an error if the operation could not be completed.
 	ReadGroup(GroupID) (*Group, error)
-	// Updates the name of the group.
+	// Transactionally updates a group.
 	//
 	// Returns an error if the operation could not be completed.
-	UpdateGroupName(GroupID, string) error
+	UpdateGroup(GroupID, func(group *Group) error) error
 	// Reads group chat messagses, on or after startTime and on or before endTime, from the database.
 	//
 	// May not return all messages. If the returned `bool` is true, there may be
 	// messages remaining (set `startTime` to the latest `message.Timestamp` and try again).
 	ReadMessages(GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error)
-	// Creates a new poll in the group, replacing the old one (if any).
-	//
-	// Returns an error if the operation could not be completed.
-	CreatePoll(GroupID, Poll) error
-	// Deletes the active poll in a group, if one exists.
-	//
-	// Returns an error if the operation could not be completed.
-	DeletePoll(GroupID) error
-	// Creates an availability for a user in a group.
-	CreateAvailability(GroupID /*, Activity*/) error
-	// Creates an activity in a group.
-	CreateActivity(GroupID /*, Activity*/) error
-	// Deletes a group from the database, if it exists.
-	//
 	// Returns an error if the operation could not be completed.
 	DeleteGroup(GroupID) error
 	// Creates a new chat message in the group.
@@ -138,6 +130,10 @@ func (dynamoDB *DynamoDB) ReadUser(userID UserID) (*User, error) {
 	return &user, err
 }
 
+func (dynamoDB *DynamoDB) UpdateUser(userID UserID, transaction func(*User) error) error {
+	panic("unimplemented")
+}
+
 // Deletes a user from the database, if it exists.
 //
 // Returns an error if the operation could not be completed.
@@ -167,8 +163,27 @@ func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
 	return &group, err
 }
 
-func (dynamoDB *DynamoDB) UpdateGroupName(groupID GroupID, name string) error {
-	panic("unimplemented")
+func (dynamoDB *DynamoDB) UpdateGroup(groupID GroupID, transaction func(*Group) error) error {
+	for {
+		group, err := dynamoDB.ReadGroup(groupID)
+		if err != nil {
+			return err
+		}
+		if group == nil {
+			return fmt.Errorf("group not found")
+		}
+
+		oldCount := group.updateCount
+		transaction(group)
+		group.updateCount = oldCount + 1
+
+		err = dynamoDB.groups.Put(group).If("updateCount = ?", oldCount).Run()
+		if err != nil && dynamo.IsCondCheckFailed(err) {
+			// Retry the transaction.
+			continue
+		}
+		return err
+	}
 }
 
 func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error) {
@@ -184,52 +199,6 @@ func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, en
 func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
 	err := dynamoDB.groups.Delete("GroupID", groupID).If("attribute_exists(UserID)").Run()
 	return err
-}
-
-// Inserts a new schedule to the database, if it does not exist
-// Returns an error if schedule already exists in database
-func (dynamoDB *DynamoDB) InsertNewSchedule(userID UserID, scheduleInfo Schedule) error {
-	err := dynamoDB.users.Update("UserID", userID).Append("Schedules", scheduleInfo).Run()
-	return err
-}
-
-// Updates the group information in the database, if it exist
-// Returns an error if group does not exist in database
-func (dynamoDB *DynamoDB) UpdateGroupInfo(groupID GroupID, newInfo Group) error {
-	err := dynamoDB.groups.Update("GroupID", groupID).Set("Group", newInfo).Run()
-	return err
-}
-
-// Updates the user information in the database, if it exist
-// Returns an error if user does not exist in database
-func (dynamoDB *DynamoDB) UpdateUserInfo(userID UserID, newInfo User) error {
-	err := dynamoDB.users.Update("UserID", userID).Set("User", newInfo).Run()
-	return err
-}
-
-// Deletes a user from the group database, if the user exists in that group.
-//
-// Returns an error if the operation could not be completed.
-func (dynamoDB *DynamoDB) DeleteUserFromGroup(userInfo User, groupID GroupID) error {
-	//Check if group exists, check if user exists
-	err := dynamoDB.groups.Update("GroupID", groupID).DeleteFromSet("Users", userInfo).Run()
-	return err
-}
-
-func (dynamoDB *DynamoDB) CreateActivity(groupID GroupID /*, activity Activity*/) error {
-	return fmt.Errorf("unimplemented")
-}
-
-func (dynamoDB *DynamoDB) CreateAvailability(groupID GroupID /*, availability Availability*/) error {
-	return fmt.Errorf("unimplemented")
-}
-
-func (dynamoDB *DynamoDB) CreatePoll(groupID GroupID, poll Poll) error {
-	return fmt.Errorf("unimplemented")
-}
-
-func (dynamoDB *DynamoDB) DeletePoll(groupID GroupID) error {
-	return fmt.Errorf("unimplemented")
 }
 
 func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
@@ -283,6 +252,20 @@ func (memoryDatabase *MemoryDatabase) ReadUser(userID UserID) (*User, error) {
 	}
 }
 
+func (memoryDatabase *MemoryDatabase) UpdateUser(userID UserID, transaction func(*User) error) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	user, ok := memoryDatabase.users[userID]
+	if !ok {
+		return fmt.Errorf("user not found")
+	}
+	if err := transaction(&user); err != nil {
+		return nil
+	}
+	memoryDatabase.users[userID] = user
+	return nil
+}
+
 func (memoryDatabase *MemoryDatabase) DeleteUser(userID UserID) error {
 	memoryDatabase.mu.Lock()
 	defer memoryDatabase.mu.Unlock()
@@ -311,14 +294,16 @@ func (memoryDatabase *MemoryDatabase) ReadGroup(groupId GroupID) (*Group, error)
 	}
 }
 
-func (memoryDatabase *MemoryDatabase) UpdateGroupName(groupID GroupID, name string) error {
+func (memoryDatabase *MemoryDatabase) UpdateGroup(groupID GroupID, transaction func(*Group) error) error {
 	memoryDatabase.mu.Lock()
 	defer memoryDatabase.mu.Unlock()
 	group, ok := memoryDatabase.groups[groupID]
 	if !ok {
 		return fmt.Errorf("group not found")
 	}
-	group.Name = name
+	if err := transaction(&group); err != nil {
+		return nil
+	}
 	memoryDatabase.groups[groupID] = group
 	return nil
 }
@@ -340,48 +325,6 @@ func (memoryDatabase *MemoryDatabase) ReadMessages(groupID GroupID, startTime Un
 		messages = append(messages, message)
 	}
 	return messages, more, nil
-}
-
-func (memoryDatabase *MemoryDatabase) CreateActivity(groupID GroupID /*, activity Activity*/) error {
-	memoryDatabase.mu.Lock()
-	defer memoryDatabase.mu.Unlock()
-	// TODO: unimplemented.
-	return nil
-}
-
-func (memoryDatabase *MemoryDatabase) CreateAvailability(groupID GroupID /*, availability Availability*/) error {
-	memoryDatabase.mu.Lock()
-	defer memoryDatabase.mu.Unlock()
-	_, ok := memoryDatabase.groups[groupID]
-	if !ok {
-		return fmt.Errorf("group not found")
-	}
-	//group.Availabilities = append(group.Availabilities, availability)
-	return nil
-}
-
-func (memoryDatabase *MemoryDatabase) CreatePoll(groupID GroupID, poll Poll) error {
-	memoryDatabase.mu.Lock()
-	defer memoryDatabase.mu.Unlock()
-	group, ok := memoryDatabase.groups[groupID]
-	if !ok {
-		return fmt.Errorf("group not found")
-	}
-	group.Poll = &poll
-	memoryDatabase.groups[groupID] = group
-	return nil
-}
-
-func (memoryDatabase *MemoryDatabase) DeletePoll(groupID GroupID) error {
-	memoryDatabase.mu.Lock()
-	defer memoryDatabase.mu.Unlock()
-	group, ok := memoryDatabase.groups[groupID]
-	if !ok {
-		return fmt.Errorf("group not found")
-	}
-	group.Poll = nil
-	memoryDatabase.groups[groupID] = group
-	return nil
 }
 
 func (memoryDatabase *MemoryDatabase) DeleteGroup(groupID GroupID) error {
