@@ -141,12 +141,18 @@ func TestHTTPService(t *testing.T) {
 	MustDecode(t, response.Body, &getGroupResponse)
 	assert.Equal(t, patchGroupRequest.Name, getGroupResponse.Name)
 	assert.Equal(t, patchGroupRequest.CalendarMode, getGroupResponse.CalendarMode)
+	assert.Equal(t, []UserID{userID}, getGroupResponse.Members)
 	assert.NotNil(t, getGroupResponse.Poll)
 	assert.Equal(t, putPollRequest.Title, getGroupResponse.Poll.Title)
 	assert.Equal(t, len(putPollRequest.Options), len(getGroupResponse.Poll.Options))
 	for i, option := range putPollRequest.Options {
 		assert.Equal(t, option, getGroupResponse.Poll.Options[i].Name)
 	}
+	assert.Equal(t, 1, len(getGroupResponse.Activities))
+	assert.Equal(t, patchActivityRequest.Title, getGroupResponse.Activities[0].Title)
+	assert.Equal(t, 1, len(getGroupResponse.Availabilities))
+	assert.Equal(t, patchAvailabilityRequest.Date, getGroupResponse.Availabilities[0].Date)
+	assert.Equal(t, userID, getGroupResponse.Availabilities[0].UserID)
 
 	// Test: delete poll.
 	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID))
