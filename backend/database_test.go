@@ -112,7 +112,7 @@ func TestInsertGroup(t *testing.T) {
 		GroupID: GroupID,
 		Name:    "Portland",
 		Polls, []*string{},
-		Users: map[string]Schedule{}
+		Users: map[string]Schedule{},
 	}
 
 	err := table.CreateGroup(item)
@@ -134,7 +134,7 @@ func TestDeleteGroup(t *testing.T) {
 		GroupID: GroupID,
 		Name:    "Portland",
 		Polls, []*string{},
-		Users: map[string]Schedule{}
+		Users: map[string]Schedule{},
 	}
 
 	err := table.CreateGroup(item)
