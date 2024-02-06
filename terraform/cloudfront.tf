@@ -1,90 +1,109 @@
-/*
-TODO: add the following resources/data
+locals {
+  frontend_origin_id     = "S3-frontend"
+  backend_rest_origin_id = "API-GATEWAY-backend-rest"
+  backend_ws_origin_id   = "API-GATEWAY-backend-ws"
+}
 
-aws_cloudfront_origin_access_identity
-aws_cloudfront_distribution
-aws_cloudfront_distribution
-aws_iam_policy_document
-aws_s3_bucket_policy
-*/
-
-resource "aws_cloudfront_origin_access_identity" "example" {
+resource "aws_cloudfront_origin_access_identity" "backend" {
   comment = "origin access identity"
 }
 
-resource "aws_cloudfront_distribution" "name" {
-  origin {
-    domain_name              = aws_s3_bucket.b.bucket_regional_domain_name
-    origin_access_control_id = aws_cloudfront_origin_access_control.default.id
-    origin_id                = local.s3_origin_id
-  }
-
+resource "aws_cloudfront_distribution" "backend" {
+  depends_on          = [aws_acm_certificate_validation.backend, aws_s3_bucket.frontend]
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
+  aliases             = [var.domain]
 
-  logging_config {
-    include_cookies = false
-    bucket          = "mylogs.s3.amazonaws.com"
-    prefix          = "myprefix"
+  origin {
+    domain_name = aws_s3_bucket_website_configuration.frontend.website_endpoint
+    origin_id   = local.frontend_origin_id
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.1", "TLSv1.2"]
+    }
   }
-
-  aliases = ["mysite.example.com", "yoursite.example.com"]
-
+  origin {
+    domain_name = element(split("/", aws_api_gateway_deployment.backend.invoke_url), 2)
+    origin_id   = local.backend_rest_origin_id
+    origin_path = "/prod"
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+  /*
+  origin {
+    domain_name = element(split("/", aws_apigatewayv2_stage.backend.invoke_url), 2)
+    origin_id = local.backend_ws_origin_id
+    origin_path = ""
+    custom_origin_config {
+      http_port = 80
+      https_port = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols = ["TLSv1.2"]
+    }
+  }
+  */
   default_cache_behavior {
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = local.s3_origin_id
-
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods  = ["GET", "HEAD"]
+    compress        = true
     forwarded_values {
-      query_string = false
-
       cookies {
-        forward = "none"
+        forward = "all"
       }
+      query_string = false
     }
-
-    min_ttl                = 0
-    default_ttl            = 86400
-    max_ttl                = 31536000
-    compress               = true
+    target_origin_id       = local.frontend_origin_id
     viewer_protocol_policy = "redirect-to-https"
   }
-
   ordered_cache_behavior {
-    path_pattern     = "/content/*"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = local.s3_origin_id
-
+    allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods  = ["GET", "HEAD"]
+    compress        = true
     forwarded_values {
-      query_string = false
       cookies {
-        forward = "none"
+        forward = "all"
       }
+      headers      = []
+      query_string = true
     }
-
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
-    compress               = true
+    max_ttl                = 600
+    path_pattern           = "api/*"
+    target_origin_id       = local.backend_rest_origin_id
     viewer_protocol_policy = "redirect-to-https"
   }
-
-  price_class = "PriceClass_200"
-  restrictions {
-    geo_restriction {
-      restriction_type = "whitelist"
-      locations        = ["US", "CA", "GB", "DE"]
-    }
+  ordered_cache_behavior {
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+    cached_methods           = ["GET", "HEAD"]
+    compress                 = true
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+    path_pattern             = "ws/*"
+    target_origin_id         = local.backend_ws_origin_id
+    viewer_protocol_policy   = "redirect-to-https"
   }
+
+  price_class = "PriceClass_100"
 
   viewer_certificate {
     cloudfront_default_certificate = true
   }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
 }
 
-data "aws_iam_policy_document" "example" {
+data "aws_iam_policy_document" "backend" {
   statement {
     sid = "1"
 
@@ -131,13 +150,20 @@ data "aws_iam_policy_document" "example" {
   }
 }
 
-resource "aws_iam_policy" "example" {
-  name   = "example_policy"
-  path   = "/"
-  policy = data.aws_iam_policy_document.example.json
+resource "aws_s3_bucket_policy" "frontend" {
+  bucket     = aws_s3_bucket.frontend.id
+  depends_on = [aws_cloudfront_origin_access_identity.main]
+  policy     = data.aws_iam_policy_document.frontend.json
 }
 
-resource "aws_s3_bucket_policy" "example" {
-  bucket = aws_s3_bucket.example.id
-  policy = data.aws_iam_policy_document.example
+data "aws_iam_policy_document" "frontend" {
+  statement {
+    actions = ["s3:GetObject"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    resources = ["${aws_s3_bucket.frontend.arn}/*"]
+    sid       = "cloudfront"
+  }
 }

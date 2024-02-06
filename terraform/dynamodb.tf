@@ -1,4 +1,4 @@
-resource "aws_dynamodb_table" "Group" {
+resource "aws_dynamodb_table" "group" {
   name         = "GroupTable"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "GroupID"
@@ -9,7 +9,7 @@ resource "aws_dynamodb_table" "Group" {
   }
 }
 
-resource "aws_dynamodb_table" "User" {
+resource "aws_dynamodb_table" "user" {
   name         = "UserTable"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "UserID"
@@ -20,7 +20,7 @@ resource "aws_dynamodb_table" "User" {
   }
 }
 
-resource "aws_dynamodb_table" "Message" {
+resource "aws_dynamodb_table" "message" {
   name         = "MessageTable"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "MessageId"
@@ -36,5 +36,3 @@ resource "aws_dynamodb_table" "Message" {
     type = "N"
   }
 }
-
-//ignore poll/pollresult
