@@ -109,10 +109,9 @@ func TestInsertGroup(t *testing.T) {
 	var groupID GroupID = rand.Uint64()
 
 	item := Group{
-		GroupID: GroupID,
+		GroupID: groupID,
 		Name:    "Portland",
-		Polls, []*string{},
-		Users: map[string]Schedule{},
+		Poll:    nil,
 	}
 
 	err := table.CreateGroup(item)
@@ -131,10 +130,9 @@ func TestDeleteGroup(t *testing.T) {
 	var groupID GroupID = rand.Uint64()
 
 	item := Group{
-		GroupID: GroupID,
+		GroupID: groupID,
 		Name:    "Portland",
-		Polls, []*string{},
-		Users: map[string]Schedule{},
+		Poll:    nil,
 	}
 
 	err := table.CreateGroup(item)
@@ -144,7 +142,7 @@ func TestDeleteGroup(t *testing.T) {
 
 	//assert.Equal(t, 1, len(table.users.primarykeys()))
 
-	err := table.DeleteGroup(GroupID)
+	err = table.DeleteGroup(groupID)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -160,8 +158,7 @@ func TestReadGroup(t *testing.T) {
 	item := Group{
 		GroupID: GroupID,
 		Name:    "Portland",
-		Polls, []*string{},
-		Users: map[string]Schedule{},
+		Poll:    nil,
 	}
 
 	err := table.CreateGroup(item)
@@ -176,5 +173,5 @@ func TestReadGroup(t *testing.T) {
 		t.Error("unexpected error:", err)
 	}
 
-	assertEquals(t, "Portland", group.Name)
+	assert.Equal(t, "Portland", group.Name)
 }
