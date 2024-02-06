@@ -199,7 +199,7 @@ func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, en
 //
 // Returns an error if the operation could not be completed.
 func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
-	err := dynamoDB.groups.Delete("GroupID", groupID).If("attribute_exists(UserID)").Run()
+	err := dynamoDB.groups.Delete("GroupID", groupID).If("attribute_exists(GroupID)").Run()
 	return err
 }
 
