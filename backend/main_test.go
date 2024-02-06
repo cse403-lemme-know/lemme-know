@@ -11,11 +11,13 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,6 +55,25 @@ func TestHTTPService(t *testing.T) {
 	var getUserResponse2 GetUserResponse
 	MustDecode(t, response.Body, &getUserResponse2)
 	assert.Equal(t, getUserResponse.UserID, getUserResponse2.UserID)
+
+	// Test: open websocket.
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("localhost:%d", port), Path: "/ws/"}
+
+	ws, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	defer ws.Close()
+
+	go func() {
+		for {
+			_, message, err := ws.ReadMessage()
+			if err != nil {
+				return
+			}
+			log.Printf("received: %s", message)
+		}
+	}()
 
 	// Test: create group.
 	patchGroupRequest := PatchGroupRequest{
