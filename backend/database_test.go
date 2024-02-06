@@ -106,17 +106,15 @@ func TestInsertGroup(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = rand.Uint64()
+	var groupID GroupID = rand.Uint64()
 
-	item := User{
-		UserID:      userID,
-		Name:        "Bob",
-		Groups:      []GroupID{},
-		Connections: []ConnectionID{},
-		Schedules:   map[string]Schedule{},
+	item := Group{
+		GroupID: groupID,
+		Name:    "Portland",
+		Poll:    nil,
 	}
 
-	err := table.CreateUser(item)
+	err := table.CreateGroup(item)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
@@ -129,22 +127,25 @@ func TestDeleteGroup(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = rand.Uint64()
+	var groupID GroupID = rand.Uint64()
 
-	item := User{
-		UserID:      userID,
-		Name:        "Bob",
-		Groups:      []GroupID{},
-		Connections: []ConnectionID{},
-		Schedules:   map[string]Schedule{},
+	item := Group{
+		GroupID: groupID,
+		Name:    "Portland",
+		Poll:    nil,
 	}
 
-	err := table.CreateUser(item)
+	err := table.CreateGroup(item)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
 
 	//assert.Equal(t, 1, len(table.users.primarykeys()))
+
+	err = table.DeleteGroup(groupID)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
 }
 
 func TestReadGroup(t *testing.T) {
@@ -152,20 +153,25 @@ func TestReadGroup(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = rand.Uint64()
+	var GroupID uint64 = 43
 
-	item := User{
-		UserID:      userID,
-		Name:        "Bob",
-		Groups:      []GroupID{},
-		Connections: []ConnectionID{},
-		Schedules:   map[string]Schedule{},
+	item := Group{
+		GroupID: GroupID,
+		Name:    "Portland",
+		Poll:    nil,
 	}
 
-	err := table.CreateUser(item)
+	err := table.CreateGroup(item)
 	if err != nil {
 		t.Error("unexpected error:", err)
 	}
 
 	//assert.Equal(t, 1, len(table.users.primarykeys()))
+
+	group, err := table.ReadGroup(GroupID)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+
+	assert.Equal(t, "Portland", group.Name)
 }
