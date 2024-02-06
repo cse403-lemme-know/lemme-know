@@ -49,9 +49,12 @@ func WriteJSON(w http.ResponseWriter, data any) {
 }
 
 // WebSocket event (connect or disconnect) handler.
-func WebSocket(database Database, connectionId ConnectionID, isConnect bool) error {
-	log.Printf("websocket %s isConnect=%t\n", connectionId, isConnect)
-	return nil
+func WebSocket(database Database, connectionId ConnectionID, userID UserID, isConnect bool) error {
+	log.Printf("websocket %s userID=%d isConnect=%t\n", connectionId, userID, isConnect)
+	return database.UpdateUser(userID, func(user *User) error {
+		user.Connections = append(user.Connections, connectionId)
+		return nil
+	})
 }
 
 // Cron event handler.

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -36,22 +37,53 @@ func newLambdaHandler(database Database, notification Notification) func(context
 
 	return func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 		// Check if the event is an AWS API Gateway HTTP Rest request.
-		var http events.APIGatewayProxyRequest
-		if err := json.Unmarshal(event, &http); err == nil && http.HTTPMethod != "" {
-			log.Printf("received HTTP request: %s\n", http.Path)
-			return httpHandler(context, http)
+		var rest events.APIGatewayProxyRequest
+		if err := json.Unmarshal(event, &rest); err == nil && rest.HTTPMethod != "" {
+			log.Printf("received HTTP request: %s\n", rest.Path)
+			return httpHandler(context, rest)
 		}
 
 		// Check if the event is an AWS API Gateway HTTP WebSocket event.
 		var ws events.APIGatewayWebsocketProxyRequest
 		if err := json.Unmarshal(event, &ws); err == nil && ws.RequestContext.ConnectionID != "" {
+			// Construct a request to access cookies.
+			request, err := http.NewRequest(
+				http.MethodGet,
+				"http://example.com",
+				strings.NewReader(ws.Body),
+			)
+			if err != nil {
+				// Unreachable.
+				panic(err)
+			}
+			for key, value := range ws.Headers {
+				request.Header.Add(key, value)
+			}
+			for key, values := range ws.MultiValueHeaders {
+				for _, value := range values {
+					request.Header.Add(key, value)
+				}
+			}
+			user, err := CheckCookie(request, database)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+			if user == nil {
+				return events.APIGatewayProxyResponse{
+					StatusCode: http.StatusUnauthorized,
+					Body:       "no such user",
+				}, nil
+			}
+
 			isConnect := ws.RequestContext.EventType == "Connect"
 			isDisconnect := ws.RequestContext.EventType == "Disconnect"
-			var err error
 			if isConnect || isDisconnect {
-				err = WebSocket(database, ws.RequestContext.ConnectionID, isConnect)
+				err = WebSocket(database, ws.RequestContext.ConnectionID, user.UserID, isConnect)
 			}
-			return events.APIGatewayProxyResponse{}, err
+			return events.APIGatewayProxyResponse{
+				StatusCode: http.StatusOK,
+				Body:       "",
+			}, err
 		}
 
 		// Check if the event is an AWS EventBridge cron event.
@@ -93,19 +125,30 @@ func runLocalService(port uint16, ctx context.Context) error {
 
 	// In addition to the Rest API, expose WebSocket capabilities.
 	router.HandleFunc("/ws/", func(w http.ResponseWriter, r *http.Request) {
+		user, err := CheckCookie(r, database)
+		if err != nil {
+			http.Error(w, "could not check cookie", http.StatusInternalServerError)
+			return
+		}
+		if user == nil {
+			http.Error(w, "no such user", http.StatusUnauthorized)
+			return
+		}
+
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
+			http.Error(w, "could not open WebSocket", http.StatusUpgradeRequired)
 			return
 		}
 
 		connectionID := notification.add(c)
 
-		WebSocket(database, connectionID, true)
+		WebSocket(database, connectionID, user.UserID, true)
 
 		go func() {
 			defer c.Close()
 			defer notification.remove(connectionID)
-			defer WebSocket(database, connectionID, false)
+			defer WebSocket(database, connectionID, user.UserID, false)
 			for {
 				messageType, _, err := c.ReadMessage()
 				if err != nil || messageType == websocket.CloseMessage {
