@@ -22,6 +22,8 @@ type User struct {
 	Groups      []GroupID           `dynamo:",set"`
 	Connections []ConnectionID      `dynamo:",set"`
 	Schedules   map[string]Schedule `dynamo:",set"`
+	// Counts updates to help ensure atomicity.
+	updateCount uint64
 }
 
 type Poll struct {
