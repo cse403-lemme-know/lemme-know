@@ -131,7 +131,28 @@ func (dynamoDB *DynamoDB) ReadUser(userID UserID) (*User, error) {
 }
 
 func (dynamoDB *DynamoDB) UpdateUser(userID UserID, transaction func(*User) error) error {
-	panic("unimplemented")
+	for {
+		user, err := dynamoDB.ReadUser(userID)
+		if err != nil {
+			return err
+		}
+		if user == nil {
+			return fmt.Errorf("user not found")
+		}
+
+		oldCount := user.updateCount
+		if err := transaction(user); err != nil {
+			return err
+		}
+		user.updateCount = oldCount + 1
+
+		err = dynamoDB.users.Put(user).If("updateCount = ?", oldCount).Run()
+		if err != nil && dynamo.IsCondCheckFailed(err) {
+			// Retry the transaction.
+			continue
+		}
+		return err
+	}
 }
 
 // Deletes a user from the database, if it exists.
@@ -204,7 +225,7 @@ func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
 }
 
 func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
-	return fmt.Errorf("unimplemented")
+	return dynamoDB.messages.Put(message).If("attribute_not_exists(Timestamp)").Run()
 }
 
 func printDatabase(database Database) error {
