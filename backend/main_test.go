@@ -13,6 +13,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -56,25 +57,6 @@ func TestHTTPService(t *testing.T) {
 	MustDecode(t, response.Body, &getUserResponse2)
 	assert.Equal(t, getUserResponse.UserID, getUserResponse2.UserID)
 
-	// Test: open websocket.
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("localhost:%d", port), Path: "/ws/"}
-
-	ws, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		log.Fatal("dial:", err)
-	}
-	defer ws.Close()
-
-	go func() {
-		for {
-			_, message, err := ws.ReadMessage()
-			if err != nil {
-				return
-			}
-			log.Printf("received: %s", message)
-		}
-	}()
-
 	// Test: create group.
 	patchGroupRequest := PatchGroupRequest{
 		Name: "test",
@@ -87,6 +69,39 @@ func TestHTTPService(t *testing.T) {
 
 	groupID := patchGroupResponse.GroupID
 	log.Printf("got group id %d", groupID)
+
+	// Test: open websocket.
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("localhost:%d", port), Path: "/ws/"}
+
+	dialer := websocket.Dialer{
+		Jar: c.Jar,
+	}
+	ws, _, err := dialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	defer ws.Close()
+
+	var groupChanges atomic.Uint64
+
+	go func() {
+		for {
+			t, message, err := ws.ReadMessage()
+			if err != nil {
+				return
+			}
+			if t != websocket.TextMessage {
+				continue
+			}
+			log.Printf("received: %s", message)
+			var groupChanged GroupChanged
+			if err := json.Unmarshal(message, &groupChanged); err == nil {
+				if groupChanged.Group.GroupID == groupID {
+					groupChanges.Add(1)
+				}
+			}
+		}
+	}()
 
 	// Test: edit group.
 	patchGroupRequest = PatchGroupRequest{
@@ -199,6 +214,10 @@ func TestHTTPService(t *testing.T) {
 	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	assert.Greater(t, groupChanges.Load(), uint64(0))
+
+	log.Printf("group change notification received %d time(s)\n", groupChanges.Load())
 }
 
 // Integration test of Lambda handler.
