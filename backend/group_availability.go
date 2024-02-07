@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"math/rand"
 	"net/http"
 	"slices"
 
@@ -79,7 +78,7 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database) {
 
 		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
 			group.Availabilities = append(group.Availabilities, Availability{
-				AvailabilityID: rand.Uint64(),
+				AvailabilityID: GenerateID(),
 				UserID:         user.UserID,
 				Date:           request.Date,
 				Start:          request.Start,

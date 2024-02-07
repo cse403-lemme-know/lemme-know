@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"sync"
 
@@ -117,7 +116,7 @@ func (localNotification *LocalNotification) add(conn *websocket.Conn) Connection
 	defer localNotification.mu.Unlock()
 	var connectionID string
 	for connectionID == "" || localNotification.websockets[connectionID] != nil {
-		connectionID = strconv.FormatUint(rand.Uint64(), 10)
+		connectionID = strconv.FormatUint(GenerateID(), 10)
 	}
 	localNotification.websockets[connectionID] = conn
 	return connectionID

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"sync"
 
@@ -13,12 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
 )
-
-type UserID = uint64
-type GroupID = uint64
-type ActivityID = uint64
-type AvailabilityID = uint64
-type UnixMillis = uint64
 
 // A service capable of persisting data.
 type Database interface {
@@ -380,4 +375,11 @@ func GetRegion() string {
 	}
 
 	return region
+}
+
+// Generates a positive ID number that won't experience precision
+// issues for the client's JavaScript number representation.
+func GenerateID() uint64 {
+	const maxSafeInteger = 9007199254740991
+	return uint64(rand.Int63n(maxSafeInteger + 1))
 }
