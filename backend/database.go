@@ -89,17 +89,17 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 		db = dynamo.New(sess)
 
 		// Ingnore errors (e.g. duplicate table)
-		_ = db.CreateTable("Groups", Group{}).Run()
-		_ = db.CreateTable("Users", User{}).Run()
-		_ = db.CreateTable("Messages", Message{}).Run()
+		_ = db.CreateTable("GroupTable", Group{}).Run()
+		_ = db.CreateTable("UserTable", User{}).Run()
+		_ = db.CreateTable("MessageTable", Message{}).Run()
 	} else {
 		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
 	}
 
 	return &DynamoDB{
-		groups:   db.Table("Groups"),
-		users:    db.Table("Users"),
-		messages: db.Table("Messages"),
+		groups:   db.Table("GroupTable"),
+		users:    db.Table("UserTable"),
+		messages: db.Table("MessageTable"),
 	}
 }
 
