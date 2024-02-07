@@ -46,21 +46,22 @@ data "aws_iam_policy_document" "backend_policy" {
       "arn:aws:logs:*:*:*"
     ]
   }
-  #statement {
-  #  sid = "dynamodb"
-  #  actions = [
-  #    "dynamodb:DeleteItem",
-  #    "dynamodb:GetItem",
-  #    "dynamodb:PutItem",
-  #    "dynamodb:Scan",
-  #    "dynamodb:Query",
-  #    "dynamodb:UpdateItem"
-  #  ]
-  #  resources = [
-  #    "${aws_dynamodb_table.TODO_TABLE_NAME_1.arn}",
-  #    "${aws_dynamodb_table.TODO_TABLE_NAME_2.arn}"
-  #  ]
-  #}
+  statement {
+    sid = "dynamodb"
+    actions = [
+      "dynamodb:DeleteItem",
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:Scan",
+      "dynamodb:Query",
+      "dynamodb:UpdateItem"
+    ]
+    resources = [
+      "${aws_dynamodb_table.user.arn}",
+      "${aws_dynamodb_table.group.arn}",
+      "${aws_dynamodb_table.message.arn}"
+    ]
+  }
   #statement {
   #  sid = "websocket"
   #  action = [
