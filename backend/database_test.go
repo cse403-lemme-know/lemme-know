@@ -30,7 +30,6 @@ func TestInsertUser(t *testing.T) {
 		Name:        "Bob",
 		Groups:      []GroupID{},
 		Connections: []ConnectionID{},
-		Schedules:   map[string]Schedule{},
 	}
 
 	err := table.CreateUser(item)
@@ -53,7 +52,6 @@ func TestDeleteUser(t *testing.T) {
 		Name:        "Bob",
 		Groups:      []GroupID{},
 		Connections: []ConnectionID{},
-		Schedules:   map[string]Schedule{},
 	}
 
 	err := table.CreateUser(item)
@@ -83,7 +81,6 @@ func TestReadUser(t *testing.T) {
 		Name:        "Bob",
 		Groups:      []GroupID{},
 		Connections: []ConnectionID{},
-		Schedules:   map[string]Schedule{},
 	}
 
 	err := table.CreateUser(item)
