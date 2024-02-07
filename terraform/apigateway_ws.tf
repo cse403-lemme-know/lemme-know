@@ -99,14 +99,14 @@ resource "aws_apigatewayv2_route_response" "disconnect" {
 }
 
 resource "aws_apigatewayv2_stage" "backend" {
-  api_id      = aws_apigatewayv2_api.backend.id
-  name        = "backend-stage"
+  api_id = aws_apigatewayv2_api.backend.id
+  # Stage name is part of path.
+  name        = "ws"
   auto_deploy = true
   default_route_settings {
     throttling_burst_limit = 64
     throttling_rate_limit  = 64
   }
-
 }
 
 resource "aws_lambda_permission" "backend_ws" {
