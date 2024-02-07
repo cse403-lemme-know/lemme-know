@@ -12,12 +12,11 @@ resource "aws_lambda_function" "backend" {
 resource "aws_iam_role" "backend_role" {
   name               = "lemmeknow-backend-role"
   assume_role_policy = data.aws_iam_policy_document.backend_role.json
-
 }
 
 data "aws_iam_policy_document" "backend_role" {
   statement {
-    sid = "1"
+    sid = "lambda"
     actions = [
       "sts:AssumeRole"
     ]

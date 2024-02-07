@@ -1,5 +1,5 @@
 variable "domain" {
-  default = "lemmeknow.com"
+  default = "lemmeknow.xyz"
   type    = string
 }
 
