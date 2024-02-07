@@ -1,10 +1,12 @@
 module backend
 
-go 1.20
+go 1.21
+
+toolchain go1.21.6
 
 require (
 	github.com/aws/aws-lambda-go v1.46.0
-	github.com/aws/aws-sdk-go v1.50.8
+	github.com/aws/aws-sdk-go v1.50.10
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.1
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1

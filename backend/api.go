@@ -4,24 +4,42 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
 
 // HTTP multiplexer for the root path.
-func RestRoot(router *mux.Router, database Database, _notification Notification) {
-	RestApi(AddHandler(router, "/api"), database)
+func RestRoot(router *mux.Router, database Database, notification Notification) {
+	RestApi(AddHandler(router, "/api"), database, notification)
 }
 
 // HTTP multiplexer for the API.
-func RestApi(router *mux.Router, database Database) {
+func RestApi(router *mux.Router, database Database, notification Notification) {
 	RestUserAPI(AddHandler(router, "/user"), database)
-	RestGroupAPI(AddHandler(router, "/group"), database)
+	RestGroupAPI(AddHandler(router, "/group"), database, notification)
 }
 
 // Adds a nested multiplexer at a relative path prefix.
 func AddHandler(router *mux.Router, prefix string) *mux.Router {
 	return router.PathPrefix(prefix).Subrouter()
+}
+
+// Parse a required path parameter of type uint64.
+//
+// The second return value is a status flag, set to `true` if ok. If `false`, an error response was sent and the request is done.
+func ParseUint64PathParameter(w http.ResponseWriter, r *http.Request, parameterName string) (uint64, bool) {
+	parameterString, ok := mux.Vars(r)[parameterName]
+	if !ok {
+		http.Error(w, "missing "+parameterName, http.StatusBadRequest)
+		return 0, false
+	}
+	parameter, err := strconv.ParseUint(parameterString, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid "+parameterName, http.StatusBadRequest)
+		return 0, false
+	}
+	return parameter, true
 }
 
 // Write HTTP response consisting of JSON.
@@ -31,9 +49,12 @@ func WriteJSON(w http.ResponseWriter, data any) {
 }
 
 // WebSocket event (connect or disconnect) handler.
-func WebSocket(database Database, connectionId ConnectionID, isConnect bool) error {
-	log.Printf("websocket %s isConnect=%t\n", connectionId, isConnect)
-	return nil
+func WebSocket(database Database, connectionId ConnectionID, userID UserID, isConnect bool) error {
+	log.Printf("websocket %s userID=%d isConnect=%t\n", connectionId, userID, isConnect)
+	return database.UpdateUser(userID, func(user *User) error {
+		user.Connections = append(user.Connections, connectionId)
+		return nil
+	})
 }
 
 // Cron event handler.

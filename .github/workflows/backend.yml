@@ -6,9 +6,11 @@ on:
       - main
     paths: 
       - 'backend/**'
+      - '.github/workflows/backend.yml'
   pull_request:
     paths: 
       - 'backend/**'
+      - '.github/workflows/backend.yml'
 
 jobs:
   build:
@@ -23,7 +25,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.20.x'
+          go-version: '1.21.x'
       - name: Build
         run: go build
   test:
@@ -38,7 +40,19 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.20.x'
+          go-version: '1.21.x'
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '11'
+      - name: Run DynamoDB Local
+        run:
+          wget -q https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.zip &&
+          unzip -q dynamodb_local_latest.zip &&
+          nohup java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory -disableTelemetry &
+      - name: Wait for DynamoDB Local to start up
+        run: sleep 2
       - name: Test
         run: go test
   format:
@@ -53,7 +67,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.20.x'
+          go-version: '1.21.x'
       - name: Check format
         # https://stackoverflow.com/a/42510278
         run: diff -u <(echo -n) <(gofmt -d ./)

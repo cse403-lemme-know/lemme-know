@@ -1,50 +1,69 @@
 package main
 
-import (
-	"time"
-)
-
 type Group struct {
-	GroupID GroupID `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
-	//Time   time.Time // Range key, a.k.a. sort key
+	GroupID GroupID `dynamo:",hash"` // Hash key, a.k.a. partition key
+	//Time      time.Time // Range key, a.k.a. sort key
 
-	Name string
-	//Count int                 		 `dynamo:",omitempty"` // Omits if zero value
-	Polls    []Poll             `dynamo:",set"`
-	Members  []UserID           `dynamo:",set"`
-	Messages map[string]Message `dynamo:",set"`
+	Name         string
+	CalendarMode string
+	//Count     int                  `dynamo:",omitempty"` // Omits if zero value
+	Poll           *Poll
+	Members        []UserID
+	Activities     []Activity
+	Availabilities []Availability
+	// Counts updates to help ensure atomicity.
+	updateCount uint64
 }
 
 type User struct {
-	UserID      UserID `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
+	UserID      UserID `dynamo:",hash"` // Hash key, a.k.a. partition key
 	Name        string
+	Status      string
 	Groups      []GroupID           `dynamo:",set"`
 	Connections []ConnectionID      `dynamo:",set"`
 	Schedules   map[string]Schedule `dynamo:",set"`
+	// Counts updates to help ensure atomicity.
+	updateCount uint64
 }
 
 type Poll struct {
-	PollID     int                   `dynamo:"ID,hash"` // Hash key, a.k.a. partition key
-	Timestamp  time.Time             `dynamo:",range"`  // Range key, a.k.a. sort key
-	PollResult map[string]PollResult `dynamo:",set"`
-	DoneFlag   bool
+	Title     string
+	Timestamp uint64
+	Options   []PollOption
+	DoneFlag  bool
 }
 
 type Message struct {
-	MessageId int    `dynamo:"MessageID,hash"` //Hash key
-	Timestamp uint64 `dynamo:"Timestamp,range"`
+	GroupID   GroupID `dynamo:",hash"`
+	Timestamp uint64  `dynamo:",range"`
+	Content   string
 	Sender    UserID
-	Content   string `dynamo:"Message"`
 }
 
-type PollResult struct {
-	pollResultID int `dynamo:"ID,hash"` //Hash key
-	Option       string
-	userIDVoted  []int `dynamo:",set"`
+type PollOption struct {
+	Name  string
+	Votes []UserID `dynamo:",set"`
+}
+
+type Activity struct {
+	ActivityID ActivityID
+	Title      string
+	Date       string
+	Start      string
+	End        string
+	Confirmed  []UserID `dynamo:",set"`
+}
+
+type Availability struct {
+	AvailabilityID AvailabilityID
+	UserID         UserID
+	Date           string
+	Start          string
+	End            string
 }
 
 type Schedule struct {
-	ScheduleID int `dynamo:"ID,hash"`
+	ScheduleID int `dynamo:",hash"`
 	Year       int
 	Month      int
 	Day        int
@@ -52,7 +71,7 @@ type Schedule struct {
 }
 
 type Task struct {
-	TaskID    int `dynamo:"ID,hash"`
+	TaskID    int `dynamo:",hash"`
 	TaskName  string
 	StartTime string //HHMM format string
 	EndTime   string //HHMM format string
