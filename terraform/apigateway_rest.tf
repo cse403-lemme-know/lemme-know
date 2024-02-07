@@ -57,5 +57,5 @@ resource "aws_lambda_permission" "backend_rest" {
   function_name = aws_lambda_function.backend.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.backend.execution_arn}/*/*"
-  statement_id  = "APIGateway"
+  statement_id  = "APIGatewayRest"
 }

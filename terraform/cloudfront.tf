@@ -36,19 +36,17 @@ resource "aws_cloudfront_distribution" "backend" {
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
-  /*
   origin {
     domain_name = element(split("/", aws_apigatewayv2_stage.backend.invoke_url), 2)
-    origin_id = local.backend_ws_origin_id
+    origin_id   = local.backend_ws_origin_id
     origin_path = ""
     custom_origin_config {
-      http_port = 80
-      https_port = 443
+      http_port              = 80
+      https_port             = 443
       origin_protocol_policy = "https-only"
-      origin_ssl_protocols = ["TLSv1.2"]
+      origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
-  */
   default_cache_behavior {
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
     cached_methods  = ["GET", "HEAD"]
