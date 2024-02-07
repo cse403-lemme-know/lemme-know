@@ -62,13 +62,13 @@ data "aws_iam_policy_document" "backend_policy" {
       "${aws_dynamodb_table.message.arn}"
     ]
   }
-  statement {
-    sid = "websocket"
-    action = [
-      "execute-api:*"
-    ]
-    resources = [
-      "arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.NAME.id}/*/*/*"
-    ]
-  }
+  #statement {
+  #  sid = "websocket"
+  #  action = [
+  #    "execute-api:*"
+  #  ]
+  #  resources = [
+  #    "arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.NAME.id}/*/*/*"
+  #  ]
+  #}
 }

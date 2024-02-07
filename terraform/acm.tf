@@ -20,10 +20,10 @@ resource "aws_route53_record" "backend_cert" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = data.aws_route53_zone.backend.zone_id
+  zone_id         = resource.aws_route53_zone.backend.zone_id
 }
 
-resource "aws_acm_certificate_validation" "example" {
+resource "aws_acm_certificate_validation" "backend" {
   certificate_arn         = aws_acm_certificate.backend.arn
   validation_record_fqdns = [for record in aws_route53_record.backend_cert : record.fqdn]
 }

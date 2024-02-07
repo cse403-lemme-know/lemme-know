@@ -28,6 +28,18 @@ resource "aws_s3_bucket_acl" "frontend" {
   acl    = "public-read"
 }
 
+resource "aws_s3_bucket_website_configuration" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+}
+
 resource "aws_s3_bucket_cors_configuration" "frontend" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -38,22 +50,22 @@ resource "aws_s3_bucket_cors_configuration" "frontend" {
   }
 }
 
+resource "aws_s3_bucket_policy" "frontend" {
+  depends_on = [aws_cloudfront_origin_access_identity.backend]
+  bucket     = aws_s3_bucket.frontend.id
+  policy     = data.aws_iam_policy_document.frontend.json
+}
+
 data "aws_iam_policy_document" "frontend" {
   statement {
-    sid       = "public"
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.frontend.arn}/*"]
-
+    actions = ["s3:GetObject"]
     principals {
       type        = "*"
       identifiers = ["*"]
     }
+    resources = ["${aws_s3_bucket.frontend.arn}/*"]
+    sid       = "cloudfront"
   }
-}
-
-resource "aws_s3_bucket_policy" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
-  policy = data.aws_iam_policy_document.frontend.json
 }
 
 resource "aws_s3_object" "frontend" {

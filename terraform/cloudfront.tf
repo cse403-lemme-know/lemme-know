@@ -26,7 +26,7 @@ resource "aws_cloudfront_distribution" "backend" {
     }
   }
   origin {
-    domain_name = element(split("/", aws_api_gateway_deployment.backend.invoke_url), 2)
+    domain_name = element(split("/", aws_api_gateway_deployment.backend_rest.invoke_url), 2)
     origin_id   = local.backend_rest_origin_id
     origin_path = "/prod"
     custom_origin_config {
@@ -103,67 +103,3 @@ resource "aws_cloudfront_distribution" "backend" {
 
 }
 
-data "aws_iam_policy_document" "backend" {
-  statement {
-    sid = "1"
-
-    actions = [
-      "s3:ListAllMyBuckets",
-      "s3:GetBucketLocation",
-    ]
-
-    resources = [
-      "arn:aws:s3:::*",
-    ]
-  }
-
-  statement {
-    actions = [
-      "s3:ListBucket",
-    ]
-
-    resources = [
-      "arn:aws:s3:::${var.s3_bucket_name}",
-    ]
-
-    condition {
-      test     = "StringLike"
-      variable = "s3:prefix"
-
-      values = [
-        "",
-        "home/",
-        "home/&{aws:username}/",
-      ]
-    }
-  }
-
-  statement {
-    actions = [
-      "s3:*",
-    ]
-
-    resources = [
-      "arn:aws:s3:::${var.s3_bucket_name}/home/&{aws:username}",
-      "arn:aws:s3:::${var.s3_bucket_name}/home/&{aws:username}/*",
-    ]
-  }
-}
-
-resource "aws_s3_bucket_policy" "frontend" {
-  bucket     = aws_s3_bucket.frontend.id
-  depends_on = [aws_cloudfront_origin_access_identity.main]
-  policy     = data.aws_iam_policy_document.frontend.json
-}
-
-data "aws_iam_policy_document" "frontend" {
-  statement {
-    actions = ["s3:GetObject"]
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-    resources = ["${aws_s3_bucket.frontend.arn}/*"]
-    sid       = "cloudfront"
-  }
-}

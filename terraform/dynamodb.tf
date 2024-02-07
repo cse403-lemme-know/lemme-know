@@ -5,7 +5,7 @@ resource "aws_dynamodb_table" "group" {
 
   attribute {
     name = "GroupID"
-    type = "S"
+    type = "N"
   }
 }
 
@@ -16,7 +16,7 @@ resource "aws_dynamodb_table" "user" {
 
   attribute {
     name = "UserID"
-    type = "S"
+    type = "N"
   }
 }
 
@@ -27,8 +27,8 @@ resource "aws_dynamodb_table" "message" {
   range_key    = "Timestamp"
 
   attribute {
-    name = "UserID"
-    type = "S"
+    name = "MessageId"
+    type = "N"
   }
 
   attribute {
