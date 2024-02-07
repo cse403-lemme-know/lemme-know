@@ -18,6 +18,7 @@ type UserID = uint64
 type GroupID = uint64
 type ActivityID = uint64
 type AvailabilityID = uint64
+type TaskID = uint64
 type UnixMillis = uint64
 
 // A service capable of persisting data.

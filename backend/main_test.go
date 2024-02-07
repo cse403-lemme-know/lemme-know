@@ -169,6 +169,14 @@ func TestHTTPService(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 
+	// Test: create task.
+	patchTaskReqwest := PatchTaskRequest{
+		Title: "cook the food",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/task/", port, groupID), patchTaskReqwest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
 	// Test: read group.
 	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
 	assert.Nil(t, err)
@@ -189,11 +197,30 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, 1, len(getGroupResponse.Availabilities))
 	assert.Equal(t, patchAvailabilityRequest.Date, getGroupResponse.Availabilities[0].Date)
 	assert.Equal(t, userID, getGroupResponse.Availabilities[0].UserID)
+	assert.Equal(t, 1, len(getGroupResponse.Tasks))
+	assert.Equal(t, patchTaskReqwest.Title, getGroupResponse.Tasks[0].Title)
 
-	activityID := getGroupResponse.Activities[0].ActivityId
+	activityID := getGroupResponse.Activities[0].ActivityID
 	availabilityID := getGroupResponse.Availabilities[0].AvailabilityID
+	taskID := getGroupResponse.Tasks[0].TaskID
 	log.Printf("got activity id %d", activityID)
 	log.Printf("got availability id %d", availabilityID)
+	log.Printf("got task id %d", taskID)
+
+	// Test: update task.
+	boolTrue := true
+	patchTaskReqwest = PatchTaskRequest{
+		Title:     "cook the food and drinks",
+		Completed: &boolTrue,
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/task/%d/", port, groupID, taskID), patchTaskReqwest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: delete task.
+	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/task/%d/", port, groupID, taskID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
 
 	// Test: delete activity.
 	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/activity/%d/", port, groupID, activityID))
