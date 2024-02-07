@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"math/rand"
 	"net/http"
 	"slices"
 
@@ -87,7 +86,7 @@ func RestGroupAPI(router *mux.Router, database Database, notification Notificati
 			return
 		}
 		group := Group{
-			GroupID: rand.Uint64(),
+			GroupID: GenerateID(),
 			Name:    request.Name,
 			Members: []UserID{user.UserID},
 		}

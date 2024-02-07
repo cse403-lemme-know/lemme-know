@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -36,7 +35,7 @@ func RestUserAPI(router *mux.Router, database Database) {
 		case http.MethodGet:
 			if user == nil {
 				user = &User{
-					UserID: rand.Uint64(),
+					UserID: GenerateID(),
 				}
 				if err := database.CreateUser(*user); err != nil {
 					http.Error(w, "could not create user", http.StatusInternalServerError)

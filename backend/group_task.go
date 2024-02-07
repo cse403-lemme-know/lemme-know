@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"math/rand"
 	"net/http"
 	"slices"
 
@@ -106,7 +105,7 @@ func RestGroupTaskAPI(router *mux.Router, database Database) {
 		}
 
 		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
-			group.Tasks = append(group.Tasks, Task{TaskID: rand.Uint64(), Title: request.Title, Completed: completed, Assignee: assignee})
+			group.Tasks = append(group.Tasks, Task{TaskID: GenerateID(), Title: request.Title, Completed: completed, Assignee: assignee})
 			return nil
 		}); err != nil {
 			http.Error(w, "could not create task", http.StatusInternalServerError)

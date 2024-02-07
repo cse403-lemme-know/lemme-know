@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math/rand"
 	"os"
 	"testing"
 
@@ -18,12 +17,30 @@ func maybeSkip(t *testing.T) {
 	}
 }
 
+func TestGenerateID(t *testing.T) {
+	generated := make(map[uint64]struct{})
+	for i := 0; i < 1000; i++ {
+		id := GenerateID()
+
+		if _, ok := generated[id]; ok {
+			t.Fail()
+		}
+		generated[id] = struct{}{}
+
+		assert.Positive(t, id)
+
+		double := float64(id)
+		roundtrip := uint64(double)
+		assert.Equal(t, id, roundtrip)
+	}
+}
+
 func TestInsertUser(t *testing.T) {
 	maybeSkip(t)
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = rand.Uint64()
+	var userID UserID = GenerateID()
 
 	item := User{
 		UserID:      userID,
@@ -45,7 +62,7 @@ func TestDeleteUser(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = rand.Uint64()
+	var userID UserID = GenerateID()
 
 	item := User{
 		UserID:      userID,
@@ -74,7 +91,7 @@ func TestReadUser(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var userID UserID = rand.Uint64()
+	var userID UserID = GenerateID()
 
 	item := User{
 		UserID:      userID,
@@ -103,7 +120,7 @@ func TestInsertGroup(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var groupID GroupID = rand.Uint64()
+	var groupID GroupID = GenerateID()
 
 	item := Group{
 		GroupID: groupID,
@@ -124,7 +141,7 @@ func TestDeleteGroup(t *testing.T) {
 	//Insert user
 	table := NewDynamoDB(nil)
 
-	var groupID GroupID = rand.Uint64()
+	var groupID GroupID = GenerateID()
 
 	item := Group{
 		GroupID: groupID,
