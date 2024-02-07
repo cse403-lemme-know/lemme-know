@@ -5,7 +5,7 @@
 	import { writable } from 'svelte/store';
 	import { startDate, endDate, groupName } from '$lib/stores';
 	// Imported for loading user side effect.
-	import * as _model from "$lib/model";
+	import * as _model from '$lib/model';
 	let name = 'LemmeKnow';
 	let errorMsg = writable('');
 
