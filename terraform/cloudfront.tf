@@ -89,15 +89,16 @@ resource "aws_cloudfront_distribution" "backend" {
 
   price_class = "PriceClass_100"
 
-  viewer_certificate {
-    cloudfront_default_certificate = true
-  }
-
   restrictions {
     geo_restriction {
       restriction_type = "none"
     }
   }
 
+  viewer_certificate {
+    acm_certificate_arn      = aws_acm_certificate.backend.arn
+    minimum_protocol_version = "TLSv1.1_2016"
+    ssl_support_method       = "sni-only"
+  }
 }
 

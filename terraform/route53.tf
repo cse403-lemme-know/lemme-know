@@ -2,8 +2,6 @@ resource "aws_route53_zone" "backend" {
   name = var.domain
 }
 
-// TODO: Uncomment when Cloudfront is added
-/*
 resource "aws_route53_record" "cloudfront" {
   alias {
     evaluate_target_health = false
@@ -14,4 +12,3 @@ resource "aws_route53_record" "cloudfront" {
   type    = "A"
   zone_id = aws_route53_zone.backend.zone_id
 }
-*/
