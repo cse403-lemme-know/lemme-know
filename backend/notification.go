@@ -110,9 +110,7 @@ func updateUserAndNotifyGroups(userID UserID, transaction func(*User) error, dat
 		return err
 	}
 	var wait sync.WaitGroup
-	println("notifying groups")
 	for _, groupID := range u.Groups {
-		println("notifying a group")
 		groupID := groupID
 		wait.Add(1)
 		go func() {
