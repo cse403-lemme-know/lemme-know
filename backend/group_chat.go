@@ -28,7 +28,7 @@ type PatchChatRequest struct {
 }
 
 // API's related to chat within a group.
-func RestGroupChatAPI(router *mux.Router, database Database, _notification Notification) {
+func RestGroupChatAPI(router *mux.Router, database Database, notification Notification) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
@@ -76,15 +76,23 @@ func RestGroupChatAPI(router *mux.Router, database Database, _notification Notif
 				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return
 			}
-			if err := database.CreateMessage(Message{
+			message := Message{
 				GroupID:   group.GroupID,
 				Sender:    user.UserID,
 				Timestamp: unixMillis(),
 				Content:   request.Content,
-			}); err != nil {
+			}
+			if err := database.CreateMessage(message); err != nil {
 				http.Error(w, "could not create message", http.StatusInternalServerError)
 				return
 			}
+
+			notifyGroup(group, MessageReceived{Message: MessageReceivedMessage{
+				GroupID:   message.GroupID,
+				Timestamp: message.Timestamp,
+				Sender:    message.Sender,
+				Content:   message.Content,
+			}}, database, notification)
 
 			WriteJSON(w, nil)
 		}

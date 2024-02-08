@@ -34,6 +34,17 @@ type UserChangedUser struct {
 	Status string `json:"status"`
 }
 
+type MessageReceived struct {
+	Message MessageReceivedMessage `json:"message"`
+}
+
+type MessageReceivedMessage struct {
+	GroupID   GroupID `json:"groupId"`
+	Timestamp uint64  `json:"timestamp"`
+	Sender    UserID  `json:"sender"`
+	Content   string  `json:"content"`
+}
+
 // Send a best-effort notification to all group members.
 //
 // If `data` is `nil`, then just send a group-changed notification.
