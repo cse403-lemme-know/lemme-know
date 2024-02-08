@@ -94,6 +94,14 @@ func RestGroupAPI(router *mux.Router, database Database, notification Notificati
 			http.Error(w, "could not create group", http.StatusInternalServerError)
 			return
 		}
+		if err := database.UpdateUser(user.UserID, func(user *User) error {
+			user.Groups = append(user.Groups, group.GroupID)
+			return nil
+		}); err != nil {
+			http.Error(w, "could not join new group", http.StatusInternalServerError)
+			return
+		}
+
 		WriteJSON(w, PatchGroupResponse{
 			GroupID: group.GroupID,
 		})
