@@ -28,7 +28,7 @@ type PatchChatRequest struct {
 }
 
 // API's related to chat within a group.
-func RestGroupChatAPI(router *mux.Router, database Database) {
+func RestGroupChatAPI(router *mux.Router, database Database, _notification Notification) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)

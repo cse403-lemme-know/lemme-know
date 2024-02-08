@@ -17,7 +17,7 @@ type PatchActivityRequest struct {
 }
 
 // API's related to activities within a group.
-func RestGroupActivityAPI(router *mux.Router, database Database) {
+func RestGroupActivityAPI(router *mux.Router, database Database, notification Notification) {
 	router.HandleFunc("/{activityID}/", func(w http.ResponseWriter, r *http.Request) {
 		activityID, ok := ParseUint64PathParameter(w, r, "activityID")
 		if !ok {
@@ -34,10 +34,10 @@ func RestGroupActivityAPI(router *mux.Router, database Database) {
 
 		switch r.Method {
 		case http.MethodDelete:
-			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				slices.DeleteFunc(group.Activities, func(activity Activity) bool { return activity.ActivityID == activityID })
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not delete activity", http.StatusInternalServerError)
 				return
 			}
@@ -66,7 +66,7 @@ func RestGroupActivityAPI(router *mux.Router, database Database) {
 			return
 		}
 
-		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+		if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 			group.Activities = append(group.Activities, Activity{
 				ActivityID: GenerateID(),
 				Title:      request.Title,
@@ -76,7 +76,7 @@ func RestGroupActivityAPI(router *mux.Router, database Database) {
 				Confirmed:  []UserID{},
 			})
 			return nil
-		}); err != nil {
+		}, database, notification); err != nil {
 			http.Error(w, "could not create activity", http.StatusInternalServerError)
 			return
 		}
