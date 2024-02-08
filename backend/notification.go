@@ -3,9 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 	"sync"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"
 	"github.com/gorilla/websocket"
@@ -85,7 +88,13 @@ type APIGateway struct {
 }
 
 func NewApiGateway(sess *session.Session) *APIGateway {
-	managementAPI := apigatewaymanagementapi.New(sess)
+	config := aws.NewConfig()
+	if endpoint := os.Getenv("AWS_API_GATEWAY_WS_ENDPOINT"); endpoint != "" {
+		config.WithEndpoint(endpoint)
+	} else {
+		log.Println("could not get ws endpoint from environment so ws notifications will not work")
+	}
+	managementAPI := apigatewaymanagementapi.New(sess, config)
 	return &APIGateway{managementAPI}
 }
 
