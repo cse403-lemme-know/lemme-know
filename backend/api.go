@@ -16,7 +16,7 @@ func RestRoot(router *mux.Router, database Database, notification Notification) 
 
 // HTTP multiplexer for the API.
 func RestApi(router *mux.Router, database Database, notification Notification) {
-	RestUserAPI(AddHandler(router, "/user"), database)
+	RestUserAPI(AddHandler(router, "/user"), database, notification)
 	RestGroupAPI(AddHandler(router, "/group"), database, notification)
 }
 

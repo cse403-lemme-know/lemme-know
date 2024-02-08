@@ -24,6 +24,16 @@ type GroupChangedGroup struct {
 	GroupID GroupID `json:"groupID"`
 }
 
+type UserChanged struct {
+	User UserChangedUser `json:"user"`
+}
+
+type UserChangedUser struct {
+	UserID UserID `json:"userId"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
 // Send a best-effort notification to all group members.
 //
 // If `data` is `nil`, then just send a group-changed notification.
@@ -38,6 +48,7 @@ func notifyGroup(group *Group, data any, database Database, notification Notific
 	}
 	var wait sync.WaitGroup
 	for _, userID := range group.Members {
+		userID := userID
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
@@ -70,6 +81,37 @@ func updateAndNotifyGroup(groupID GroupID, transaction func(*Group) error, datab
 		return err
 	}
 	notifyGroup(g, nil, database, notification)
+	return nil
+}
+
+// Update a user (like `Database.UpdateUser`) and notify the members
+// of all their groups (like `Notification.NotifyGroup`)
+//
+// Errors are passed through from `Database.UpdateUser`. Notification is
+// skipped in the case of an error.
+func updateUserAndNotifyGroups(userID UserID, transaction func(*User) error, database Database, notification Notification) error {
+	var u *User = nil
+	err := database.UpdateUser(userID, func(user *User) error {
+		u = user
+		return transaction(user)
+	})
+	if err != nil {
+		return err
+	}
+	var wait sync.WaitGroup
+	for _, groupID := range u.Groups {
+		groupID := groupID
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			group, err := database.ReadGroup(groupID)
+			if err != nil || group == nil {
+				return
+			}
+			notifyGroup(group, nil, database, notification)
+		}()
+	}
+	wait.Wait()
 	return nil
 }
 
