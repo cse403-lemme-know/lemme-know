@@ -16,7 +16,7 @@ type PatchTaskRequest struct {
 }
 
 // API's related to activities within a group.
-func RestGroupTaskAPI(router *mux.Router, database Database) {
+func RestGroupTaskAPI(router *mux.Router, database Database, notification Notification) {
 	router.HandleFunc("/{taskID}/", func(w http.ResponseWriter, r *http.Request) {
 		taskID, ok := ParseUint64PathParameter(w, r, "taskID")
 		if !ok {
@@ -39,7 +39,7 @@ func RestGroupTaskAPI(router *mux.Router, database Database) {
 				return
 			}
 
-			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				for _, task := range group.Tasks {
 					if task.TaskID != taskID {
 						continue
@@ -55,18 +55,18 @@ func RestGroupTaskAPI(router *mux.Router, database Database) {
 					}
 				}
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not update task", http.StatusInternalServerError)
 				return
 			}
 			WriteJSON(w, nil)
 		case http.MethodDelete:
-			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				slices.DeleteFunc(group.Tasks, func(task Task) bool {
 					return task.TaskID == taskID
 				})
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not delete task", http.StatusInternalServerError)
 				return
 			}
@@ -104,10 +104,10 @@ func RestGroupTaskAPI(router *mux.Router, database Database) {
 			assignee = *request.Assignee
 		}
 
-		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+		if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 			group.Tasks = append(group.Tasks, Task{TaskID: GenerateID(), Title: request.Title, Completed: completed, Assignee: assignee})
 			return nil
-		}); err != nil {
+		}, database, notification); err != nil {
 			http.Error(w, "could not create task", http.StatusInternalServerError)
 			return
 		}

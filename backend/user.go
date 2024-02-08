@@ -24,7 +24,7 @@ type PatchUserRequest struct {
 }
 
 // User-related API's.
-func RestUserAPI(router *mux.Router, database Database) {
+func RestUserAPI(router *mux.Router, database Database, notification Notification) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		user, err := CheckCookie(r, database)
 		if err != nil {
@@ -63,7 +63,7 @@ func RestUserAPI(router *mux.Router, database Database) {
 				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return
 			}
-			if err := database.UpdateUser(user.UserID, func(user *User) error {
+			if err := updateUserAndNotifyGroups(user.UserID, func(user *User) error {
 				if request.Name != "" {
 					user.Name = request.Name
 				}
@@ -71,7 +71,7 @@ func RestUserAPI(router *mux.Router, database Database) {
 					user.Status = request.Status
 				}
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not update user", http.StatusInternalServerError)
 				return
 			}

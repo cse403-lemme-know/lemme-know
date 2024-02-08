@@ -94,6 +94,14 @@ func RestGroupAPI(router *mux.Router, database Database, notification Notificati
 			http.Error(w, "could not create group", http.StatusInternalServerError)
 			return
 		}
+		if err := database.UpdateUser(user.UserID, func(user *User) error {
+			user.Groups = append(user.Groups, group.GroupID)
+			return nil
+		}); err != nil {
+			http.Error(w, "could not join new group", http.StatusInternalServerError)
+			return
+		}
+
 		WriteJSON(w, PatchGroupResponse{
 			GroupID: group.GroupID,
 		})
@@ -126,11 +134,11 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 			next.ServeHTTP(w, rWithContext)
 		})
 	})
-	RestGroupActivityAPI(AddHandler(router, "/activity"), database)
-	RestGroupAvailabilityAPI(AddHandler(router, "/availability"), database)
-	RestGroupChatAPI(AddHandler(router, "/chat"), database)
-	RestGroupPollAPI(AddHandler(router, "/poll"), database)
-	RestGroupTaskAPI(AddHandler(router, "/task"), database)
+	RestGroupActivityAPI(AddHandler(router, "/activity"), database, notification)
+	RestGroupAvailabilityAPI(AddHandler(router, "/availability"), database, notification)
+	RestGroupChatAPI(AddHandler(router, "/chat"), database, notification)
+	RestGroupPollAPI(AddHandler(router, "/poll"), database, notification)
+	RestGroupTaskAPI(AddHandler(router, "/task"), database, notification)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
@@ -144,10 +152,10 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				}
 			}
 			if !found {
-				if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+				if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 					group.Members = append(group.Members, user.UserID)
 					return nil
-				}); err != nil {
+				}, database, notification); err != nil {
 					http.Error(w, "could not join group", http.StatusInternalServerError)
 					return
 				}
@@ -219,7 +227,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				return
 			}
 
-			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				if request.Name != "" {
 					group.Name = request.Name
 				}
@@ -227,12 +235,10 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 					group.CalendarMode = request.CalendarMode
 				}
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not update group", http.StatusInternalServerError)
 				return
 			}
-
-			notifyGroup(group, database, notification, nil)
 
 			WriteJSON(w, nil)
 		case http.MethodDelete:
@@ -240,7 +246,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				http.Error(w, "not a member of group", http.StatusUnauthorized)
 				return
 			}
-			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				slices.DeleteFunc(group.Members, func(member UserID) bool {
 					return member == user.UserID
 				})
@@ -265,7 +271,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 					}
 				}
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not leave group (part 1)", http.StatusInternalServerError)
 				return
 			}

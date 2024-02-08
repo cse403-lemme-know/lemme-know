@@ -83,6 +83,8 @@ func TestHTTPService(t *testing.T) {
 	defer ws.Close()
 
 	var groupChanges atomic.Uint64
+	var userChanges atomic.Uint64
+	var messagesReceived atomic.Uint64
 
 	go func() {
 		for {
@@ -100,8 +102,29 @@ func TestHTTPService(t *testing.T) {
 					groupChanges.Add(1)
 				}
 			}
+			var userChanged UserChanged
+			if err := json.Unmarshal(message, &userChanged); err == nil {
+				if userChanged.User.UserID == userID {
+					userChanges.Add(1)
+				}
+			}
+			var messageReceived MessageReceived
+			if err := json.Unmarshal(message, &messageReceived); err == nil {
+				if messageReceived.Message.GroupID == groupID {
+					messagesReceived.Add(1)
+				}
+			}
 		}
 	}()
+
+	// Test: edit user.
+	patchUserRequest := PatchUserRequest{
+		Name:   "amogus",
+		Status: "lit",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/user/", port), patchUserRequest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
 
 	// Test: edit group.
 	patchGroupRequest = PatchGroupRequest{
@@ -243,8 +266,10 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 
 	assert.Greater(t, groupChanges.Load(), uint64(0))
+	assert.Greater(t, userChanges.Load(), uint64(0))
+	assert.Greater(t, messagesReceived.Load(), uint64(0))
 
-	log.Printf("group change notification received %d time(s)\n", groupChanges.Load())
+	log.Printf("notifications:  group=%d user=%d message=%d\n", groupChanges.Load(), userChanges.Load(), messagesReceived.Load())
 }
 
 // Integration test of Lambda handler.

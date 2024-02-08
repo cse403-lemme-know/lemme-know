@@ -3,9 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 	"sync"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"
 	"github.com/gorilla/websocket"
@@ -21,10 +24,31 @@ type GroupChangedGroup struct {
 	GroupID GroupID `json:"groupID"`
 }
 
+type UserChanged struct {
+	User UserChangedUser `json:"user"`
+}
+
+type UserChangedUser struct {
+	UserID UserID `json:"userId"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
+type MessageReceived struct {
+	Message MessageReceivedMessage `json:"message"`
+}
+
+type MessageReceivedMessage struct {
+	GroupID   GroupID `json:"groupId"`
+	Timestamp uint64  `json:"timestamp"`
+	Sender    UserID  `json:"sender"`
+	Content   string  `json:"content"`
+}
+
 // Send a best-effort notification to all group members.
 //
 // If `data` is `nil`, then just send a group-changed notification.
-func notifyGroup(group *Group, database Database, notification Notification, data any) {
+func notifyGroup(group *Group, data any, database Database, notification Notification) {
 	dataOrGroupChanged := data
 	if dataOrGroupChanged == nil {
 		dataOrGroupChanged = GroupChanged{
@@ -35,6 +59,7 @@ func notifyGroup(group *Group, database Database, notification Notification, dat
 	}
 	var wait sync.WaitGroup
 	for _, userID := range group.Members {
+		userID := userID
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
@@ -52,6 +77,58 @@ func notifyGroup(group *Group, database Database, notification Notification, dat
 	wait.Wait()
 }
 
+// Update a group (like `Database.UpdateGroup`) and notify the members
+// (like `Notification>NotifyGroup`)
+//
+// Errors are passed through from `Database.UpdateGroup`. Notification is
+// skipped in the case of an error.
+func updateAndNotifyGroup(groupID GroupID, transaction func(*Group) error, database Database, notification Notification) error {
+	var g *Group = nil
+	err := database.UpdateGroup(groupID, func(group *Group) error {
+		g = group
+		return transaction(group)
+	})
+	if err != nil {
+		return err
+	}
+	notifyGroup(g, nil, database, notification)
+	return nil
+}
+
+// Update a user (like `Database.UpdateUser`) and notify the members
+// of all their groups (like `Notification.NotifyGroup`)
+//
+// Errors are passed through from `Database.UpdateUser`. Notification is
+// skipped in the case of an error.
+func updateUserAndNotifyGroups(userID UserID, transaction func(*User) error, database Database, notification Notification) error {
+	var u *User = nil
+	err := database.UpdateUser(userID, func(user *User) error {
+		u = user
+		return transaction(user)
+	})
+	if err != nil {
+		return err
+	}
+	var wait sync.WaitGroup
+	for _, groupID := range u.Groups {
+		groupID := groupID
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			group, err := database.ReadGroup(groupID)
+			if err != nil || group == nil {
+				return
+			}
+			println("read the group")
+			notifyGroup(group, UserChanged{
+				User: UserChangedUser{UserID: userID, Name: u.Name, Status: u.Status},
+			}, database, notification)
+		}()
+	}
+	wait.Wait()
+	return nil
+}
+
 // A service capable of notifying clients regardless of how many tab(s) they have open.
 type Notification interface {
 	// Sends a JSON notification to the client with the provided connection ID.
@@ -67,7 +144,13 @@ type APIGateway struct {
 }
 
 func NewApiGateway(sess *session.Session) *APIGateway {
-	managementAPI := apigatewaymanagementapi.New(sess)
+	config := aws.NewConfig()
+	if endpoint := os.Getenv("AWS_API_GATEWAY_WS_ENDPOINT"); endpoint != "" {
+		config.WithEndpoint(endpoint)
+	} else {
+		log.Println("could not get ws endpoint from environment so ws notifications will not work")
+	}
+	managementAPI := apigatewaymanagementapi.New(sess, config)
 	return &APIGateway{managementAPI}
 }
 
