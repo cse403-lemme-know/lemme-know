@@ -1,5 +1,12 @@
 package main
 
+type UserID = uint64
+type GroupID = uint64
+type ActivityID = uint64
+type AvailabilityID = uint64
+type TaskID = uint64
+type UnixMillis = uint64
+
 type Group struct {
 	GroupID GroupID `dynamo:",hash"` // Hash key, a.k.a. partition key
 	//Time      time.Time // Range key, a.k.a. sort key
@@ -11,6 +18,7 @@ type Group struct {
 	Members        []UserID
 	Activities     []Activity
 	Availabilities []Availability
+	Tasks          []Task
 	// Counts updates to help ensure atomicity.
 	updateCount uint64
 }
@@ -19,9 +27,8 @@ type User struct {
 	UserID      UserID `dynamo:",hash"` // Hash key, a.k.a. partition key
 	Name        string
 	Status      string
-	Groups      []GroupID           `dynamo:",set"`
-	Connections []ConnectionID      `dynamo:",set"`
-	Schedules   map[string]Schedule `dynamo:",set"`
+	Groups      []GroupID      `dynamo:",set"`
+	Connections []ConnectionID `dynamo:",set"`
 	// Counts updates to help ensure atomicity.
 	updateCount uint64
 }
@@ -62,17 +69,9 @@ type Availability struct {
 	End            string
 }
 
-type Schedule struct {
-	ScheduleID int `dynamo:",hash"`
-	Year       int
-	Month      int
-	Day        int
-	Tasks      map[string]Task `dynamo:",set"`
-}
-
 type Task struct {
-	TaskID    int `dynamo:",hash"`
-	TaskName  string
-	StartTime string //HHMM format string
-	EndTime   string //HHMM format string
+	TaskID    TaskID
+	Title     string
+	Assignee  UserID
+	Completed bool
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"math/rand"
 	"net/http"
 	"slices"
 
@@ -17,6 +16,7 @@ type GetGroupResponse struct {
 	Poll           *GetGroupResponsePoll          `json:"poll"`
 	Availabilities []GetGroupResponseAvailability `json:"availabilities"`
 	Activities     []GetGroupResponseActivity     `json:"activities"`
+	Tasks          []GetGroupResponseTask         `json:"tasks"`
 	CalendarMode   string                         `json:"calendarMode"`
 }
 
@@ -34,21 +34,29 @@ type GetGroupResponsePollOption struct {
 
 // Availability sent over JSON.
 type GetGroupResponseAvailability struct {
-	AvailabilityID uint64 `json:"availabilityId"`
-	UserID         UserID `json:"userId"`
-	Date           string `json:"date"`
-	Start          string `json:"start"`
-	End            string `json:"end"`
+	AvailabilityID AvailabilityID `json:"availabilityId"`
+	UserID         UserID         `json:"userId"`
+	Date           string         `json:"date"`
+	Start          string         `json:"start"`
+	End            string         `json:"end"`
 }
 
 // Activity sent over JSON.
 type GetGroupResponseActivity struct {
-	ActivityId uint64   `json:"activityId"`
-	Title      string   `json:"title"`
-	Date       string   `json:"date"`
-	Start      string   `json:"start"`
-	End        string   `json:"end"`
-	Confirmed  []UserID `json:"confirmed"`
+	ActivityID ActivityID `json:"activityId"`
+	Title      string     `json:"title"`
+	Date       string     `json:"date"`
+	Start      string     `json:"start"`
+	End        string     `json:"end"`
+	Confirmed  []UserID   `json:"confirmed"`
+}
+
+// Task sent over JSON.
+type GetGroupResponseTask struct {
+	TaskID    TaskID `json:"taskId"`
+	Title     string `json:"title"`
+	Assignee  UserID `json:"assignee"`
+	Completed bool   `json:"completed"`
 }
 
 // Group properties sent over JSON, used to create or update group.
@@ -78,7 +86,7 @@ func RestGroupAPI(router *mux.Router, database Database, notification Notificati
 			return
 		}
 		group := Group{
-			GroupID: rand.Uint64(),
+			GroupID: GenerateID(),
 			Name:    request.Name,
 			Members: []UserID{user.UserID},
 		}
@@ -122,6 +130,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 	RestGroupAvailabilityAPI(AddHandler(router, "/availability"), database)
 	RestGroupChatAPI(AddHandler(router, "/chat"), database)
 	RestGroupPollAPI(AddHandler(router, "/poll"), database)
+	RestGroupTaskAPI(AddHandler(router, "/task"), database)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
@@ -151,6 +160,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				Members:        group.Members,
 				Availabilities: []GetGroupResponseAvailability{},
 				Activities:     []GetGroupResponseActivity{},
+				Tasks:          []GetGroupResponseTask{},
 			}
 
 			if group.Poll != nil {
@@ -168,7 +178,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 
 			for _, activity := range group.Activities {
 				response.Activities = append(response.Activities, GetGroupResponseActivity{
-					ActivityId: activity.ActivityID,
+					ActivityID: activity.ActivityID,
 					Title:      activity.Title,
 					Date:       activity.Date,
 					Start:      activity.Start,
@@ -184,6 +194,15 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 					Date:           availability.Date,
 					Start:          availability.Start,
 					End:            availability.End,
+				})
+			}
+
+			for _, task := range group.Tasks {
+				response.Tasks = append(response.Tasks, GetGroupResponseTask{
+					TaskID:    task.TaskID,
+					Title:     task.Title,
+					Assignee:  task.Assignee,
+					Completed: task.Completed,
 				})
 			}
 
@@ -233,6 +252,11 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 						return confirmed == user.UserID
 					})
 				}
+				// TODO: suboptimal. ideally tasks could be reverted to
+				// no assignee, but that complicates the protocol.
+				slices.DeleteFunc(group.Tasks, func(task Task) bool {
+					return task.Assignee == user.UserID
+				})
 				if group.Poll != nil {
 					for _, option := range group.Poll.Options {
 						slices.DeleteFunc(option.Votes, func(vote UserID) bool {

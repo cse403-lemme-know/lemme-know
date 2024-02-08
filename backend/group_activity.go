@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"math/rand"
 	"net/http"
 	"slices"
 
@@ -69,7 +68,7 @@ func RestGroupActivityAPI(router *mux.Router, database Database) {
 
 		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
 			group.Activities = append(group.Activities, Activity{
-				ActivityID: rand.Uint64(),
+				ActivityID: GenerateID(),
 				Title:      request.Title,
 				Date:       request.Date,
 				Start:      request.Start,

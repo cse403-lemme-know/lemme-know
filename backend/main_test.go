@@ -11,11 +11,14 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -66,6 +69,39 @@ func TestHTTPService(t *testing.T) {
 
 	groupID := patchGroupResponse.GroupID
 	log.Printf("got group id %d", groupID)
+
+	// Test: open websocket.
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("localhost:%d", port), Path: "/ws/"}
+
+	dialer := websocket.Dialer{
+		Jar: c.Jar,
+	}
+	ws, _, err := dialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	defer ws.Close()
+
+	var groupChanges atomic.Uint64
+
+	go func() {
+		for {
+			t, message, err := ws.ReadMessage()
+			if err != nil {
+				return
+			}
+			if t != websocket.TextMessage {
+				continue
+			}
+			log.Printf("received: %s", message)
+			var groupChanged GroupChanged
+			if err := json.Unmarshal(message, &groupChanged); err == nil {
+				if groupChanged.Group.GroupID == groupID {
+					groupChanges.Add(1)
+				}
+			}
+		}
+	}()
 
 	// Test: edit group.
 	patchGroupRequest = PatchGroupRequest{
@@ -133,6 +169,14 @@ func TestHTTPService(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 
+	// Test: create task.
+	patchTaskReqwest := PatchTaskRequest{
+		Title: "cook the food",
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/task/", port, groupID), patchTaskReqwest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
 	// Test: read group.
 	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
 	assert.Nil(t, err)
@@ -153,11 +197,30 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, 1, len(getGroupResponse.Availabilities))
 	assert.Equal(t, patchAvailabilityRequest.Date, getGroupResponse.Availabilities[0].Date)
 	assert.Equal(t, userID, getGroupResponse.Availabilities[0].UserID)
+	assert.Equal(t, 1, len(getGroupResponse.Tasks))
+	assert.Equal(t, patchTaskReqwest.Title, getGroupResponse.Tasks[0].Title)
 
-	activityID := getGroupResponse.Activities[0].ActivityId
+	activityID := getGroupResponse.Activities[0].ActivityID
 	availabilityID := getGroupResponse.Availabilities[0].AvailabilityID
+	taskID := getGroupResponse.Tasks[0].TaskID
 	log.Printf("got activity id %d", activityID)
 	log.Printf("got availability id %d", availabilityID)
+	log.Printf("got task id %d", taskID)
+
+	// Test: update task.
+	boolTrue := true
+	patchTaskReqwest = PatchTaskRequest{
+		Title:     "cook the food and drinks",
+		Completed: &boolTrue,
+	}
+	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/task/%d/", port, groupID, taskID), patchTaskReqwest)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: delete task.
+	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/task/%d/", port, groupID, taskID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
 
 	// Test: delete activity.
 	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/activity/%d/", port, groupID, activityID))
@@ -178,6 +241,10 @@ func TestHTTPService(t *testing.T) {
 	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	assert.Greater(t, groupChanges.Load(), uint64(0))
+
+	log.Printf("group change notification received %d time(s)\n", groupChanges.Load())
 }
 
 // Integration test of Lambda handler.

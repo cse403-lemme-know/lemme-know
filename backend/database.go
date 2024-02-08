@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"sync"
 
@@ -13,12 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
 )
-
-type UserID = uint64
-type GroupID = uint64
-type ActivityID = uint64
-type AvailabilityID = uint64
-type UnixMillis = uint64
 
 // A service capable of persisting data.
 type Database interface {
@@ -94,17 +89,17 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 		db = dynamo.New(sess)
 
 		// Ingnore errors (e.g. duplicate table)
-		_ = db.CreateTable("Groups", Group{}).Run()
-		_ = db.CreateTable("Users", User{}).Run()
-		_ = db.CreateTable("Messages", Message{}).Run()
+		_ = db.CreateTable("GroupTable", Group{}).Run()
+		_ = db.CreateTable("UserTable", User{}).Run()
+		_ = db.CreateTable("MessageTable", Message{}).Run()
 	} else {
 		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
 	}
 
 	return &DynamoDB{
-		groups:   db.Table("Groups"),
-		users:    db.Table("Users"),
-		messages: db.Table("Messages"),
+		groups:   db.Table("GroupTable"),
+		users:    db.Table("UserTable"),
+		messages: db.Table("MessageTable"),
 	}
 }
 
@@ -220,7 +215,7 @@ func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, en
 //
 // Returns an error if the operation could not be completed.
 func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
-	err := dynamoDB.groups.Delete("GroupID", groupID).If("attribute_exists(UserID)").Run()
+	err := dynamoDB.groups.Delete("GroupID", groupID).If("attribute_exists(GroupID)").Run()
 	return err
 }
 
@@ -380,4 +375,11 @@ func GetRegion() string {
 	}
 
 	return region
+}
+
+// Generates a positive ID number that won't experience precision
+// issues for the client's JavaScript number representation.
+func GenerateID() uint64 {
+	const maxSafeInteger = 9007199254740991
+	return uint64(rand.Int63n(maxSafeInteger + 1))
 }
