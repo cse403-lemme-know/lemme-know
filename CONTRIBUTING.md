@@ -16,6 +16,10 @@ We accept [pull requests](https://github.com/cse403-lemmeknow/lemmeknow/pulls)!
 
 Keep your pull request tagged as a draft until you want it reviewed. Ensure automated tests pass!
 
+A common cause for CI failures is improper formatting. To fix, run `make fmt` in the applicable directories and try again.
+
+You can run `make lint` in [`frontend/`](./frontend/) or [`backend/`](./backend/) to proactively check for other errors that would be flagged by the CI.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under our [AGPL-3.0 license](./LICENSE).
