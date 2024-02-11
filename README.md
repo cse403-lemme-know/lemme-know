@@ -18,6 +18,7 @@ LemmeKnow is a group activity planning platform with an integrated calendar to s
 - [`frontend/`](./frontend/) contains the frontend website
 - [`backend/`](./backend/) contains the backend serverless function 
 - [`terraform/`](./terraform/) contains infrastructure definitions
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) offers advice on contributing.
 
 ## Prerequisites
 
@@ -45,6 +46,6 @@ Each `Makefile` includes a `test` step, so simply type `make test` in [`frontend
 
 Some tests, notably DynamoDB unit tests, have dependencies best suited for installation in a CI workflow or Docker container. To run *all* tests locally, run `act` ([instructions](#prerequisites)) in this directory.
 
-## Deployment
+## Deploying
 
 After building, you may deploy to the AWS cloud ([instructions](./terraform/README.md#provisioning-infrastructure)).

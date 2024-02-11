@@ -14,6 +14,9 @@ test:
 fmt:
 	go fmt
 
+lint:
+	go vet
+
 tidy:
 	go mod tidy
 
