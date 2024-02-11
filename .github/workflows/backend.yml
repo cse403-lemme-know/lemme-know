@@ -68,6 +68,9 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.21.x'
+      - name: Check format
+        # https://stackoverflow.com/a/42510278
+        run: diff -u <(echo -n) <(gofmt -d ./)
   lint:
     name: Lint
     runs-on: ubuntu-latest
