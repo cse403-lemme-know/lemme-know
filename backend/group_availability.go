@@ -16,7 +16,7 @@ type PatchAvailabilityRequest struct {
 }
 
 // API's related to activities within a group.
-func RestGroupAvailabilityAPI(router *mux.Router, database Database) {
+func RestGroupAvailabilityAPI(router *mux.Router, database Database, notification Notification) {
 	router.HandleFunc("/{availabilityID}/", func(w http.ResponseWriter, r *http.Request) {
 		availabilityID, ok := ParseUint64PathParameter(w, r, "availabilityID")
 		if !ok {
@@ -42,12 +42,12 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database) {
 					return
 				}
 			}
-			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				slices.DeleteFunc(group.Availabilities, func(availability Availability) bool {
 					return availability.AvailabilityID == availabilityID && availability.UserID == user.UserID
 				})
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not delete availability", http.StatusInternalServerError)
 				return
 			}
@@ -76,7 +76,7 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database) {
 			return
 		}
 
-		if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+		if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 			group.Availabilities = append(group.Availabilities, Availability{
 				AvailabilityID: GenerateID(),
 				UserID:         user.UserID,
@@ -85,7 +85,7 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database) {
 				End:            request.End,
 			})
 			return nil
-		}); err != nil {
+		}, database, notification); err != nil {
 			http.Error(w, "could not create availability", http.StatusInternalServerError)
 			return
 		}

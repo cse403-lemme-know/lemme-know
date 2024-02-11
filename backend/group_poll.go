@@ -21,7 +21,7 @@ type PatchPollRequest struct {
 }
 
 // API's related to polls within a group.
-func RestGroupPollAPI(router *mux.Router, database Database) {
+func RestGroupPollAPI(router *mux.Router, database Database, notification Notification) {
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
@@ -45,7 +45,7 @@ func RestGroupPollAPI(router *mux.Router, database Database) {
 				options = append(options, PollOption{Name: name, Votes: []UserID{}})
 			}
 
-			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				group.Poll = &Poll{
 					Title:     request.Title,
 					Timestamp: unixMillis(),
@@ -53,7 +53,7 @@ func RestGroupPollAPI(router *mux.Router, database Database) {
 					DoneFlag:  false,
 				}
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not create poll", http.StatusInternalServerError)
 				return
 			}
@@ -66,7 +66,7 @@ func RestGroupPollAPI(router *mux.Router, database Database) {
 				return
 			}
 
-			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				if group.Poll == nil {
 					return fmt.Errorf("no such poll")
 				}
@@ -84,17 +84,17 @@ func RestGroupPollAPI(router *mux.Router, database Database) {
 					}
 				}
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not vote in poll", http.StatusInternalServerError)
 				return
 			}
 
 			WriteJSON(w, nil)
 		case http.MethodDelete:
-			if err := database.UpdateGroup(group.GroupID, func(group *Group) error {
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				group.Poll = nil
 				return nil
-			}); err != nil {
+			}, database, notification); err != nil {
 				http.Error(w, "could not delete poll", http.StatusInternalServerError)
 				return
 			}

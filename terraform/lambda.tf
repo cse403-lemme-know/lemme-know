@@ -7,6 +7,13 @@ resource "aws_lambda_function" "backend" {
   runtime          = "provided.al2023"
   source_code_hash = filebase64sha256("../backend/bin/bootstrap.zip")
   timeout          = 10
+  environment {
+    variables = {
+      AWS_API_GATEWAY_WS_ENDPOINT = replace(aws_apigatewayv2_stage.backend.invoke_url, "wss:", "https:")
+      AWS_REGION                  = var.region
+    }
+  }
+
 }
 
 resource "aws_iam_role" "backend_role" {
