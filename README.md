@@ -15,6 +15,36 @@ LemmeKnow is a group activity planning platform with an integrated calendar to s
 
 ## Layout
 
-- `frontend/` contains the frontend website (see [./frontend/README.md](./frontend/README.md) for instructions)
-- `backend/` contains the backend microservice (see [./backend/README.md](./backend/README.md) for instructions and an API reference)
-- `terraform/` contains infrastructure definitions (see [./terraform/README.md](./terraform/README.md) for instructions)
+- [`frontend/`](./frontend/) contains the frontend website
+- [`backend/`](./backend/) contains the backend serverless function 
+- [`terraform/`](./terraform/) contains infrastructure definitions
+
+## Prerequisites
+
+1. Use a Linux or MacOS environment. Alternatively, be prepared for additional troubleshooting beyond what is described below.
+2. Install `go` v1.21 or higher ([instructions](https://go.dev/doc/install)).
+3. Install `node` v18 or higher ([instructions](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs)).
+4. Install `make` ([instructions](https://www.gnu.org/software/make/)). Alternatively, run the corresponding command(s) from each `Makefile`.
+5. Install `zip` ([Ubuntu instructions](https://www.mysoftkey.com/linux/how-to-do-zip-and-unzip-file-in-ubuntu-linux/), [MacOS instructions](https://formulae.brew.sh/formula/zip)). Alternatively, manually create any applicable zip archives.
+6. Optionally, for containerized testing, install Docker and then `act` ([instructions](https://nektosact.com/installation/index.html)).
+7. Optionally, for cloud deployment, install and configure AWS CLI and then Terraform ([instructions](./terraform/README.md#prerequisites)).
+
+## Running
+
+The first entry in each component's `Makefile` will run it locally, so simply type `make` in [`frontend/`](./frontend/) and/or [`backend/`](./backend/).
+
+By default, the fronted will host http://localhost:5173/ and the backend will host http://localhost:8080. If you run both, the backend will reverse-proxy the frontend, so navigate to the latter URL only.
+
+## Building
+
+Each `Makefile` includes a `build` step, so simply type `make build` in [`frontend/`](`frontend/`) and/or [`backend/`](./backend/). The frontend will build to `frontend/build/*` and the backend will build to `backend/bin/bootstrap.zip`
+
+## Testing
+
+Each `Makefile` includes a `test` step, so simply type `make test` in [`frontend/`](`frontend/`) and/or [`backend/`](./backend/).
+
+Some tests, notably DynamoDB unit tests, have dependencies best suited for installation in a CI workflow or Docker container. To run *all* tests locally, run `act` ([instructions](#prerequisites)) in this directory.
+
+## Deployment
+
+After building, you may deploy to the AWS cloud ([instructions](./terraform/README.md#provisioning-infrastructure)).
