@@ -1,30 +1,6 @@
 # Backend
 
-## Prerequisites
-
-1. Install `go` v1.21 or higher.
-2. Install `make`.
-
-## Running local backend
-
-1. Run local backend:
-```sh
-make
-```
-2. Run the development frontend:
-```sh
-cd ../frontend
-npm run build && npm run preview
-```
-2. Open http://localhost:8080.
-
-## Deploying backend to AWS lambda
-
-1. Apply Terraform to get credentials.
-2. Deploy serverless backend:
-```sh
-make deploy
-```
+See [`../README.md`](../README.md) for instructions.
 
 ## API
 - Open WebSocket: `/ws/`

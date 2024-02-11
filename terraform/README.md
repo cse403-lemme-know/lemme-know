@@ -4,7 +4,7 @@
 
 1. Install `terraform`
 2. Install `aws` CLI
-3. Add AWS credentials to `~/.aws/credentials`
+3. Add administrator AWS credentials to `~/.aws/credentials`
 ```toml
 [cse403]
 aws_access_key_id = {your AWS access key id}
@@ -18,7 +18,10 @@ terraform init -backend-config="password={your-github-token}"
 
 ## Provisioning infrastructure
 
-To provision or update infrastructure, run the apply command:
+To provision or update infrastructure, register a domain and run the apply command:
 ```sh
-terraform apply
+terraform apply -var domain="yourdomain.com”
 ```
+
+The step of validating the AWS ACM TLS certificate will fail, at which point you must
+copy DNS servers listed in AWS Route53 to your domain registrar. Finally, rerun the apply command and wait.
