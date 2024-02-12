@@ -86,7 +86,7 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 	if sess == nil {
 		endpoint := "http://localhost:8000"
 		sess, err := session.NewSession(
-			&aws.Config{Region: aws.String(GetRegion()), Endpoint: &endpoint, Credentials: credentials.NewCredentials(&credentials.StaticProvider{credentials.Value{
+			&aws.Config{Region: aws.String(GetRegion()), Endpoint: &endpoint, Credentials: credentials.NewCredentials(&credentials.StaticProvider{Value: credentials.Value{
 				AccessKeyID:     "dummy",
 				SecretAccessKey: "dummy",
 				SessionToken:    "dummy",
