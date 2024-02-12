@@ -57,6 +57,14 @@ func TestHTTPService(t *testing.T) {
 	MustDecode(t, response.Body, &getUserResponse2)
 	assert.Equal(t, getUserResponse.UserID, getUserResponse2.UserID)
 
+	// Test: get push keys
+	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/push/", port))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	var getPushResponse GetPushResponse
+	MustDecode(t, response.Body, &getPushResponse)
+	assert.NotEmpty(t, getPushResponse.VAPIDPublicKey)
+
 	// Test: create group.
 	patchGroupRequest := PatchGroupRequest{
 		Name: "test",

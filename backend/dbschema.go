@@ -52,6 +52,11 @@ type Message struct {
 	Sender    UserID
 }
 
+type Variable struct {
+	Name  string `dynamo:",hash"`
+	Value string
+}
+
 type PollOption struct {
 	Name  string
 	Votes []UserID `dynamo:",set"`

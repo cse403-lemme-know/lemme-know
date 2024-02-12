@@ -5,22 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	webpush "github.com/Appboy/webpush-go"
 	"github.com/gorilla/mux"
 )
-
-/*
-func NewWebPush() *WebPush {
-	privateKey, publicKey, err := webpush.GenerateVAPIDKeys()
-	if err != nil {
-		log.Fatal("unable to access randomness")
-	}
-	return &WebPush{
-		privateKey, publicKey,
-	}
-}
-*/
 
 var VAPIDPublicKey string
 var VAPIDPrivateKey string
@@ -45,8 +34,13 @@ func RestPushAPI(router *mux.Router, database Database, notification Notificatio
 
 		switch r.Method {
 		case http.MethodGet:
+			_, vapidPublicKey, err := getVAPIDKeys(database)
+			if err != nil {
+				http.Error(w, "could not get push keys", http.StatusInternalServerError)
+				return
+			}
 			WriteJSON(w, GetPushResponse{
-				VAPIDPublicKey: VAPIDPublicKey,
+				VAPIDPublicKey: vapidPublicKey,
 			})
 		case http.MethodPatch:
 			var request PatchPushRequest
@@ -69,14 +63,18 @@ func RestPushAPI(router *mux.Router, database Database, notification Notificatio
 	})
 }
 
-func WebPush(data any, subscription webpush.Subscription) error {
+func WebPush(data any, subscription webpush.Subscription, database Database) error {
 	json, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("could not marshal push to JSON: %w", err)
 	}
+	vapidPrivateKey, vapidPublicKey, err := getVAPIDKeys(database)
+	if err != nil {
+		return fmt.Errorf("could not get VAPID keys: %w", err)
+	}
 	resp, err := webpush.SendNotification(json, &subscription, &webpush.Options{
-		VAPIDPrivateKey: VAPIDPrivateKey,
-		VAPIDPublicKey:  VAPIDPublicKey,
+		VAPIDPrivateKey: vapidPrivateKey,
+		VAPIDPublicKey:  vapidPublicKey,
 		Urgency:         webpush.UrgencyNormal,
 		Subscriber:      os.Getenv("DOMAIN"),
 		SubIsURL:        true,
@@ -86,4 +84,26 @@ func WebPush(data any, subscription webpush.Subscription) error {
 	}
 	_ = resp.Body.Close()
 	return nil
+}
+
+// Returns private and public VAPID keys, generating and
+// storing new ones if needed.
+func getVAPIDKeys(database Database) (string, string, error) {
+	keys, err := database.ReadVariable("VAPID_KEYS")
+	if err != nil {
+		return "", "", err
+	}
+	if keys == "" || strings.Count(keys, ":") != 1 {
+		privateKey, publicKey, err := webpush.GenerateVAPIDKeys()
+		if err != nil {
+			return "", "", err
+		}
+		keys = privateKey + ":" + publicKey
+		err = database.WriteVariable("VAPID_KEYS", keys)
+		if err != nil {
+			return "", "", err
+		}
+	}
+	splits := strings.Split(keys, ":")
+	return splits[0], splits[1], nil
 }
