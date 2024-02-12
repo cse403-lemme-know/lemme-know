@@ -1,5 +1,34 @@
 # Backend
 
+## Architecture
+
+```mermaid
+flowchart LR
+    EventBridge[AWS EventBridge] -.JSON.-> Handler
+    Gateway[AWS API Gateway] <-.JSON.-> Handler[Handler Function]
+    Handler <--HTTP--> Router[HTTP Router]
+    Handler --WebSocket Connects/Disconnects--> Notification
+    Router <--User HTTP--> Session[User Router]
+    Router <--Group HTTP--> Group[Group Router]
+    Router <--Chat HTTP--> Chat[Chat Router]
+    Router <--Poll HTTP--> Poll[Poll Router]
+    Router <--Calendar HTTP--> Calendar[Calendar Router]
+    Notification <--UserID, ConnectionID--> Database[Database Layer]
+    Session <--Users---> Database
+    Group <--Groups---> Database
+    Chat <--Messages--> Database
+    Poll <--Groups--> Database
+    Calendar <--Users, Groups--> Database
+    Database <-.JSON.-> DynamoDB[(DynamoDB)]
+    Chat --ConnectionID--> Notification
+    Poll --ConnectionID--> Notification
+    Calendar --ConnectionID--> Notification
+    Notification -.WebSocket Messages.->Gateway
+    Gateway <-.HTTP.-> Frontend[[Frontend]]
+```
+
+## Instructions
+
 See [`../README.md`](../README.md) for instructions.
 
 ## API
