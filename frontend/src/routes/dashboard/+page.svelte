@@ -2,16 +2,15 @@
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
-	import { startDate, endDate } from '$lib/stores';
-	let start;
-	let end;
-
+	import { startDate, endDate, groupId } from '$lib/stores';
+	import { createAvailability } from '$lib/model';
+	let start, end;
 	let availability = writable({});
 	let tasks = writable([]);
 	let taskInput = '';
 	let assignedInput = '';
 
-	onMount(() => {
+	onMount(async () => {
 		start = get(startDate);
 		end = get(endDate);
 
@@ -22,16 +21,22 @@
 			let days = {};
 
 			for (
-				let current = start;
-				current.isBefore(end.add(1, 'day'));
-				current = current.add(1, 'day')
+					let current = start;
+					current.isBefore(end.add(1, 'day'));
+					current = current.add(1, 'day')
 			) {
 				const dateString = current.format('YYYY-MM-DD');
 				days[dateString] = new Array(24).fill(false);
 			}
 			availability.set(days);
 		}
-		initializeAvailability(dayjs(start), dayjs(end));
+
+		if (start.isValid() && end.isValid()) {
+			initializeAvailability(start, end);
+		} else {
+			console.error("Invalid start or end date");
+		}
+
 	});
 
 	function toggleSlot(day, hour) {
@@ -87,6 +92,43 @@
 			sendMessage();
 		}
 	}
+
+	async function saveAllAvailabilities() {
+		const currentGroupId = $groupId;
+		console.log(currentGroupId);
+		if (!currentGroupId) {
+			console.error('No group ID is set.');
+			return;
+		}
+
+		let allAvailabilitiesSaved = true;
+		const allAvailabilityData = [];
+
+		for (const [date, slots] of Object.entries($availability)) {
+			slots.forEach((slot, hour) => {
+				if (slot) {
+					allAvailabilityData.push({
+						date: date,
+						start: `${hour}:00`,
+						end: `${hour+1}:00`
+					});
+				}
+			});
+		}
+
+		for (const availabilityData of allAvailabilityData) {
+			const result = await createAvailability(currentGroupId, availabilityData);
+			if (!result) {
+				allAvailabilitiesSaved = false;
+				console.error('Failed to save availability for', availabilityData);
+				break;
+			}
+		}
+
+		if (allAvailabilitiesSaved) {
+			console.log('All availabilities saved successfully');
+		}
+	}
 </script>
 
 <header />
@@ -119,10 +161,10 @@
 
 			<div class="input-bar">
 				<input
-					class="input"
-					bind:value={newMessage}
-					placeholder="Type your message..."
-					on:keydown={handleKeyPress}
+						class="input"
+						bind:value={newMessage}
+						placeholder="Type your message..."
+						on:keydown={handleKeyPress}
 				/>
 				<button on:click={sendMessage} on:keyup={sendMessage}>Send Message</button>
 			</div>
@@ -136,9 +178,9 @@
 					<div class="slots">
 						{#each $availability[day] as available, hour}
 							<div
-								class="slot {available ? 'available' : ''}"
-								on:click={() => toggleSlot(day, hour)}
-								on:keypress={() => toggleSlot(day, hour)}
+									class="slot {available ? 'available' : ''}"
+									on:click|preventDefault={() => toggleSlot(day, hour)}
+									on:keypress={() => toggleSlot(day, hour)}
 							>
 								{hour}:00
 							</div>
@@ -146,18 +188,19 @@
 					</div>
 				</div>
 			{/each}
+			<button on:click={saveAllAvailabilities}>Save Availability</button>
 			<form on:submit|preventDefault={() => addTask(taskInput, assignedInput)}>
 				<input
-					type="text"
-					bind:value={taskInput}
-					placeholder="Enter task description (50 characters max)"
-					maxlength="50"
+						type="text"
+						bind:value={taskInput}
+						placeholder="Enter task description (50 characters max)"
+						maxlength="50"
 				/>
 				<input
-					type="text"
-					bind:value={assignedInput}
-					placeholder="Enter assignee name (50 characters max)"
-					maxlength="50"
+						type="text"
+						bind:value={assignedInput}
+						placeholder="Enter assignee name (50 characters max)"
+						maxlength="50"
 				/>
 				<button type="submit" disabled={!taskInput.trim() || !assignedInput.trim()}>Add Task</button
 				>
@@ -165,10 +208,10 @@
 			{#each $tasks as task (task.id)}
 				<div class="task-item">
 					<input
-						type="checkbox"
-						bind:checked={task.completed}
-						on:click={() => toggleCompletion(task.id)}
-						on:keypress={() => toggleCompletion(task.id)}
+							type="checkbox"
+							bind:checked={task.completed}
+							on:click={() => toggleCompletion(task.id)}
+							on:keypress={() => toggleCompletion(task.id)}
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
 					{#if task.assignedTo}
@@ -263,13 +306,14 @@
 	.content-wrap {
 		display: flex;
 		flex-direction: row;
+		gap: 2rem;
 	}
 
 	.calendar-container {
 		display: flex;
 		flex-direction: column;
 		flex-wrap: wrap;
-		margin-left: 4rem;
+		margin-left: 2rem;
 		margin-top: 3rem;
 	}
 
@@ -362,13 +406,13 @@
 		display: flex;
 		flex-direction: column;
 		border: 2px solid #ccc;
-		padding: 10px;
-		width: 700px;
+		padding: 4rem 6rem 2rem 6rem;
+		max-width: calc(90% - 10px);
 		height: 700px;
-		margin: auto;
 		border-radius: 8px;
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 		overflow-y: auto; /* Add scrollbar when content exceeds the height */
+		margin-right: 2rem;
 	}
 
 	.messages {

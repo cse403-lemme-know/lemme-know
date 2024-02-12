@@ -1,27 +1,49 @@
+
 <script>
 	import { goto } from '$app/navigation';
 	import { Datepicker } from 'svelte-calendar';
 	import dayjs from 'dayjs';
 	import { writable } from 'svelte/store';
-	import { startDate, endDate, groupName } from '$lib/stores';
-	// Imported for loading user side effect.
-	import '$lib/model';
+	import "$lib/model.js"
+	import { startDate, endDate, groupName, groupId } from '$lib/stores';
 	let name = 'LemmeKnow';
 	let errorMsg = writable('');
 
-	function handleButtonClick() {
+	async function handleButtonClick() {
 		if ($startDate && $endDate) {
 			if (dayjs($startDate).isAfter($endDate)) {
 				$errorMsg = 'Start date must be before the end date';
 			} else {
 				$errorMsg = '';
-				if (!$groupName || $groupName.trim().length == 0) {
+				if (!$groupName || $groupName.trim().length === 0) {
 					$errorMsg = 'Please enter a group name';
 				} else {
 					startDate.set($startDate);
 					endDate.set($endDate);
 					groupName.set($groupName);
-					goto('/dashboard');
+					try {
+						const response = await fetch(`//${location.host}/api/group/`, {
+							method: 'PATCH',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({
+								name: $groupName,
+							}),
+						});
+
+						if (response.ok) {
+							const data = await response.json();
+							console.log('Group created with ID:', data.groupId);
+							groupId.set(data.groupId);
+							goto('/dashboard');
+						} else {
+							$errorMsg = 'Failed to create group';
+						}
+					} catch (error) {
+						console.error('Error creating group:', error);
+						$errorMsg = 'Error connecting to the server';
+					}
 				}
 			}
 		}
