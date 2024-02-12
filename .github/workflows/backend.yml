@@ -30,6 +30,7 @@ jobs:
         run: go build
   test:
     name: Test
+    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -71,3 +72,18 @@ jobs:
       - name: Check format
         # https://stackoverflow.com/a/42510278
         run: diff -u <(echo -n) <(gofmt -d ./)
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.x'
+      - name: Lint
+        run: go vet
