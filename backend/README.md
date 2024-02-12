@@ -38,6 +38,19 @@ make deploy
     - `{user: {userId: 5678, name: "Alex", status: "online" | "busy" | "offline"}}`
       - Meaning: A user profile changed.
 
+### Push
+- Request: `GET /api/push/`
+  - Precondition: Authentication cookie
+  - Response: `{vapidPublicKey: "XYZW"}`
+- Request: `PATCH /api/push/ {"endpoint": "https://example.com", "keys": {"auth": "XYZW", "p256dh": "XYZW"}}`
+  - Precondition: Authentication cookie
+  - Effect: Adds WebPush subscription.
+  - Messages:
+    - `{message: {groupId: 1234, timestamp: 123456789, sender: "Bob", content: "hello", ...}`
+      - Meaning: Delivers a chat message.
+    - `{reminder: {groupId: 1234, timestamp: 123456789, content: "hello", ...}`
+      - Meaning: Delivers a reminder.
+
 ### User
 - Request: `GET /api/user/`
   - Effect: Creates a new user and sets authentication cookie unless already authenticated.
