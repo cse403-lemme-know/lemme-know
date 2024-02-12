@@ -21,6 +21,26 @@ async function createGroup(name) {
 	}
 }
 
+async function createAvailability(groupId, availability) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/availability/`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(availability),
+			credentials: 'include',
+		});
+		if (!response.ok) {
+			throw new Error('response not ok');
+		}
+		return await response.json();
+	} catch (e) {
+		console.error('Error creating availability:', e);
+		return null;
+	}
+}
+
 getUser().then(console.log);
 
-export { createGroup };
+export { getUser, createGroup, createAvailability };

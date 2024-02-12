@@ -5,7 +5,7 @@
 	import dayjs from 'dayjs';
 	import { writable } from 'svelte/store';
 	import "$lib/model.js"
-	import { startDate, endDate, groupName } from '$lib/stores';
+	import { startDate, endDate, groupName, groupId } from '$lib/stores';
 	let name = 'LemmeKnow';
 	let errorMsg = writable('');
 
@@ -22,12 +22,11 @@
 					endDate.set($endDate);
 					groupName.set($groupName);
 					try {
-						const response = await fetch('https://localhost:8080/api/group/', {
+						const response = await fetch(`//${location.host}/api/group/`, {
 							method: 'PATCH',
 							headers: {
 								'Content-Type': 'application/json',
 							},
-							credentials: 'include',
 							body: JSON.stringify({
 								name: $groupName,
 							}),
@@ -36,6 +35,7 @@
 						if (response.ok) {
 							const data = await response.json();
 							console.log('Group created with ID:', data.groupId);
+							groupId.set(data.groupId);
 							goto('/dashboard');
 						} else {
 							$errorMsg = 'Failed to create group';

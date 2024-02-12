@@ -2,16 +2,17 @@
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
-	import { startDate, endDate } from '$lib/stores';
+	import { startDate, endDate, groupId } from '$lib/stores';
+	import { createAvailability } from '$lib/model';
 	let start;
 	let end;
-
+	let id;
 	let availability = writable({});
 	let tasks = writable([]);
 	let taskInput = '';
 	let assignedInput = '';
 
-	onMount(() => {
+	onMount(async () => {
 		start = get(startDate);
 		end = get(endDate);
 
@@ -87,6 +88,43 @@
 			sendMessage();
 		}
 	}
+
+	async function saveAllAvailabilities() {
+		const currentGroupId = $groupId;
+		if (!currentGroupId) {
+			console.error('No group ID is set.');
+			return;
+		}
+
+		let allAvailabilitiesSaved = true;
+		const allAvailabilityData = [];
+
+
+		Object.keys($availability).forEach((day) => {
+			$availability[day].forEach((slot, hour) => {
+				if (slot) {
+					allAvailabilityData.push({
+						date: day,
+						start: `${hour}:00`,
+						end: `${hour + 1}:00`
+					});
+				}
+			});
+		});
+
+		for (const availabilityData of allAvailabilityData) {
+			const result = await createAvailability(currentGroupId, availabilityData);
+			if (!result) {
+				allAvailabilitiesSaved = false;
+				console.error('Failed to save availability for', availabilityData);
+				break;
+			}
+		}
+
+		if (allAvailabilitiesSaved) {
+			console.log('All availabilities saved successfully');
+		}
+	}
 </script>
 
 <header />
@@ -146,6 +184,7 @@
 					</div>
 				</div>
 			{/each}
+			<button on:click={saveAllAvailabilities}>Save Availability</button>
 			<form on:submit|preventDefault={() => addTask(taskInput, assignedInput)}>
 				<input
 					type="text"
@@ -263,13 +302,14 @@
 	.content-wrap {
 		display: flex;
 		flex-direction: row;
+		gap: 2rem;
 	}
 
 	.calendar-container {
 		display: flex;
 		flex-direction: column;
 		flex-wrap: wrap;
-		margin-left: 4rem;
+		margin-left: 2rem;
 		margin-top: 3rem;
 	}
 
@@ -362,13 +402,13 @@
 		display: flex;
 		flex-direction: column;
 		border: 2px solid #ccc;
-		padding: 10px;
-		width: 700px;
+		padding: 4rem 6rem 2rem 6rem;
+		max-width: calc(90% - 10px);
 		height: 700px;
-		margin: auto;
 		border-radius: 8px;
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 		overflow-y: auto; /* Add scrollbar when content exceeds the height */
+		margin-right: 2rem;
 	}
 
 	.messages {
