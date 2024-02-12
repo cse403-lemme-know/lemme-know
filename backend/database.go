@@ -76,8 +76,8 @@ type DynamoDB struct {
 }
 
 const groupTableName = "lemmeknow-groups"
-const userTableName = "lemmeknow-groups"
-const messageTableName = "lemmeknow-groups"
+const userTableName = "lemmeknow-users"
+const messageTableName = "lemmeknow-messages"
 const variableTableName = "lemmeknow-vars"
 
 // Passing a `nil` session means use DynamoDB local (default port).
