@@ -119,7 +119,6 @@ func updateUserAndNotifyGroups(userID UserID, transaction func(*User) error, dat
 			if err != nil || group == nil {
 				return
 			}
-			println("read the group")
 			notifyGroup(group, UserChanged{
 				User: UserChangedUser{UserID: userID, Name: u.Name, Status: u.Status},
 			}, database, notification)

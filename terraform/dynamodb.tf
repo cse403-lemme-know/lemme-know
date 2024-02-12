@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "group" {
-  name         = "GroupTable"
+  name         = "lemmeknow-groups"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "GroupID"
 
@@ -10,7 +10,7 @@ resource "aws_dynamodb_table" "group" {
 }
 
 resource "aws_dynamodb_table" "user" {
-  name         = "UserTable"
+  name         = "lemmeknow-users"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "UserID"
 
@@ -21,7 +21,7 @@ resource "aws_dynamodb_table" "user" {
 }
 
 resource "aws_dynamodb_table" "message" {
-  name         = "MessageTable"
+  name         = "lemmeknow-messages"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "MessageId"
   range_key    = "Timestamp"
@@ -34,5 +34,16 @@ resource "aws_dynamodb_table" "message" {
   attribute {
     name = "Timestamp"
     type = "N"
+  }
+}
+
+resource "aws_dynamodb_table" "variable" {
+  name         = "lemmeknow-variables"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "Name"
+
+  attribute {
+    name = "Name"
+    type = "S"
   }
 }

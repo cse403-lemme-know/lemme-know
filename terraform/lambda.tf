@@ -65,7 +65,8 @@ data "aws_iam_policy_document" "backend_policy" {
     resources = [
       "${aws_dynamodb_table.user.arn}",
       "${aws_dynamodb_table.group.arn}",
-      "${aws_dynamodb_table.message.arn}"
+      "${aws_dynamodb_table.message.arn}",
+      "${aws_dynamodb_table.variable.arn}"
     ]
   }
   #statement {

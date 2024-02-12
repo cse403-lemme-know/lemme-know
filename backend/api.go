@@ -18,6 +18,7 @@ func RestRoot(router *mux.Router, database Database, notification Notification) 
 func RestApi(router *mux.Router, database Database, notification Notification) {
 	RestUserAPI(AddHandler(router, "/user"), database, notification)
 	RestGroupAPI(AddHandler(router, "/group"), database, notification)
+	RestPushAPI(AddHandler(router, "/push"), database, notification)
 }
 
 // Adds a nested multiplexer at a relative path prefix.

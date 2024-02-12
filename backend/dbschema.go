@@ -1,5 +1,9 @@
 package main
 
+import (
+	webpush "github.com/Appboy/webpush-go"
+)
+
 type UserID = uint64
 type GroupID = uint64
 type ActivityID = uint64
@@ -24,11 +28,12 @@ type Group struct {
 }
 
 type User struct {
-	UserID      UserID `dynamo:",hash"` // Hash key, a.k.a. partition key
-	Name        string
-	Status      string
-	Groups      []GroupID      `dynamo:",set"`
-	Connections []ConnectionID `dynamo:",set"`
+	UserID        UserID `dynamo:",hash"` // Hash key, a.k.a. partition key
+	Name          string
+	Status        string
+	Groups        []GroupID      `dynamo:",set"`
+	Connections   []ConnectionID `dynamo:",set"`
+	Subscriptions []webpush.Subscription
 	// Counts updates to help ensure atomicity.
 	updateCount uint64
 }
@@ -45,6 +50,11 @@ type Message struct {
 	Timestamp uint64  `dynamo:",range"`
 	Content   string
 	Sender    UserID
+}
+
+type Variable struct {
+	Name  string `dynamo:",hash"`
+	Value string
 }
 
 type PollOption struct {

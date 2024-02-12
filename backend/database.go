@@ -61,14 +61,24 @@ type Database interface {
 	// Returns an error if the `message.GroupID` and `message.Timestamp` are not
 	// unique, or if the operation could not be completed.
 	CreateMessage(Message) error
+	// Reads the value of a variable (possibly empty string if empty or nonexistent).
+	ReadVariable(string) (string, error)
+	// Overwrites the value of a variable.
+	WriteVariable(string, string) error
 }
 
 // An AWS non-volatile database service.
 type DynamoDB struct {
-	groups   dynamo.Table
-	users    dynamo.Table
-	messages dynamo.Table
+	groups    dynamo.Table
+	users     dynamo.Table
+	messages  dynamo.Table
+	variables dynamo.Table
 }
+
+const groupTableName = "lemmeknow-groups"
+const userTableName = "lemmeknow-users"
+const messageTableName = "lemmeknow-messages"
+const variableTableName = "lemmeknow-vars"
 
 // Passing a `nil` session means use DynamoDB local (default port).
 func NewDynamoDB(sess *session.Session) *DynamoDB {
@@ -89,17 +99,19 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 		db = dynamo.New(sess)
 
 		// Ingnore errors (e.g. duplicate table)
-		_ = db.CreateTable("GroupTable", Group{}).Run()
-		_ = db.CreateTable("UserTable", User{}).Run()
-		_ = db.CreateTable("MessageTable", Message{}).Run()
+		_ = db.CreateTable(groupTableName, Group{}).Run()
+		_ = db.CreateTable(userTableName, User{}).Run()
+		_ = db.CreateTable(messageTableName, Message{}).Run()
+		_ = db.CreateTable(variableTableName, Variable{}).Run()
 	} else {
 		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
 	}
 
 	return &DynamoDB{
-		groups:   db.Table("GroupTable"),
-		users:    db.Table("UserTable"),
-		messages: db.Table("MessageTable"),
+		groups:    db.Table(groupTableName),
+		users:     db.Table(userTableName),
+		messages:  db.Table(messageTableName),
+		variables: db.Table(variableTableName),
 	}
 }
 
@@ -223,6 +235,14 @@ func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
 	return dynamoDB.messages.Put(message).If("attribute_not_exists(Timestamp)").Run()
 }
 
+func (dynamoDB *DynamoDB) ReadVariable(name string) (string, error) {
+	panic("unimplemented")
+}
+
+func (dynamoDB *DynamoDB) WriteVariable(name string, value string) error {
+	panic("unimplemented")
+}
+
 func printDatabase(database Database) error {
 	out, err := json.Marshal(database)
 	fmt.Println(string(out))
@@ -231,10 +251,11 @@ func printDatabase(database Database) error {
 
 // An in-memory volatile database.
 type MemoryDatabase struct {
-	users    map[UserID]User
-	groups   map[GroupID]Group
-	messages map[memoryMessageID]Message
-	mu       sync.Mutex
+	users     map[UserID]User
+	groups    map[GroupID]Group
+	messages  map[memoryMessageID]Message
+	variables map[string]string
+	mu        sync.Mutex
 }
 
 type memoryMessageID struct {
@@ -244,9 +265,10 @@ type memoryMessageID struct {
 
 func NewMemoryDatabase() *MemoryDatabase {
 	return &MemoryDatabase{
-		users:    make(map[UserID]User),
-		groups:   make(map[GroupID]Group),
-		messages: make(map[memoryMessageID]Message),
+		users:     make(map[UserID]User),
+		groups:    make(map[GroupID]Group),
+		messages:  make(map[memoryMessageID]Message),
+		variables: make(map[string]string),
 	}
 }
 
@@ -364,6 +386,24 @@ func (memoryDatabase *MemoryDatabase) CreateMessage(message Message) error {
 		return fmt.Errorf("message already exists")
 	}
 	memoryDatabase.messages[id] = message
+	return nil
+}
+
+func (memoryDatabase *MemoryDatabase) ReadVariable(name string) (string, error) {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	value, ok := memoryDatabase.variables[name]
+	if ok {
+		return value, nil
+	} else {
+		return "", nil
+	}
+}
+
+func (memoryDatabase *MemoryDatabase) WriteVariable(name string, value string) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	memoryDatabase.variables[name] = value
 	return nil
 }
 
