@@ -3,25 +3,31 @@
 	import { Datepicker } from 'svelte-calendar';
 	import dayjs from 'dayjs';
 	import { writable } from 'svelte/store';
-	import { startDate, endDate, groupName } from '$lib/stores';
-	// Imported for loading user side effect.
-	import '$lib/model';
+	import { createGroup } from '$lib/model.js';
+	import { startDate, endDate, groupName, groupId } from '$lib/stores';
 	let name = 'LemmeKnow';
 	let errorMsg = writable('');
 
-	function handleButtonClick() {
+	async function handleButtonClick() {
 		if ($startDate && $endDate) {
 			if (dayjs($startDate).isAfter($endDate)) {
 				$errorMsg = 'Start date must be before the end date';
 			} else {
 				$errorMsg = '';
-				if (!$groupName || $groupName.trim().length == 0) {
+				if (!$groupName || $groupName.trim().length === 0) {
 					$errorMsg = 'Please enter a group name';
 				} else {
 					startDate.set($startDate);
 					endDate.set($endDate);
 					groupName.set($groupName);
-					goto('/dashboard');
+					const createGroupId = await createGroup($groupName);
+					if (createGroupId) {
+						console.log('Group created with ID:', createGroupId);
+						groupId.set(createGroupId);
+						goto('/dashboard');
+					} else {
+						$errorMsg = 'Failed to create group';
+					}
 				}
 			}
 		}
