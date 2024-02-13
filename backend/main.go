@@ -55,41 +55,45 @@ func newLambdaHandler(database Database, notification Notification) func(context
 		// Check if the event is an AWS API Gateway HTTP WebSocket event.
 		var ws events.APIGatewayWebsocketProxyRequest
 		if err := json.Unmarshal(event, &ws); err == nil && ws.RequestContext.ConnectionID != "" {
-			log.Printf("ws event: %s", string(mustMarshal(ws)))
-			// Construct a request to access cookies.
-			request, err := http.NewRequest(
-				http.MethodGet,
-				"http://example.com",
-				strings.NewReader(ws.Body),
-			)
-			if err != nil {
-				// Unreachable.
-				panic(err)
-			}
-			for key, value := range ws.Headers {
-				request.Header.Add(key, value)
-			}
-			for key, values := range ws.MultiValueHeaders {
-				for _, value := range values {
-					request.Header.Add(key, value)
-				}
-			}
-			log.Printf("ws req: %v", request)
-			user, err := CheckCookie(request, database)
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-			if user == nil {
-				return events.APIGatewayProxyResponse{
-					StatusCode: http.StatusUnauthorized,
-					Body:       "no such user",
-				}, nil
-			}
-
 			isConnect := ws.RequestContext.EventType == "Connect"
 			isDisconnect := ws.RequestContext.EventType == "Disconnect"
+			var connectUserID *UserID = nil
+
+			if isConnect {
+				// Construct a request to access cookies.
+				request, err := http.NewRequest(
+					http.MethodGet,
+					"http://example.com",
+					strings.NewReader(ws.Body),
+				)
+				if err != nil {
+					// Unreachable.
+					panic(err)
+				}
+				for key, value := range ws.Headers {
+					request.Header.Add(key, value)
+				}
+				for key, values := range ws.MultiValueHeaders {
+					for _, value := range values {
+						request.Header.Add(key, value)
+					}
+				}
+				log.Printf("ws req: %v", request)
+				user, err := CheckCookie(request, database)
+				if err != nil {
+					return events.APIGatewayProxyResponse{}, err
+				}
+				if user == nil {
+					return events.APIGatewayProxyResponse{
+						StatusCode: http.StatusUnauthorized,
+						Body:       "no such user",
+					}, nil
+				}
+				connectUserID = &user.UserID
+			}
+
 			if isConnect || isDisconnect {
-				err = WebSocket(database, ws.RequestContext.ConnectionID, user.UserID, isConnect)
+				err = WebSocket(database, ws.RequestContext.ConnectionID, connectUserID)
 			}
 			return events.APIGatewayProxyResponse{
 				StatusCode: http.StatusOK,
@@ -154,12 +158,12 @@ func runLocalService(port uint16, ctx context.Context) error {
 
 		connectionID := notification.add(c)
 
-		WebSocket(database, connectionID, user.UserID, true)
+		WebSocket(database, connectionID, &user.UserID)
 
 		go func() {
 			defer c.Close()
 			defer notification.remove(connectionID)
-			defer WebSocket(database, connectionID, user.UserID, false)
+			defer WebSocket(database, connectionID, nil)
 			for {
 				messageType, _, err := c.ReadMessage()
 				if err != nil || messageType == websocket.CloseMessage {

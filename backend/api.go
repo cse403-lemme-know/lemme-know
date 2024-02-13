@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -50,12 +52,34 @@ func WriteJSON(w http.ResponseWriter, data any) {
 }
 
 // WebSocket event (connect or disconnect) handler.
-func WebSocket(database Database, connectionId ConnectionID, userID UserID, isConnect bool) error {
-	log.Printf("websocket %s userID=%d isConnect=%t\n", connectionId, userID, isConnect)
-	return database.UpdateUser(userID, func(user *User) error {
-		user.Connections = append(user.Connections, connectionId)
-		return nil
-	})
+//
+// UserID is present for connect, and nil for disconnect.
+func WebSocket(database Database, connectionID ConnectionID, userID *UserID) error {
+	log.Printf("websocket %s userID=%v\n", connectionID, userID)
+	if userID == nil {
+		userID, err := database.ReadConnection(connectionID)
+		if err != nil {
+			return err
+		}
+		if userID == nil {
+			return fmt.Errorf("unknown connection")
+		}
+		if err := database.UpdateUser(*userID, func(user *User) error {
+			slices.DeleteFunc(user.Connections, func(c ConnectionID) bool {
+				return c == connectionID
+			})
+			return nil
+		}); err != nil {
+			return err
+		}
+		return database.DeleteConnection(connectionID)
+	} else {
+		return database.UpdateUser(*userID, func(user *User) error {
+			user.Connections = append(user.Connections, connectionID)
+			return nil
+		})
+	}
+
 }
 
 // Cron event handler.
