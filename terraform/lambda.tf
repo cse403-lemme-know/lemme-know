@@ -10,7 +10,7 @@ resource "aws_lambda_function" "backend" {
   environment {
     variables = {
       AWS_API_GATEWAY_WS_ENDPOINT = replace(aws_apigatewayv2_stage.backend.invoke_url, "wss:", "https:")
-      AWS_REGION                  = var.region
+      #AWS_REGION                 = var.region
     }
   }
 
@@ -63,19 +63,20 @@ data "aws_iam_policy_document" "backend_policy" {
       "dynamodb:UpdateItem"
     ]
     resources = [
-      "${aws_dynamodb_table.user.arn}",
-      "${aws_dynamodb_table.group.arn}",
-      "${aws_dynamodb_table.message.arn}",
-      "${aws_dynamodb_table.variable.arn}"
+      aws_dynamodb_table.user.arn,
+      aws_dynamodb_table.group.arn,
+      aws_dynamodb_table.message.arn,
+      aws_dynamodb_table.connection.arn,
+      aws_dynamodb_table.variable.arn
     ]
   }
-  #statement {
-  #  sid = "websocket"
-  #  action = [
-  #    "execute-api:*"
-  #  ]
-  #  resources = [
-  #    "arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.NAME.id}/*/*/*"
-  #  ]
-  #}
+  statement {
+    sid = "websocket"
+    actions = [
+      "execute-api:*"
+    ]
+    resources = [
+      "arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.backend.id}/*/*/*"
+    ]
+  }
 }

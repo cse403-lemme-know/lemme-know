@@ -61,6 +61,18 @@ type Database interface {
 	// Returns an error if the `message.GroupID` and `message.Timestamp` are not
 	// unique, or if the operation could not be completed.
 	CreateMessage(Message) error
+	// Reads the UserID associated with a connection, or returns nil if none exists.
+	//
+	// Returns an error if the operation could not be completed.
+	ReadConnection(ConnectionID) (*UserID, error)
+	// Writes or overwrites the UserID associated with a connection.
+	//
+	// Returns an error if the operation could not be completed.
+	WriteConnection(ConnectionID, UserID) error
+	// Deletes a connection.
+	//
+	// Returns an error if the operation could not be completed.
+	DeleteConnection(ConnectionID) error
 	// Reads the value of a variable (possibly empty string if empty or nonexistent).
 	ReadVariable(string) (string, error)
 	// Overwrites the value of a variable.
@@ -69,16 +81,18 @@ type Database interface {
 
 // An AWS non-volatile database service.
 type DynamoDB struct {
-	groups    dynamo.Table
-	users     dynamo.Table
-	messages  dynamo.Table
-	variables dynamo.Table
+	groups      dynamo.Table
+	users       dynamo.Table
+	messages    dynamo.Table
+	connections dynamo.Table
+	variables   dynamo.Table
 }
 
 const groupTableName = "lemmeknow-groups"
 const userTableName = "lemmeknow-users"
 const messageTableName = "lemmeknow-messages"
-const variableTableName = "lemmeknow-vars"
+const connectionTableName = "lemmeknow-connections"
+const variableTableName = "lemmeknow-variables"
 
 // Passing a `nil` session means use DynamoDB local (default port).
 func NewDynamoDB(sess *session.Session) *DynamoDB {
@@ -102,16 +116,18 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 		_ = db.CreateTable(groupTableName, Group{}).Run()
 		_ = db.CreateTable(userTableName, User{}).Run()
 		_ = db.CreateTable(messageTableName, Message{}).Run()
+		_ = db.CreateTable(connectionTableName, Connection{}).Run()
 		_ = db.CreateTable(variableTableName, Variable{}).Run()
 	} else {
 		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
 	}
 
 	return &DynamoDB{
-		groups:    db.Table(groupTableName),
-		users:     db.Table(userTableName),
-		messages:  db.Table(messageTableName),
-		variables: db.Table(variableTableName),
+		groups:      db.Table(groupTableName),
+		users:       db.Table(userTableName),
+		messages:    db.Table(messageTableName),
+		connections: db.Table(connectionTableName),
+		variables:   db.Table(variableTableName),
 	}
 }
 
@@ -138,6 +154,7 @@ func (dynamoDB *DynamoDB) ReadUser(userID UserID) (*User, error) {
 }
 
 func (dynamoDB *DynamoDB) UpdateUser(userID UserID, transaction func(*User) error) error {
+	governor := 0
 	for {
 		user, err := dynamoDB.ReadUser(userID)
 		if err != nil {
@@ -147,15 +164,19 @@ func (dynamoDB *DynamoDB) UpdateUser(userID UserID, transaction func(*User) erro
 			return fmt.Errorf("user not found")
 		}
 
-		oldCount := user.updateCount
+		oldCount := user.UpdateCount
 		if err := transaction(user); err != nil {
 			return err
 		}
-		user.updateCount = oldCount + 1
+		user.UpdateCount = oldCount + 1
 
-		err = dynamoDB.users.Put(user).If("updateCount = ?", oldCount).Run()
+		err = dynamoDB.users.Put(user).If("UpdateCount = ?", oldCount).Run()
 		if err != nil && dynamo.IsCondCheckFailed(err) {
 			// Retry the transaction.
+			governor += 1
+			if governor > 16 {
+				return fmt.Errorf("too many retries")
+			}
 			continue
 		}
 		return err
@@ -192,6 +213,7 @@ func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
 }
 
 func (dynamoDB *DynamoDB) UpdateGroup(groupID GroupID, transaction func(*Group) error) error {
+	governor := 0
 	for {
 		group, err := dynamoDB.ReadGroup(groupID)
 		if err != nil {
@@ -201,15 +223,19 @@ func (dynamoDB *DynamoDB) UpdateGroup(groupID GroupID, transaction func(*Group) 
 			return fmt.Errorf("group not found")
 		}
 
-		oldCount := group.updateCount
+		oldCount := group.UpdateCount
 		if err := transaction(group); err != nil {
 			return err
 		}
-		group.updateCount = oldCount + 1
+		group.UpdateCount = oldCount + 1
 
-		err = dynamoDB.groups.Put(group).If("updateCount = ?", oldCount).Run()
+		err = dynamoDB.groups.Put(group).If("UpdateCount = ?", oldCount).Run()
 		if err != nil && dynamo.IsCondCheckFailed(err) {
 			// Retry the transaction.
+			governor += 1
+			if governor > 16 {
+				return fmt.Errorf("too many retries")
+			}
 			continue
 		}
 		return err
@@ -235,6 +261,18 @@ func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
 	return dynamoDB.messages.Put(message).If("attribute_not_exists(Timestamp)").Run()
 }
 
+func (dynamoDB *DynamoDB) ReadConnection(connectionID ConnectionID) (*UserID, error) {
+	panic("unimplemented")
+}
+
+func (dynamoDB *DynamoDB) WriteConnection(connectionID ConnectionID, userID UserID) error {
+	panic("unimplemented")
+}
+
+func (dynamoDB *DynamoDB) DeleteConnection(connectionID ConnectionID) error {
+	panic("unimplemented")
+}
+
 func (dynamoDB *DynamoDB) ReadVariable(name string) (string, error) {
 	panic("unimplemented")
 }
@@ -251,11 +289,12 @@ func printDatabase(database Database) error {
 
 // An in-memory volatile database.
 type MemoryDatabase struct {
-	users     map[UserID]User
-	groups    map[GroupID]Group
-	messages  map[memoryMessageID]Message
-	variables map[string]string
-	mu        sync.Mutex
+	users       map[UserID]User
+	groups      map[GroupID]Group
+	messages    map[memoryMessageID]Message
+	connections map[ConnectionID]UserID
+	variables   map[string]string
+	mu          sync.Mutex
 }
 
 type memoryMessageID struct {
@@ -386,6 +425,31 @@ func (memoryDatabase *MemoryDatabase) CreateMessage(message Message) error {
 		return fmt.Errorf("message already exists")
 	}
 	memoryDatabase.messages[id] = message
+	return nil
+}
+
+func (memoryDatabase *MemoryDatabase) ReadConnection(connectionID ConnectionID) (*UserID, error) {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	userID, ok := memoryDatabase.connections[connectionID]
+	if ok {
+		return &userID, nil
+	} else {
+		return nil, nil
+	}
+}
+
+func (memoryDatabase *MemoryDatabase) WriteConnection(connectionID ConnectionID, userID UserID) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	memoryDatabase.connections[connectionID] = userID
+	return nil
+}
+
+func (memoryDatabase *MemoryDatabase) DeleteConnection(connectionID ConnectionID) error {
+	memoryDatabase.mu.Lock()
+	defer memoryDatabase.mu.Unlock()
+	delete(memoryDatabase.connections, connectionID)
 	return nil
 }
 

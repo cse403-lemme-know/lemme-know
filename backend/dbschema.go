@@ -24,7 +24,7 @@ type Group struct {
 	Availabilities []Availability
 	Tasks          []Task
 	// Counts updates to help ensure atomicity.
-	updateCount uint64
+	UpdateCount uint64
 }
 
 type User struct {
@@ -35,7 +35,7 @@ type User struct {
 	Connections   []ConnectionID `dynamo:",set"`
 	Subscriptions []webpush.Subscription
 	// Counts updates to help ensure atomicity.
-	updateCount uint64
+	UpdateCount uint64
 }
 
 type Poll struct {
@@ -55,6 +55,11 @@ type Message struct {
 type Variable struct {
 	Name  string `dynamo:",hash"`
 	Value string
+}
+
+type Connection struct {
+	ConnectionID ConnectionID `dynamo:",hash"`
+	UserID       UserID
 }
 
 type PollOption struct {
