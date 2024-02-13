@@ -32,7 +32,7 @@ async function createAvailability(groupId, availability) {
 			body: JSON.stringify(availability),
 		});
 		if (response.status === 200) {
-			console.log("success");
+			console.log("success for creating availability");
 		}
 	} catch (e) {
 		console.error('Error creating availability:', e);
@@ -40,6 +40,21 @@ async function createAvailability(groupId, availability) {
 	}
 }
 
+async function createTask(groupId, title, assignee) {
+	try {
+		return await fetch(`//${location.host}/api/group/${groupId}/task/`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ title }),
+		});
+	} catch (e) {
+		console.error('Error creating task:', e);
+		return null;
+	}
+}
+
 getUser().then(console.log);
 
-export { getUser, createGroup, createAvailability };
+export { getUser, createGroup, createAvailability, createTask };

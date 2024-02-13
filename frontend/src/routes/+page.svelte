@@ -22,7 +22,7 @@
 					groupName.set($groupName);
 					const createGroupId = await createGroup($groupName);
 					if (createGroupId) {
-						console.log('Group created wtih ID:', createGroupId);
+						console.log('Group created with ID:', createGroupId);
 						groupId.set(createGroupId);
 						goto('/dashboard');
 					} else {

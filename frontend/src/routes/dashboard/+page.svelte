@@ -3,12 +3,14 @@
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { startDate, endDate, groupId } from '$lib/stores';
-	import { createAvailability, getUser } from '$lib/model';
+	import { createAvailability, createTask } from '$lib/model';
 	let start, end;
 	let availableTimes = [];
 	let availability = writable({});
-	let tasks = writable([]);
 	let successMsg = writable('');
+
+	let tasks = writable([]);
+	let taskMsg = writable('');
 	let taskInput = '';
 	let assignedInput = '';
 
@@ -48,18 +50,44 @@
 		});
 	}
 
-	function addTask(taskDescription, assigneeName) {
-		tasks.update((currentTasks) => {
-			const newTask = {
-				id: currentTasks.length + 1,
-				description: taskDescription,
-				assignedTo: assigneeName,
-				completed: false
-			};
-			return [...currentTasks, newTask];
-		});
-		taskInput = '';
-		assignedInput = '';
+	async function addTask(taskDescription, assigneeName) {
+		const currentGroup = $groupId;
+		if (!currentGroup) {
+			taskMsg.set('No Group ID is set');
+			return;
+		}
+
+		if (!taskDescription.trim()) {
+			taskMsg.set('Task description is required.');
+			return;
+		}
+		taskMsg.set('');
+
+		try {
+			const response = await createTask(currentGroup, taskDescription, assigneeName);
+			if (response.ok) {
+				tasks.update((currentTasks) => {
+					const newTask = {
+						id: currentTasks.length + 1,
+						description: taskDescription,
+						assignedTo: assigneeName,
+						completed: false
+					};
+					return [...currentTasks, newTask];
+				});
+				taskInput = '';
+				assignedInput = '';
+				taskMsg.set(`Task added: ${taskDescription}`);
+			} else {
+				taskMsg.set(`Failed to add task: server error`);
+			}
+
+		} catch (e) {
+			taskMsg.set('Failed to add task');
+			console.error('task error ', e);
+		}
+
+
 	}
 
 	/** @param {number} taskId */
@@ -215,8 +243,12 @@
 						placeholder="Enter assignee name (50 characters max)"
 						maxlength="50"
 				/>
-				<button type="submit" disabled={!taskInput.trim() || !assignedInput.trim()}>Add Task</button
+				<button type="submit" disabled={!taskInput.trim()}>Add Task</button
 				>
+
+				{#if $taskMsg}
+					<p>{$taskMsg}</p>
+				{/if}
 			</form>
 			{#each $tasks as task (task.id)}
 				<div class="task-item">
