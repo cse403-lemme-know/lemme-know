@@ -3,7 +3,7 @@
 	import { Datepicker } from 'svelte-calendar';
 	import dayjs from 'dayjs';
 	import { writable } from 'svelte/store';
-	import { createGroup } from "$lib/model.js"
+	import { createGroup } from '$lib/model.js';
 	import { startDate, endDate, groupName, groupId } from '$lib/stores';
 	let name = 'LemmeKnow';
 	let errorMsg = writable('');
@@ -26,7 +26,7 @@
 						groupId.set(createGroupId);
 						goto('/dashboard');
 					} else {
-						$errorMsg = 'Failed to create group'
+						$errorMsg = 'Failed to create group';
 					}
 				}
 			}

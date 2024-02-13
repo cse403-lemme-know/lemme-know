@@ -25,9 +25,9 @@
 			let days = {};
 
 			for (
-					let current = start;
-					current.isBefore(end.add(1, 'day'));
-					current = current.add(1, 'day')
+				let current = start;
+				current.isBefore(end.add(1, 'day'));
+				current = current.add(1, 'day')
 			) {
 				const dateString = current.format('YYYY-MM-DD');
 				days[dateString] = new Array(24).fill(false);
@@ -38,9 +38,8 @@
 		if (start.isValid() && end.isValid()) {
 			initializeAvailability(start, end);
 		} else {
-			console.error("Invalid start or end date");
+			console.error('Invalid start or end date');
 		}
-
 	});
 
 	function toggleSlot(day, hour) {
@@ -81,13 +80,10 @@
 			} else {
 				taskMsg.set(`Failed to add task: server error`);
 			}
-
 		} catch (e) {
 			taskMsg.set('Failed to add task');
 			console.error('task error ', e);
 		}
-
-
 	}
 
 	/** @param {number} taskId */
@@ -131,7 +127,6 @@
 			return;
 		}
 
-		let allAvailabilitiesSaved = true;
 		const allAvailabilityData = [];
 
 		for (const [date, slots] of Object.entries($availability)) {
@@ -142,7 +137,7 @@
 						allAvailabilityData.push({
 							date: date,
 							start: `${hour}:00`,
-							end: `${hour+1}:00`
+							end: `${hour + 1}:00`
 						});
 						availableTimes.push(timeId);
 					}
@@ -155,17 +150,16 @@
 				createAvailability(currentGroupId, availabilityData);
 			}
 
-			const times = allAvailabilityData.map(data =>
-					`${data.date} from ${data.start} to ${data.end}`).join(', ');
+			const times = allAvailabilityData
+				.map((data) => `${data.date} from ${data.start} to ${data.end}`)
+				.join(', ');
 			successMsg.set('All availabilities saved successfully ' + times);
 			console.log('Saved times:', JSON.stringify(availableTimes));
 		} catch (error) {
-			allAvailabilitiesSaved = false;
 			successMsg.set('Failed to save availability');
 			console.error('Failed to save availability with error', error);
 			availableTimes = {};
 		}
-
 	}
 </script>
 
@@ -198,7 +192,12 @@
 			</div>
 
 			<div class="input-bar">
-				<input class="input" bind:value={newMessage} placeholder="Type your message..." on:keydown={handleKeyPress}/>
+				<input
+					class="input"
+					bind:value={newMessage}
+					placeholder="Type your message..."
+					on:keydown={handleKeyPress}
+				/>
 				<button on:click={sendMessage} on:keyup={sendMessage}>Send Message</button>
 			</div>
 		</div>
@@ -210,7 +209,11 @@
 					<h3>{day}</h3>
 					<div class="slots">
 						{#each $availability[day] as available, hour}
-							<div class="slot {available ? 'available' : ''}" on:click|preventDefault={() => toggleSlot(day, hour)} on:keypress={() => toggleSlot(day, hour)}>
+							<div
+								class="slot {available ? 'available' : ''}"
+								on:click|preventDefault={() => toggleSlot(day, hour)}
+								on:keypress={() => toggleSlot(day, hour)}
+							>
 								{hour}:00
 							</div>
 						{/each}
@@ -234,8 +237,7 @@
 					placeholder="Enter assignee name (50 characters max)"
 					maxlength="50"
 				/>
-				<button type="submit" disabled={!taskInput.trim()}>Add Task</button
-				>
+				<button type="submit" disabled={!taskInput.trim()}>Add Task</button>
 
 				{#if $taskMsg}
 					<p>{$taskMsg}</p>
