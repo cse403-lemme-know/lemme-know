@@ -37,6 +37,17 @@ resource "aws_dynamodb_table" "message" {
   }
 }
 
+resource "aws_dynamodb_table" "connection" {
+  name         = "lemmeknow-connections"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "ConnectionID"
+
+  attribute {
+    name = "ConnectionID"
+    type = "S"
+  }
+}
+
 resource "aws_dynamodb_table" "variable" {
   name         = "lemmeknow-variables"
   billing_mode = "PAY_PER_REQUEST"

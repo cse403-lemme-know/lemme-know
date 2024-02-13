@@ -23,6 +23,15 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// marshal JSON, failing on any error.
+func mustMarshal(v any) json.RawMessage {
+	json, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return json
+}
+
 // Creates a function that can handle JSON events from AWS services.
 func newLambdaHandler(database Database, notification Notification) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 	router := mux.NewRouter()
@@ -46,6 +55,7 @@ func newLambdaHandler(database Database, notification Notification) func(context
 		// Check if the event is an AWS API Gateway HTTP WebSocket event.
 		var ws events.APIGatewayWebsocketProxyRequest
 		if err := json.Unmarshal(event, &ws); err == nil && ws.RequestContext.ConnectionID != "" {
+			log.Printf("ws event: %s", string(mustMarshal(ws)))
 			// Construct a request to access cookies.
 			request, err := http.NewRequest(
 				http.MethodGet,
@@ -64,6 +74,7 @@ func newLambdaHandler(database Database, notification Notification) func(context
 					request.Header.Add(key, value)
 				}
 			}
+			log.Printf("ws req: %v", request)
 			user, err := CheckCookie(request, database)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err

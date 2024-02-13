@@ -61,6 +61,14 @@ type Database interface {
 	// Returns an error if the `message.GroupID` and `message.Timestamp` are not
 	// unique, or if the operation could not be completed.
 	CreateMessage(Message) error
+	// Reads the UserID associated with a connection, or returns nil if none exists.
+	//
+	// Returns an error if the operation could not be completed.
+	ReadConnection(ConnectionID) (*UserID, error)
+	// Writes or overwrites the UserID associated with a connection.
+	//
+	// Returns an error if the operation could not be completed.
+	WriteConnection(ConnectionID, UserID) error
 	// Reads the value of a variable (possibly empty string if empty or nonexistent).
 	ReadVariable(string) (string, error)
 	// Overwrites the value of a variable.
@@ -69,16 +77,18 @@ type Database interface {
 
 // An AWS non-volatile database service.
 type DynamoDB struct {
-	groups    dynamo.Table
-	users     dynamo.Table
-	messages  dynamo.Table
-	variables dynamo.Table
+	groups      dynamo.Table
+	users       dynamo.Table
+	messages    dynamo.Table
+	connections dynamo.Table
+	variables   dynamo.Table
 }
 
 const groupTableName = "lemmeknow-groups"
 const userTableName = "lemmeknow-users"
 const messageTableName = "lemmeknow-messages"
-const variableTableName = "lemmeknow-vars"
+const connectionTableName = "lemmeknow-connections"
+const variableTableName = "lemmeknow-variables"
 
 // Passing a `nil` session means use DynamoDB local (default port).
 func NewDynamoDB(sess *session.Session) *DynamoDB {
@@ -102,16 +112,18 @@ func NewDynamoDB(sess *session.Session) *DynamoDB {
 		_ = db.CreateTable(groupTableName, Group{}).Run()
 		_ = db.CreateTable(userTableName, User{}).Run()
 		_ = db.CreateTable(messageTableName, Message{}).Run()
+		_ = db.CreateTable(connectionTableName, Connection{}).Run()
 		_ = db.CreateTable(variableTableName, Variable{}).Run()
 	} else {
 		db = dynamo.New(sess, &aws.Config{Region: aws.String(GetRegion())})
 	}
 
 	return &DynamoDB{
-		groups:    db.Table(groupTableName),
-		users:     db.Table(userTableName),
-		messages:  db.Table(messageTableName),
-		variables: db.Table(variableTableName),
+		groups:      db.Table(groupTableName),
+		users:       db.Table(userTableName),
+		messages:    db.Table(messageTableName),
+		connections: db.Table(connectionTableName),
+		variables:   db.Table(variableTableName),
 	}
 }
 

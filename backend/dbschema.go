@@ -57,6 +57,11 @@ type Variable struct {
 	Value string
 }
 
+type Connection struct {
+	ConnectionID ConnectionID `dynamo:",hash"`
+	UserID       UserID
+}
+
 type PollOption struct {
 	Name  string
 	Votes []UserID `dynamo:",set"`
