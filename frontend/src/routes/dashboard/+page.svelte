@@ -198,12 +198,7 @@
 			</div>
 
 			<div class="input-bar">
-				<input
-						class="input"
-						bind:value={newMessage}
-						placeholder="Type your message..."
-						on:keydown={handleKeyPress}
-				/>
+				<input class="input" bind:value={newMessage} placeholder="Type your message..." on:keydown={handleKeyPress}/>
 				<button on:click={sendMessage} on:keyup={sendMessage}>Send Message</button>
 			</div>
 		</div>
@@ -215,11 +210,7 @@
 					<h3>{day}</h3>
 					<div class="slots">
 						{#each $availability[day] as available, hour}
-							<div
-									class="slot {available ? 'available' : ''}"
-									on:click|preventDefault={() => toggleSlot(day, hour)}
-									on:keypress={() => toggleSlot(day, hour)}
-							>
+							<div class="slot {available ? 'available' : ''}" on:click|preventDefault={() => toggleSlot(day, hour)} on:keypress={() => toggleSlot(day, hour)}>
 								{hour}:00
 							</div>
 						{/each}
@@ -232,16 +223,16 @@
 			{/if}
 			<form on:submit|preventDefault={() => addTask(taskInput, assignedInput)}>
 				<input
-						type="text"
-						bind:value={taskInput}
-						placeholder="Enter task description (50 characters max)"
-						maxlength="50"
+					type="text"
+					bind:value={taskInput}
+					placeholder="Enter task description (50 characters max)"
+					maxlength="50"
 				/>
 				<input
-						type="text"
-						bind:value={assignedInput}
-						placeholder="Enter assignee name (50 characters max)"
-						maxlength="50"
+					type="text"
+					bind:value={assignedInput}
+					placeholder="Enter assignee name (50 characters max)"
+					maxlength="50"
 				/>
 				<button type="submit" disabled={!taskInput.trim()}>Add Task</button
 				>
@@ -253,10 +244,10 @@
 			{#each $tasks as task (task.id)}
 				<div class="task-item">
 					<input
-							type="checkbox"
-							bind:checked={task.completed}
-							on:click={() => toggleCompletion(task.id)}
-							on:keypress={() => toggleCompletion(task.id)}
+						type="checkbox"
+						bind:checked={task.completed}
+						on:click={() => toggleCompletion(task.id)}
+						on:keypress={() => toggleCompletion(task.id)}
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
 					{#if task.assignedTo}
