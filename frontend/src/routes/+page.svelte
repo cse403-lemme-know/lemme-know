@@ -1,10 +1,9 @@
-
 <script>
 	import { goto } from '$app/navigation';
 	import { Datepicker } from 'svelte-calendar';
 	import dayjs from 'dayjs';
 	import { writable } from 'svelte/store';
-	import "$lib/model.js"
+	import { createGroup } from "$lib/model.js"
 	import { startDate, endDate, groupName, groupId } from '$lib/stores';
 	let name = 'LemmeKnow';
 	let errorMsg = writable('');
@@ -21,28 +20,13 @@
 					startDate.set($startDate);
 					endDate.set($endDate);
 					groupName.set($groupName);
-					try {
-						const response = await fetch(`//${location.host}/api/group/`, {
-							method: 'PATCH',
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: JSON.stringify({
-								name: $groupName,
-							}),
-						});
-
-						if (response.ok) {
-							const data = await response.json();
-							console.log('Group created with ID:', data.groupId);
-							groupId.set(data.groupId);
-							goto('/dashboard');
-						} else {
-							$errorMsg = 'Failed to create group';
-						}
-					} catch (error) {
-						console.error('Error creating group:', error);
-						$errorMsg = 'Error connecting to the server';
+					const createGroupId = await createGroup($groupName);
+					if (createGroupId) {
+						console.log('Group created wtih ID:', createGroupId);
+						groupId.set(createGroupId);
+						goto('/dashboard');
+					} else {
+						$errorMsg = 'Failed to create group'
 					}
 				}
 			}
