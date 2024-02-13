@@ -19,6 +19,7 @@ async function createGroup(name) {
 	} catch (e) {
 		return null;
 	}
+
 }
 
 async function createAvailability(groupId, availability) {
@@ -30,9 +31,9 @@ async function createAvailability(groupId, availability) {
 			},
 			body: JSON.stringify(availability),
 		});
-
-		const result = await response.json();
-		return result;
+		if (response.status === 200) {
+			console.log("success");
+		}
 	} catch (e) {
 		console.error('Error creating availability:', e);
 		return null;

@@ -3,10 +3,12 @@
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { startDate, endDate, groupId } from '$lib/stores';
-	import { createAvailability } from '$lib/model';
+	import { createAvailability, getUser } from '$lib/model';
 	let start, end;
+	let availableTimes = [];
 	let availability = writable({});
 	let tasks = writable([]);
+	let successMsg = writable('');
 	let taskInput = '';
 	let assignedInput = '';
 
@@ -95,7 +97,7 @@
 
 	async function saveAllAvailabilities() {
 		const currentGroupId = $groupId;
-		console.log(currentGroupId);
+		console.log('current group ', currentGroupId);
 		if (!currentGroupId) {
 			console.error('No group ID is set.');
 			return;
@@ -107,27 +109,35 @@
 		for (const [date, slots] of Object.entries($availability)) {
 			slots.forEach((slot, hour) => {
 				if (slot) {
-					allAvailabilityData.push({
-						date: date,
-						start: `${hour}:00`,
-						end: `${hour+1}:00`
-					});
+					const timeId = `${date}_${hour < 10 ? `0${hour}` : hour}:00`;
+					if (!availableTimes.includes(timeId)) {
+						allAvailabilityData.push({
+							date: date,
+							start: `${hour}:00`,
+							end: `${hour+1}:00`
+						});
+						availableTimes.push(timeId);
+					}
 				}
 			});
 		}
 
-		for (const availabilityData of allAvailabilityData) {
-			const result = await createAvailability(currentGroupId, availabilityData);
-			if (!result) {
-				allAvailabilitiesSaved = false;
-				console.error('Failed to save availability for', availabilityData);
-				break;
+		try {
+			for (const availabilityData of allAvailabilityData) {
+				createAvailability(currentGroupId, availabilityData);
 			}
+
+			const times = allAvailabilityData.map(data =>
+					`${data.date} from ${data.start} to ${data.end}`).join(', ');
+			successMsg.set('All availabilities saved successfully ' + times);
+			console.log('Saved times:', JSON.stringify(availableTimes));
+		} catch (error) {
+			allAvailabilitiesSaved = false;
+			successMsg.set('Failed to save availability');
+			console.error('Failed to save availability with error', error);
+			availableTimes = {};
 		}
 
-		if (allAvailabilitiesSaved) {
-			console.log('All availabilities saved successfully');
-		}
 	}
 </script>
 
@@ -189,6 +199,9 @@
 				</div>
 			{/each}
 			<button on:click={saveAllAvailabilities}>Save Availability</button>
+			{#if $successMsg}
+				<p>{$successMsg}</p>
+			{/if}
 			<form on:submit|preventDefault={() => addTask(taskInput, assignedInput)}>
 				<input
 						type="text"
