@@ -50,7 +50,8 @@
 	}
 
 	async function addTask(taskDescription, assigneeName) {
-		const currentGroup = $groupId;
+		const currentGroup = get(groupId);
+		console.log('adding task for group: ', currentGroup);
 		if (!currentGroup) {
 			taskMsg.set('No Group ID is set');
 			return;
