@@ -75,8 +75,8 @@ See [`../README.md`](../README.md) for instructions.
 #### Chat
 - Request: `GET /api/group/1234/chat/?start=123456789&end=123456789` gets group chat messages starting at a Unix millisecond time (inclusive) and ending at a Unix millisecond time (inclusive).
   - Precondition: Authentication cookie of user in group `1234`.
-  - Response: `{Messages: [{sender: 5678, timestamp: 123456789, content: "hello", ...}, {...}], continue: true}`
-    - Note: If `continue` is true, should request again (with higher start time) for more messages.
+  - Response: `{messages: [{sender: 5678, timestamp: 123456789, content: "hello", ...}, {...}], continue: true}`
+    - Note: If `continue` is true, should request again (with higher start time of `messages[last].timestamp + 1`) for more messages.
 - Request: `PATCH /api/group/1234/chat/ {content: "hello"}`
   - Precondition: Authentication cookie of user in group `1234`.
   - Effect: Send a chat message in group `1234`.
