@@ -1,13 +1,12 @@
 <script>
 	//@ts-nocheck
-	import { createPoll, updateVotes, deletePoll } from '$lib/model';
-	import { groupId } from '$lib/stores';
-
+	// import { createPoll, updateVotes, deletePoll } from '$lib/model';
+	// import { groupId } from '$lib/stores';
 
 	let title = '';
 	let options = [];
 	let pollData = null;
-	let votes = [];
+	let votes = {};
 
 	function addOption() {
 		options = [...options, ''];
@@ -17,8 +16,12 @@
 		options = options.filter((_, i) => i !== index);
 	}
 
-  function handleCreatePoll() {
-		pollData = createPoll($groupId, title, options);
+	async function handleCreatePoll() {
+		pollData = {
+			title: title,
+			options: options
+		};
+		// pollData = await createPoll($groupId, title, options);
 	}
 
 	function handleUpdateVotes(optionIndex) {
@@ -50,7 +53,7 @@
 			<input type="text" id="pollName" bind:value={title} />
 
 			<h3>Options:</h3>
-			{#each options as { }, index}
+			{#each options as _, index}
 				<div class="option">
 					<input type="text" bind:value={options[index]} />
 					<button on:click={() => removeOption(index)}>Remove</button>
