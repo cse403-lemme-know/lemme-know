@@ -64,7 +64,9 @@ async function createPoll(groupId, title, options) {
 			},
 			body: JSON.stringify({ title, options })
 		});
-		const result = await response.json();
+		if (response.status === 200) {
+			console.log('success for creating poll');
+		}
 	} catch (e) {
 		return null;
 	}
@@ -76,7 +78,9 @@ async function updateVotes(groupID, votes) {
 			method: 'PATCH',
 			body: JSON.stringify({ votes })
 		});
-		const result = await response.json();
+		if (response.status === 200) {
+			console.log('success for updating votes');
+		}
 	} catch (e) {
 		return null;
 	}
@@ -87,7 +91,9 @@ async function deletePoll(groupID) {
 		const response = await fetch(`//${location.host}/api/group/${groupID}/poll/`, {
 			method: 'DELETE'
 		});
-		const result = await response.json();
+		if (response.status === 200) {
+			console.log('success for deleting poll');
+		}
 	} catch (e) {
 		return null;
 	}
@@ -95,11 +101,10 @@ async function deletePoll(groupID) {
 
 async function sendMessage(groupID, content) {
 	try {
-		const response = await fetch(`//${location.host}/api/group/${groupID}/chat/`, {
+		return await fetch(`//${location.host}/api/group/${groupID}/chat/`, {
 			method: 'PATCH',
 			body: JSON.stringify({ content })
 		});
-		const result = await response.json();
 	} catch (e) {
 		return null;
 	}

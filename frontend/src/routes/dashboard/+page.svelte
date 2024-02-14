@@ -1,9 +1,13 @@
 <script>
+	// @ts-nocheck
+
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { startDate, endDate, groupId } from '$lib/stores';
-	import { createAvailability, createTask } from '$lib/model';
+	import { createAvailability, createTask, fetchMessages, sendMessage } from '$lib/model';
+	import PollCreationModal from './PollCreationModal.svelte';
+
 	let start, end;
 	let availableTimes = [];
 	let availability = writable({});
@@ -13,6 +17,8 @@
 	let taskMsg = writable('');
 	let taskInput = '';
 	let assignedInput = '';
+
+	let isPoll = writable(false);
 
 	onMount(async () => {
 		start = get(startDate);
@@ -103,11 +109,13 @@
 	/**
 	 * Send a message to the chat.
 	 */
-	function sendMessage() {
+	function handleSendMessage() {
 		if (newMessage.trim() !== '') {
 			messages = [...messages, { text: newMessage, sender: 'user' }];
+			content = newMessage.trim();
+			sendMessage($groupId, content);
 			newMessage = '';
-			// add logic here to handle the response from a server or another user.
+			// need to handle Fetch messages
 		}
 	}
 	/**
@@ -118,6 +126,10 @@
 		if (event.key === 'Enter') {
 			sendMessage();
 		}
+	}
+
+	function openPoll() {
+		isPoll.set(true);
 	}
 
 	async function saveAllAvailabilities() {
@@ -177,6 +189,10 @@
 				<img src="../users.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Members</span>
 			</button>
+			<button class="menu-button" on:click={openPoll}>
+				<img src="../users.png" alt="menu bar" class="user-icon" />
+				<span class="members-title">Create Poll</span>
+			</button>
 		</div>
 
 		<div class="chatbox">
@@ -191,7 +207,11 @@
 					</div>
 				{/each}
 			</div>
-
+			<div class="poll">
+				{#if $isPoll}
+					<PollCreationModal />
+				{/if}
+			</div>
 			<div class="input-bar">
 				<input
 					class="input"
@@ -199,7 +219,7 @@
 					placeholder="Type your message..."
 					on:keydown={handleKeyPress}
 				/>
-				<button on:click={sendMessage} on:keyup={sendMessage}>Send Message</button>
+				<button on:click={handleSendMessage} on:keyup={handleSendMessage}>Send Message</button>
 			</div>
 		</div>
 
@@ -341,7 +361,9 @@
 	.menu-button:hover .user-icon {
 		transform: scale(1.2);
 	}
-
+	.menu-button:hover .poll-icon {
+		transform: scale(1.2);
+	}
 	.content-wrap {
 		display: flex;
 		flex-direction: row;
