@@ -62,7 +62,7 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 			WriteJSON(w, nil)
 		case http.MethodDelete:
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
-				slices.DeleteFunc(group.Tasks, func(task Task) bool {
+				group.Tasks = slices.DeleteFunc(group.Tasks, func(task Task) bool {
 					return task.TaskID == taskID
 				})
 				return nil

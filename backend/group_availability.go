@@ -43,7 +43,7 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database, notificatio
 				}
 			}
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
-				slices.DeleteFunc(group.Availabilities, func(availability Availability) bool {
+				group.Availabilities = slices.DeleteFunc(group.Availabilities, func(availability Availability) bool {
 					return availability.AvailabilityID == availabilityID && availability.UserID == user.UserID
 				})
 				return nil

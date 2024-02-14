@@ -35,7 +35,7 @@ func RestGroupActivityAPI(router *mux.Router, database Database, notification No
 		switch r.Method {
 		case http.MethodDelete:
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
-				slices.DeleteFunc(group.Activities, func(activity Activity) bool { return activity.ActivityID == activityID })
+				group.Activities = slices.DeleteFunc(group.Activities, func(activity Activity) bool { return activity.ActivityID == activityID })
 				return nil
 			}, database, notification); err != nil {
 				http.Error(w, "could not delete activity", http.StatusInternalServerError)
