@@ -1,24 +1,20 @@
 <script>
-// @ts-nocheck
-
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
-	import { startDate, endDate } from '$lib/stores';
-  import PollCreationModal from './PollCreationModal.svelte';
-	import {sendMessage, fetchMessages} from '$lib/model';
-
-	let start;
-	let end;
-
+	import { startDate, endDate, groupId } from '$lib/stores';
+	import { createAvailability, createTask } from '$lib/model';
+	let start, end;
+	let availableTimes = [];
 	let availability = writable({});
+	let successMsg = writable('');
+
 	let tasks = writable([]);
+	let taskMsg = writable('');
 	let taskInput = '';
 	let assignedInput = '';
 
-	let isPollCreationModalOpen = writable(false);
-
-	onMount(() => {
+	onMount(async () => {
 		start = get(startDate);
 		end = get(endDate);
 
@@ -38,8 +34,12 @@
 			}
 			availability.set(days);
 		}
-		initializeAvailability(dayjs(start), dayjs(end));
 
+		if (start.isValid() && end.isValid()) {
+			initializeAvailability(start, end);
+		} else {
+			console.error('Invalid start or end date');
+		}
 	});
 
 	function toggleSlot(day, hour) {
@@ -49,18 +49,42 @@
 		});
 	}
 
-	function addTask(taskDescription, assigneeName) {
-		tasks.update((currentTasks) => {
-			const newTask = {
-				id: currentTasks.length + 1,
-				description: taskDescription,
-				assignedTo: assigneeName,
-				completed: false
-			};
-			return [...currentTasks, newTask];
-		});
-		taskInput = '';
-		assignedInput = '';
+	async function addTask(taskDescription, assigneeName) {
+		const currentGroup = get(groupId);
+		console.log('adding task for group: ', currentGroup);
+		if (!currentGroup) {
+			taskMsg.set('No Group ID is set');
+			return;
+		}
+
+		if (!taskDescription.trim()) {
+			taskMsg.set('Task description is required.');
+			return;
+		}
+		taskMsg.set('');
+
+		try {
+			const response = await createTask(currentGroup, taskDescription, assigneeName);
+			if (response.ok) {
+				tasks.update((currentTasks) => {
+					const newTask = {
+						id: currentTasks.length + 1,
+						description: taskDescription,
+						assignedTo: assigneeName,
+						completed: false
+					};
+					return [...currentTasks, newTask];
+				});
+				taskInput = '';
+				assignedInput = '';
+				taskMsg.set(`Task added: ${taskDescription}`);
+			} else {
+				taskMsg.set(`Failed to add task: server error`);
+			}
+		} catch (e) {
+			taskMsg.set('Failed to add task');
+			console.error('task error ', e);
+		}
 	}
 
 	/** @param {number} taskId */
@@ -74,17 +98,16 @@
 		});
 	}
 	// for chat box
-	let messages = writable([]);
+	let messages = [];
 	let newMessage = '';
 	/**
 	 * Send a message to the chat.
 	 */
-	function sendMessages() {
+	function sendMessage() {
 		if (newMessage.trim() !== '') {
 			messages = [...messages, { text: newMessage, sender: 'user' }];
 			newMessage = '';
 			// add logic here to handle the response from a server or another user.
-
 		}
 	}
 	/**
@@ -93,15 +116,52 @@
 	 */
 	function handleKeyPress(event) {
 		if (event.key === 'Enter') {
-			sendMessages();
+			sendMessage();
 		}
 	}
-	// for poll
-  function openPollCreationModal() {
-		isPollCreationModalOpen.set(true);
-	}
-	
 
+	async function saveAllAvailabilities() {
+		const currentGroupId = $groupId;
+		console.log('current group ', currentGroupId);
+		if (!currentGroupId) {
+			console.error('No group ID is set.');
+			return;
+		}
+
+		const allAvailabilityData = [];
+
+		for (const [date, slots] of Object.entries($availability)) {
+			slots.forEach((slot, hour) => {
+				if (slot) {
+					const timeId = `${date}_${hour < 10 ? `0${hour}` : hour}:00`;
+					if (!availableTimes.includes(timeId)) {
+						allAvailabilityData.push({
+							date: date,
+							start: `${hour}:00`,
+							end: `${hour + 1}:00`
+						});
+						availableTimes.push(timeId);
+					}
+				}
+			});
+		}
+
+		try {
+			for (const availabilityData of allAvailabilityData) {
+				createAvailability(currentGroupId, availabilityData);
+			}
+
+			const times = allAvailabilityData
+				.map((data) => `${data.date} from ${data.start} to ${data.end}`)
+				.join(', ');
+			successMsg.set('All availabilities saved successfully ' + times);
+			console.log('Saved times:', JSON.stringify(availableTimes));
+		} catch (error) {
+			successMsg.set('Failed to save availability');
+			console.error('Failed to save availability with error', error);
+			availableTimes = {};
+		}
+	}
 </script>
 
 <header />
@@ -117,10 +177,6 @@
 				<img src="../users.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Members</span>
 			</button>
-			<button class="menu-button" on:click={openPollCreationModal}>
-				<img src="../poll.png" alt="menu bar" class="poll-icon" />
-				<span class="members-title">Create Poll</span>
-			</button>
 		</div>
 
 		<div class="chatbox">
@@ -135,10 +191,6 @@
 					</div>
 				{/each}
 			</div>
-			<!-- poll on and off -->
-			{#if $isPollCreationModalOpen}
-				<PollCreationModal />
-			{/if}
 
 			<div class="input-bar">
 				<input
@@ -147,10 +199,10 @@
 					placeholder="Type your message..."
 					on:keydown={handleKeyPress}
 				/>
-				<button on:click={sendMessages} on:keyup={sendMessages}>Send Message</button>
+				<button on:click={sendMessage} on:keyup={sendMessage}>Send Message</button>
 			</div>
 		</div>
-    
+
 		<div class="calendar-container">
 			<span class="calendar-title">AVAILABILITY CALENDAR</span>
 			{#each Object.keys($availability) as day}
@@ -160,7 +212,7 @@
 						{#each $availability[day] as available, hour}
 							<div
 								class="slot {available ? 'available' : ''}"
-								on:click={() => toggleSlot(day, hour)}
+								on:click|preventDefault={() => toggleSlot(day, hour)}
 								on:keypress={() => toggleSlot(day, hour)}
 							>
 								{hour}:00
@@ -169,6 +221,10 @@
 					</div>
 				</div>
 			{/each}
+			<button on:click={saveAllAvailabilities}>Save Availability</button>
+			{#if $successMsg}
+				<p>{$successMsg}</p>
+			{/if}
 			<form on:submit|preventDefault={() => addTask(taskInput, assignedInput)}>
 				<input
 					type="text"
@@ -182,8 +238,11 @@
 					placeholder="Enter assignee name (50 characters max)"
 					maxlength="50"
 				/>
-				<button type="submit" disabled={!taskInput.trim() || !assignedInput.trim()}>Add Task</button
-				>
+				<button type="submit" disabled={!taskInput.trim()}>Add Task</button>
+
+				{#if $taskMsg}
+					<p>{$taskMsg}</p>
+				{/if}
 			</form>
 			{#each $tasks as task (task.id)}
 				<div class="task-item">
@@ -232,14 +291,6 @@
 		margin-left: 1.5rem;
 	}
 
-	.poll-icon {
-		align-items: center;
-		justify-content: center;
-		width: 3rem;
-		display: block;
-
-	}
-
 	.menu-button {
 		background: none;
 		border: none;
@@ -250,8 +301,6 @@
 		justify-content: center;
 		line-height: 1;
 		text-align: center;
-		display: flex;
-		padding: 0;
 	}
 
 	.menu-button:focus {
@@ -296,13 +345,14 @@
 	.content-wrap {
 		display: flex;
 		flex-direction: row;
+		gap: 2rem;
 	}
 
 	.calendar-container {
 		display: flex;
 		flex-direction: column;
 		flex-wrap: wrap;
-		margin-left: 4rem;
+		margin-left: 2rem;
 		margin-top: 3rem;
 	}
 
@@ -395,13 +445,13 @@
 		display: flex;
 		flex-direction: column;
 		border: 2px solid #ccc;
-		padding: 10px;
-		width: 700px;
+		padding: 4rem 6rem 2rem 6rem;
+		max-width: calc(90% - 10px);
 		height: 700px;
-		margin: auto;
 		border-radius: 8px;
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 		overflow-y: auto; /* Add scrollbar when content exceeds the height */
+		margin-right: 2rem;
 	}
 
 	.messages {
@@ -432,5 +482,20 @@
 		align-items: center;
 		justify-content: space-between;
 		margin-top: 10px;
+	}
+	input {
+		padding: 0.5rem;
+		margin-bottom: 0.5rem;
+		width: 80%;
+		max-width: 300px;
+		text-align: center;
+		font-size: 1rem;
+		background-color: #eedaf4;
+		border-radius: 15px;
+		border: 2px solid transparent;
+	}
+
+	button {
+		flex-shrink: 0;
 	}
 </style>
