@@ -3,7 +3,6 @@
 	import { createPoll, updateVotes, deletePoll } from '$lib/model';
 	import { groupId } from '$lib/stores';
 
-
 	let title = '';
 	let options = [];
 	let pollData = null;
@@ -17,7 +16,7 @@
 		options = options.filter((_, i) => i !== index);
 	}
 
-  function handleCreatePoll() {
+	function handleCreatePoll() {
 		pollData = createPoll($groupId, title, options);
 	}
 
