@@ -2,8 +2,8 @@
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
-	import { startDate, endDate, groupId } from '$lib/stores';
-	import { createAvailability, createTask } from '$lib/model';
+	import { startDate, endDate, groupId, userId } from '$lib/stores';
+	import {createAvailability, createTask, deleteAvailability, getUser} from '$lib/model';
 	let start, end;
 	let availableTimes = [];
 	let availability = writable({});
@@ -39,6 +39,11 @@
 			initializeAvailability(start, end);
 		} else {
 			console.error('Invalid start or end date');
+		}
+
+		const userData = await getUser();
+		if (userData) {
+			userId.set(userData.userId);
 		}
 	});
 
@@ -97,9 +102,11 @@
 			return currentTasks;
 		});
 	}
+
 	// for chat box
 	let messages = [];
 	let newMessage = '';
+
 	/**
 	 * Send a message to the chat.
 	 */
@@ -110,6 +117,7 @@
 			// add logic here to handle the response from a server or another user.
 		}
 	}
+
 	/**
 	 * send message if hit enter
 	 * @param event
@@ -162,6 +170,22 @@
 			availableTimes = {};
 		}
 	}
+
+	async function removeAvailability(day, hour) {
+		const currentGroupId = get(groupId);
+		const currentUserId = get(userId);
+		console.log("current User ID: ", currentUserId);
+		if (!currentGroupId || !currentUserId) {
+			console.error('No group or user ID is set.');
+			return;
+		}
+		await deleteAvailability(currentGroupId, currentUserId);
+		availability.update((a) => {
+			a[day][hour] = false;
+			return a;
+		});
+	}
+
 </script>
 
 <header />
@@ -177,6 +201,7 @@
 				<img src="../users.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Members</span>
 			</button>
+			<button class="invite-button">Invite Link!</button>
 		</div>
 
 		<div class="chatbox">
@@ -216,6 +241,11 @@
 								on:keypress={() => toggleSlot(day, hour)}
 							>
 								{hour}:00
+								{#if available}
+									<button on:click={() => removeAvailability(day, hour)}>
+										Delete
+									</button>
+								{/if}
 							</div>
 						{/each}
 					</div>
@@ -497,5 +527,22 @@
 
 	button {
 		flex-shrink: 0;
+	}
+
+	.invite-button {
+		display: block;
+		margin: 1rem auto;
+		background-color: #76a6e7;
+		font-weight: bolder;
+		font-family: "Baloo Bhai 2";
+		font-size: large;
+		color: black;
+
+
+	}
+
+	.invite-button:hover {
+		background-color: #afaeae;
+		color: white;
 	}
 </style>

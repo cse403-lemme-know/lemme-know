@@ -39,6 +39,21 @@ async function createAvailability(groupId, availability) {
 	}
 }
 
+async function deleteAvailability(groupId, userId) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/availability/${userId}/`, {
+			method: 'DELETE',
+		});
+		if (response.ok) {
+			console.log(`Availability ${userId} deleted successfully`);
+		} else {
+			console.error('Error deleting availability:', response.statusText);
+		}
+	} catch (e) {
+		console.error('Error in deleteAvailability:', e);
+	}
+}
+
 async function createTask(groupId, title) {
 	try {
 		return await fetch(`//${location.host}/api/group/${groupId}/task/`, {
@@ -56,4 +71,4 @@ async function createTask(groupId, title) {
 
 getUser().then(console.log);
 
-export { getUser, createGroup, createAvailability, createTask };
+export { getUser, createGroup, createAvailability, createTask, deleteAvailability };
