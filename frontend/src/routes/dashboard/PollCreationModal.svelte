@@ -18,7 +18,7 @@
 
 	async function handleCreatePoll() {
 		pollData = {
-			title: title,
+			name: title,
 			options: options
 		};
 		// pollData = await createPoll($groupId, title, options);
