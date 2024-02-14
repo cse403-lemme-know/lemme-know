@@ -107,9 +107,12 @@ async function sendMessage(groupID, content) {
 
 async function fetchMessages(groupID, start, end) {
 	try {
-		const response = await fetch(`//${location.host}/api/group/${groupID}/chat/?` + new URLSearchParams({ start, end}), {
-			method: 'GET',
-		});
+		const response = await fetch(
+			`//${location.host}/api/group/${groupID}/chat/?` + new URLSearchParams({ start, end }),
+			{
+				method: 'GET'
+			}
+		);
 		const result = await response.json();
 		if (result.continue == true) {
 			result.messages[result.messages.length - 1].timestamp + 1;
@@ -121,7 +124,14 @@ async function fetchMessages(groupID, start, end) {
 
 getUser().then(console.log);
 
-export { getUser, createGroup, 
-	createAvailability, createTask, 
-	createPoll, updateVotes, deletePoll, 
-	sendMessage, fetchMessages};
+export {
+	getUser,
+	createGroup,
+	createAvailability,
+	createTask,
+	createPoll,
+	updateVotes,
+	deletePoll,
+	sendMessage,
+	fetchMessages
+};
