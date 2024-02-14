@@ -179,8 +179,8 @@
 
 		console.log(currentGroupId);
 		if (matchingAvailability) {
-			const userId = await getUser();
 			await deleteAvailability(currentGroupId, matchingAvailability.availabilityId);
+			console.log("making an attempt to delete availability with id: ", matchingAvailability.availabilityId);
 			await updateGroupData(currentGroupId);
 			console.log(`Deleted availability with ID: ${matchingAvailability.availabilityId}`);
 		} else {
