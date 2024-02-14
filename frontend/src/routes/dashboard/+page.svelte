@@ -5,7 +5,7 @@
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { startDate, endDate, groupId } from '$lib/stores';
-	import { createAvailability, createTask, fetchMessages, sendMessage } from '$lib/model';
+	import { createAvailability, createTask } from '$lib/model';
 	import PollCreationModal from './PollCreationModal.svelte';
 
 	let start, end;
@@ -105,16 +105,16 @@
 	}
 	// for chat box
 	let messages = [];
-	let newMessage = '';
+	let content = '';
 	/**
 	 * Send a message to the chat.
 	 */
 	function handleSendMessage() {
-		if (newMessage.trim() !== '') {
-			messages = [...messages, { text: newMessage, sender: 'user' }];
-			content = newMessage.trim();
-			sendMessage($groupId, content);
-			newMessage = '';
+		if (content.trim() !== '') {
+			messages = [...messages, { text: content, sender: 'user' }];
+			content = content.trim();
+			// sendMessage($groupId, content);
+			content = '';
 			// need to handle Fetch messages
 		}
 	}
@@ -124,7 +124,7 @@
 	 */
 	function handleKeyPress(event) {
 		if (event.key === 'Enter') {
-			sendMessage();
+			handleSendMessage();
 		}
 	}
 
@@ -190,7 +190,7 @@
 				<span class="members-title">Members</span>
 			</button>
 			<button class="menu-button" on:click={openPoll}>
-				<img src="../users.png" alt="menu bar" class="user-icon" />
+				<img src="../poll.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Create Poll</span>
 			</button>
 		</div>
@@ -215,7 +215,7 @@
 			<div class="input-bar">
 				<input
 					class="input"
-					bind:value={newMessage}
+					bind:value={content}
 					placeholder="Type your message..."
 					on:keydown={handleKeyPress}
 				/>
