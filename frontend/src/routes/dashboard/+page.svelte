@@ -3,11 +3,12 @@
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { startDate, endDate, groupId, userId } from '$lib/stores';
-	import {createAvailability, createTask, deleteAvailability, getUser} from '$lib/model';
+	import {createAvailability, createTask, deleteAvailability, getGroup, getUser} from '$lib/model';
 	let start, end;
 	let availableTimes = [];
 	let availability = writable({});
 	let successMsg = writable('');
+	let groupData = {};
 
 	let tasks = writable([]);
 	let taskMsg = writable('');
@@ -17,7 +18,6 @@
 	onMount(async () => {
 		start = get(startDate);
 		end = get(endDate);
-
 		start = dayjs(start);
 		end = dayjs(end);
 
@@ -41,10 +41,9 @@
 			console.error('Invalid start or end date');
 		}
 
-		const userData = await getUser();
-		if (userData) {
-			userId.set(userData.userId);
-		}
+		const currentGroupId = get(groupId);
+		groupData = await getGroup(currentGroupId);
+
 	});
 
 	function toggleSlot(day, hour) {
@@ -130,7 +129,6 @@
 
 	async function saveAllAvailabilities() {
 		const currentGroupId = $groupId;
-		console.log('current group ', currentGroupId);
 		if (!currentGroupId) {
 			console.error('No group ID is set.');
 			return;
@@ -171,19 +169,35 @@
 		}
 	}
 
-	async function removeAvailability(day, hour) {
+	async function removeAvailability(selectedDay, selectedHour) {
 		const currentGroupId = get(groupId);
-		const currentUserId = get(userId);
-		console.log("current User ID: ", currentUserId);
-		if (!currentGroupId || !currentUserId) {
-			console.error('No group or user ID is set.');
-			return;
+		const formattedHour = `${selectedHour < 10 ? `0${selectedHour}` : selectedHour}:00`;
+		const currentData = await getGroup(currentGroupId);
+		const matchingAvailability = currentData.availabilities.find(avail =>
+				avail.date === selectedDay && avail.start === formattedHour
+		);
+
+		console.log(currentGroupId);
+		if (matchingAvailability) {
+			const userId = await getUser();
+			await deleteAvailability(currentGroupId, matchingAvailability.availabilityId);
+			await updateGroupData(currentGroupId);
+			console.log(`Deleted availability with ID: ${matchingAvailability.availabilityId}`);
+		} else {
+			console.error("No matching availability found to delete");
 		}
-		await deleteAvailability(currentGroupId, currentUserId);
-		availability.update((a) => {
-			a[day][hour] = false;
-			return a;
-		});
+
+
+	}
+
+	async function updateGroupData(groupId) {
+		try {
+			const updated = await getGroup(groupId);
+			groupData = updated;
+			console.log("group after deletion ", groupData);
+		} catch (e) {
+			console.error(e);
+		}
 	}
 
 </script>
@@ -242,9 +256,7 @@
 							>
 								{hour}:00
 								{#if available}
-									<button on:click={() => removeAvailability(day, hour)}>
-										Delete
-									</button>
+									<button on:click|preventDefault={() => removeAvailability(day, hour)}>Delete</button>
 								{/if}
 							</div>
 						{/each}

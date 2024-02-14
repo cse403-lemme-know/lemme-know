@@ -39,20 +39,21 @@ async function createAvailability(groupId, availability) {
 	}
 }
 
-async function deleteAvailability(groupId, userId) {
+async function deleteAvailability(groupId, availabilityId) {
 	try {
-		const response = await fetch(`//${location.host}/api/group/${groupId}/availability/${userId}/`, {
-			method: 'DELETE',
+		const response = await fetch(`//${location.host}/api/group/${groupId}/availability/${availabilityId}/`, {
+			method: 'DELETE'
 		});
 		if (response.ok) {
-			console.log(`Availability ${userId} deleted successfully`);
+			console.log('Availability deleted successfully');
 		} else {
-			console.error('Error deleting availability:', response.statusText);
+			console.error('Failed to delete availability');
 		}
 	} catch (e) {
-		console.error('Error in deleteAvailability:', e);
+		console.error('Error deleting availability:', e);
 	}
 }
+
 
 async function createTask(groupId, title) {
 	try {
@@ -69,6 +70,23 @@ async function createTask(groupId, title) {
 	}
 }
 
+async function getGroup(groupId) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/`, {
+			method: 'GET',
+		});
+		if (!response.ok) {
+			throw new Error(response.statusText);
+		}
+		const groupData = await response.json();
+		return groupData;
+	} catch (e) {
+		console.error(e);
+		return null;
+	}
+}
+
+
 getUser().then(console.log);
 
-export { getUser, createGroup, createAvailability, createTask, deleteAvailability };
+export { getUser, createGroup, createAvailability, createTask, deleteAvailability, getGroup };
