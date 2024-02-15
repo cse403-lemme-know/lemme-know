@@ -93,10 +93,18 @@ func RestGroupAPI(router *mux.Router, database Database, notification Notificati
 		if invalidString(w, request.Name, groupNameMinLen, groupNameMaxLen) {
 			return
 		}
+		calendarMode := "dayOfWeek"
+		if request.CalendarMode != "" {
+			if invalidCalendarMode(w, request.CalendarMode) {
+				return
+			}
+			calendarMode = request.CalendarMode
+		}
 		group := Group{
-			GroupID: GenerateID(),
-			Name:    request.Name,
-			Members: []UserID{user.UserID},
+			GroupID:      GenerateID(),
+			Name:         request.Name,
+			Members:      []UserID{user.UserID},
+			CalendarMode: calendarMode,
 		}
 		if err := database.CreateGroup(group); err != nil {
 			http.Error(w, "could not create group", http.StatusInternalServerError)
@@ -229,6 +237,9 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 			}
 
 			if invalidString(w, request.Name, 0, groupNameMaxLen) {
+				return
+			}
+			if request.CalendarMode != "" && invalidCalendarMode(w, request.CalendarMode) {
 				return
 			}
 

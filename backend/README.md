@@ -51,7 +51,7 @@ See [`../README.md`](../README.md) for instructions.
 - Requet: `DELETE /api/group/1234/`
   - Precondition: Authentication cookie of user in group `1234`.
   - Effect: Leaves the group, deleting it if last to leave.
-- Request: `PATCH /api/group/ {name: "Friends"}`
+- Request: `PATCH /api/group/ {name: "Friends", calendarMode: "2024-02-15 to 2024-03-04" | "dayOfWeek"}`
   - Precondition: Authentication cookie.
   - Effect: Creates a new group with the specified name.
   - Response: `{groupId: 1234}`.

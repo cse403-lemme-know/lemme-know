@@ -137,7 +137,7 @@ func TestHTTPService(t *testing.T) {
 	// Test: edit group.
 	patchGroupRequest = PatchGroupRequest{
 		Name:         "test2",
-		CalendarMode: "weekdays",
+		CalendarMode: "dayOfWeek",
 	}
 	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID), patchGroupRequest)
 	assert.Nil(t, err)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -66,6 +67,25 @@ func parseTime(input string) *time.Time {
 	}
 }
 
+// Returns the start and end dates (one mode) or whether using "dayOfWeek" mode.
+//
+// Returns nil, nil, false in case of any error.
+func parseCalendarMode(input string) (*time.Time, *time.Time, bool) {
+	if input == "dayOfWeek" {
+		return nil, nil, true
+	}
+	if strings.Count(input, " to ") != 1 {
+		return nil, nil, false
+	}
+	segments := strings.Split(input, " to ")
+	start := parseDate(segments[0])
+	end := parseDate(segments[1])
+	if start == nil || end == nil {
+		return nil, nil, false
+	}
+	return start, end, false
+}
+
 // Checks if a string is a valid date (like "2006-01-02").
 //
 // If returns true, error has been sent and should return.
@@ -83,6 +103,18 @@ func invalidDate(w http.ResponseWriter, input string) bool {
 func invalidTime(w http.ResponseWriter, input string) bool {
 	if parseTime(input) == nil {
 		http.Error(w, "invalid time", http.StatusBadRequest)
+		return true
+	}
+	return false
+}
+
+// Checks if a calendar is valid.
+//
+// If returns true, error has been sent and should return.
+func invalidCalendarMode(w http.ResponseWriter, input string) bool {
+	start, end, dayOfWeek := parseCalendarMode(input)
+	if start == nil && end == nil && !dayOfWeek {
+		http.Error(w, "invalid calendar mode", http.StatusBadRequest)
 		return true
 	}
 	return false
