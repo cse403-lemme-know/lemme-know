@@ -8,6 +8,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	taskTitleMinLen = 1
+	taskTitleMaxLen = 64
+)
+
 // New/updated task sent over JSON.
 type PatchTaskRequest struct {
 	Title     string  `json:"title"`
@@ -38,6 +43,8 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return
 			}
+
+			validateString(w, request.Title, 0, taskTitleMaxLen)
 
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				for _, task := range group.Tasks {
@@ -86,6 +93,8 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 			http.Error(w, "could not decode body", http.StatusBadRequest)
 			return
 		}
+
+		validateString(w, request.Title, taskTitleMinLen, taskTitleMaxLen)
 
 		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)

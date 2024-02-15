@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
 	"time"
+	"unicode/utf8"
 )
 
 // Returns true if and only if executing in an AWS Lambda function.
@@ -23,4 +25,23 @@ func mustMarshal(v any) json.RawMessage {
 		panic(err)
 	}
 	return json
+}
+
+// Checks a string for validity.
+//
+// If returns true, error has been sent and should return.
+func validateString(w http.ResponseWriter, input string, minLen uint, maxLen uint) bool {
+	if !utf8.ValidString(input) {
+		http.Error(w, "invalid utf-8", http.StatusBadRequest)
+		return true
+	}
+	if len(input) < int(minLen) {
+		http.Error(w, "too short", http.StatusBadRequest)
+		return true
+	}
+	if len(input) > int(maxLen) {
+		http.Error(w, "too long", http.StatusBadRequest)
+		return true
+	}
+	return false
 }

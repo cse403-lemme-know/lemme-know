@@ -9,6 +9,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const groupNameMinLen = 1
+const groupNameMaxLen = 64
+
 // Group sent over JSON.
 type GetGroupResponse struct {
 	Name           string                         `json:"name"`
@@ -85,6 +88,7 @@ func RestGroupAPI(router *mux.Router, database Database, notification Notificati
 			http.Error(w, "could not decode body", http.StatusBadRequest)
 			return
 		}
+		validateString(w, request.Name, groupNameMinLen, groupNameMaxLen)
 		group := Group{
 			GroupID: GenerateID(),
 			Name:    request.Name,
@@ -219,6 +223,8 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return
 			}
+
+			validateString(w, request.Name, 0, groupNameMaxLen)
 
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				if request.Name != "" {
