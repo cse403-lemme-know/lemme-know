@@ -12,12 +12,9 @@ type TaskID = uint64
 type UnixMillis = uint64
 
 type Group struct {
-	GroupID GroupID `dynamo:",hash"` // Hash key, a.k.a. partition key
-	//Time      time.Time // Range key, a.k.a. sort key
-
-	Name         string
-	CalendarMode string
-	//Count     int                  `dynamo:",omitempty"` // Omits if zero value
+	GroupID        GroupID `dynamo:",hash"` // Hash key, a.k.a. partition key
+	Name           string
+	CalendarMode   string
 	Poll           *Poll
 	Members        []UserID
 	Activities     []Activity

@@ -182,9 +182,9 @@ func TestHTTPService(t *testing.T) {
 	// Test: create activity.
 	patchActivityRequest := PatchActivityRequest{
 		Title: "hang out",
-		Date:  "wednesday",
-		Start: "1800",
-		End:   "1900",
+		Date:  "2024-02-15",
+		Start: "18:00",
+		End:   "19:00",
 	}
 	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/activity/", port, groupID), patchActivityRequest)
 	assert.Nil(t, err)
@@ -192,9 +192,9 @@ func TestHTTPService(t *testing.T) {
 
 	// Test: create availability.
 	patchAvailabilityRequest := PatchAvailabilityRequest{
-		Date:  "wednesday",
-		Start: "1800",
-		End:   "1900",
+		Date:  "2024-02-15",
+		Start: "18:00",
+		End:   "19:00",
 	}
 	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/availability/", port, groupID), patchAvailabilityRequest)
 	assert.Nil(t, err)

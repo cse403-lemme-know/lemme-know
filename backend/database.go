@@ -192,7 +192,7 @@ func (dynamoDB *DynamoDB) DeleteUser(userID UserID) error {
 
 // Creates a new group in the database.
 //
-// Returns an error if a group with the same `GroupIP`
+// Returns an error if a group with the same `GroupID`
 // already exists, or if the operation may have failed.
 func (dynamoDB *DynamoDB) CreateGroup(groupInfo Group) error {
 	return dynamoDB.groups.Put(groupInfo).If("attribute_not_exists(GroupID)").Run()

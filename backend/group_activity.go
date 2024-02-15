@@ -46,11 +46,11 @@ func RestGroupActivityAPI(router *mux.Router, database Database, notification No
 				return
 			}
 
+			if (request.Date != "" && invalidDate(w, request.Date)) || (request.Start != "" && invalidTime(w, request.Start)) || (request.End != "" && invalidTime(w, request.End)) {
+				return
+			}
+
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
-				confirmed := []UserID{}
-				if request.Confirm != nil && *request.Confirm {
-					confirmed = append(confirmed, user.UserID)
-				}
 				for i, activity := range group.Activities {
 					if activity.ActivityID != activityID {
 						continue
@@ -113,6 +113,10 @@ func RestGroupActivityAPI(router *mux.Router, database Database, notification No
 		var request PatchActivityRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			http.Error(w, "could not decode body", http.StatusBadRequest)
+			return
+		}
+
+		if invalidDate(w, request.Date) || invalidTime(w, request.Start) || invalidTime(w, request.End) {
 			return
 		}
 

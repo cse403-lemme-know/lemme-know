@@ -45,3 +45,45 @@ func invalidString(w http.ResponseWriter, input string, minLen uint, maxLen uint
 	}
 	return false
 }
+
+// Parses a date like "2006-01-02", returning nil in case of error.
+func parseDate(input string) *time.Time {
+	t, err := time.Parse(time.DateOnly, input)
+	if err == nil {
+		return &t
+	} else {
+		return nil
+	}
+}
+
+// Parses a time like "15:04", returning nil in case of error.
+func parseTime(input string) *time.Time {
+	t, err := time.Parse("15:04", input)
+	if err == nil {
+		return &t
+	} else {
+		return nil
+	}
+}
+
+// Checks if a string is a valid date (like "2006-01-02").
+//
+// If returns true, error has been sent and should return.
+func invalidDate(w http.ResponseWriter, input string) bool {
+	if parseDate(input) == nil {
+		http.Error(w, "invalid date", http.StatusBadRequest)
+		return true
+	}
+	return false
+}
+
+// Checks if a string is a valid time (like "15:04").
+//
+// If returns true, error has been sent and should return.
+func invalidTime(w http.ResponseWriter, input string) bool {
+	if parseTime(input) == nil {
+		http.Error(w, "invalid date", http.StatusBadRequest)
+		return true
+	}
+	return false
+}
