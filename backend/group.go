@@ -9,8 +9,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const groupNameMinLen = 1
-const groupNameMaxLen = 50
+const (
+	groupNameMinLen = 1
+	groupNameMaxLen = 50
+)
 
 // Group sent over JSON.
 type GetGroupResponse struct {

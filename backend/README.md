@@ -44,7 +44,7 @@ See [`../README.md`](../README.md) for instructions.
   - Effect: User `1234` joins the group if they weren't in it already.
   - Note: Most group API operations return nothing and instead issue an unsolicited notification for all participating clients to use this API to re-download the group.
   - Response: `{poll: {options: [{"a": [1234], ..}]}, availabilities: [{availabilityId: 5678, UserId: 5678, date: "9999-09-25", start: "8:00", end: "11:00"}], activities: [{activityId: 5678, Title: "abc", date: "9999-09-25", start: "15:00", end: "16:30", confirmed: [5678]}, ...], tasks: [{taskId: 2345, title: "prepare food & drinks", assignee: 5678, complete: true}, ...], ...}`
-- Request: `PATCH /api/group/1234/ {name: "Best Friends", calendarMode: "date" | "dayOfWeek"}`
+- Request: `PATCH /api/group/1234/ {name: "Best Friends", calendarMode: "2024-02-15 to 2024-03-04" | "dayOfWeek"}`
   - Precondition: Authentication cookie of user in group `1234`.
   - Effect: Updates any group `1234` setting(s) passed in object.
   - Response: `{groupId: 1234}`.

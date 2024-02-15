@@ -82,7 +82,7 @@ func invalidDate(w http.ResponseWriter, input string) bool {
 // If returns true, error has been sent and should return.
 func invalidTime(w http.ResponseWriter, input string) bool {
 	if parseTime(input) == nil {
-		http.Error(w, "invalid date", http.StatusBadRequest)
+		http.Error(w, "invalid time", http.StatusBadRequest)
 		return true
 	}
 	return false
