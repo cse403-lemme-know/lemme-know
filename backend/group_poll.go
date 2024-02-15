@@ -66,6 +66,11 @@ func RestGroupPollAPI(router *mux.Router, database Database, notification Notifi
 				return
 			}
 
+			if group.Poll == nil {
+				http.Error(w, "no such poll", http.StatusNotFound)
+				return
+			}
+
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				if group.Poll == nil {
 					return fmt.Errorf("no such poll")

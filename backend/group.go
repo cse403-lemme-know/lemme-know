@@ -144,14 +144,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 		group := r.Context().Value(GroupKey).(*Group)
 		switch r.Method {
 		case http.MethodGet:
-			found := false
-			for _, member := range group.Members {
-				if member == user.UserID {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !group.IsMember(user.UserID) {
 				if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 					group.Members = append(group.Members, user.UserID)
 					return nil

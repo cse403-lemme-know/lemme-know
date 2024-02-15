@@ -60,6 +60,9 @@ See [`../README.md`](../README.md) for instructions.
 - Request: `PATCH /api/group/1234/activity/ {title: "abc", date: "9999-12-31", start: "9:00", end: "10:30"}`
   - Precondition: Authentication cookie of user in group `1234`, activity doesn't overlap with others.
   - Effect: Create new scheduled activity.
+- Request: `PATCH /api/group/1234/activity/5678/ {title: "abc", date: "9999-12-31", start: "9:00", end: "10:30", confirm: true}`
+  - Precondition: Authentication cookie of user in group `1234`, activity doesn't overlap with others.
+  - Effect: Edit scheduled activity, notably by marking whether the requesting user confirms their attendance. If the date, start, or end is changed, the availability of others will be erased.
 - Request: `DELETE /api/group/1234/activity/5678/`
   - Precondition: authentication cookie of user in group `1234`.
   - Effect: Delete scheduled activity by ID.

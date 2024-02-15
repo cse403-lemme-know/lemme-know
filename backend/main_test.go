@@ -225,8 +225,15 @@ func TestHTTPService(t *testing.T) {
 	}
 	assert.Equal(t, 1, len(getGroupResponse.Activities))
 	assert.Equal(t, patchActivityRequest.Title, getGroupResponse.Activities[0].Title)
+	assert.Equal(t, patchActivityRequest.Date, getGroupResponse.Activities[0].Date)
+	assert.Equal(t, patchActivityRequest.Start, getGroupResponse.Activities[0].Start)
+	assert.Equal(t, patchActivityRequest.End, getGroupResponse.Activities[0].End)
+	assert.Empty(t, getGroupResponse.Activities[0].Confirmed)
 	assert.Equal(t, 1, len(getGroupResponse.Availabilities))
 	assert.Equal(t, patchAvailabilityRequest.Date, getGroupResponse.Availabilities[0].Date)
+	assert.Equal(t, patchAvailabilityRequest.Start, getGroupResponse.Availabilities[0].Start)
+	assert.Equal(t, patchAvailabilityRequest.End, getGroupResponse.Availabilities[0].End)
+
 	assert.Equal(t, userID, getGroupResponse.Availabilities[0].UserID)
 	assert.Equal(t, 1, len(getGroupResponse.Tasks))
 	assert.Equal(t, patchTaskReqwest.Title, getGroupResponse.Tasks[0].Title)
@@ -267,6 +274,17 @@ func TestHTTPService(t *testing.T) {
 	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/poll/", port, groupID))
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
+
+	// Test: Read group again.
+	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	var getGroupResponse2 GetGroupResponse
+	MustDecode(t, response.Body, &getGroupResponse)
+	assert.Empty(t, getGroupResponse2.Activities)
+	assert.Empty(t, getGroupResponse2.Availabilities)
+	assert.Empty(t, getGroupResponse2.Tasks)
+	assert.Nil(t, getGroupResponse2.Poll)
 
 	// Test: leave/delete group.
 	response, err = Delete(c, fmt.Sprintf("http://localhost:%d/api/group/%d/", port, groupID))
