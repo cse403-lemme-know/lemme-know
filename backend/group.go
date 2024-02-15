@@ -88,7 +88,9 @@ func RestGroupAPI(router *mux.Router, database Database, notification Notificati
 			http.Error(w, "could not decode body", http.StatusBadRequest)
 			return
 		}
-		validateString(w, request.Name, groupNameMinLen, groupNameMaxLen)
+		if invalidString(w, request.Name, groupNameMinLen, groupNameMaxLen) {
+			return
+		}
 		group := Group{
 			GroupID: GenerateID(),
 			Name:    request.Name,
@@ -224,7 +226,9 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				return
 			}
 
-			validateString(w, request.Name, 0, groupNameMaxLen)
+			if invalidString(w, request.Name, 0, groupNameMaxLen) {
+				return
+			}
 
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				if request.Name != "" {

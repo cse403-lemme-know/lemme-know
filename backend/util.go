@@ -30,7 +30,7 @@ func mustMarshal(v any) json.RawMessage {
 // Checks a string for validity.
 //
 // If returns true, error has been sent and should return.
-func validateString(w http.ResponseWriter, input string, minLen uint, maxLen uint) bool {
+func invalidString(w http.ResponseWriter, input string, minLen uint, maxLen uint) bool {
 	if !utf8.ValidString(input) {
 		http.Error(w, "invalid utf-8", http.StatusBadRequest)
 		return true
