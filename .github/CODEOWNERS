@@ -2,7 +2,7 @@
 /backend/ @abdimoh596 @davengt @finnbear @ShwayShway
 /backend/main.go @finnbear
 /backend/database.go @davengt @ShwayShway
+/backend/database_test.go @davengt @ShwayShway
 /backend/dbschema.go @davengt @ShwayShway
-/frontend/ @brooklynxzhu @Zohar-Le
-/terraform/ @abdimoh596
-/reports/ @abdimoh596 @brooklynxzhu @davengt @finnbear @ShwayShway @Zohar-Le
+/frontend/ @abdimoh596 @brooklynxzhu @Zohar-Le
+/terraform/ @abdimoh596 @finnbear
