@@ -24,7 +24,7 @@
 					if (createGroupId) {
 						console.log('Group created with ID:', createGroupId);
 						groupId.set(createGroupId);
-						goto('/dashboard');
+						goto(`/dashboard?groupId=${createGroupId}`);
 					} else {
 						$errorMsg = 'Failed to create group';
 					}

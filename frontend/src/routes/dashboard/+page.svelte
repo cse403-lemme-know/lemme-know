@@ -14,12 +14,21 @@
 	let taskMsg = writable('');
 	let taskInput = '';
 	let assignedInput = '';
+	let currentGroupId = '';
 
 	onMount(async () => {
+		const queryParams = new URLSearchParams(window.location.search);
+		currentGroupId = queryParams.get('groupId');
+		console.log("groupid here", currentGroupId);
 		start = get(startDate);
 		end = get(endDate);
 		start = dayjs(start);
 		end = dayjs(end);
+
+		if (currentGroupId) {
+			groupId.set(currentGroupId);
+			groupData = await getGroup(currentGroupId);
+		}
 
 		function initializeAvailability(start, end) {
 			let days = {};
@@ -41,10 +50,6 @@
 		} else {
 			console.error('Invalid start or end date');
 		}
-
-		const currentGroupId = get(groupId);
-		groupData = await getGroup(currentGroupId);
-
 	});
 
 	function toggleSlot(day, hour) {
@@ -52,12 +57,12 @@
 			a[day][hour] = !a[day][hour];
 			return a;
 		});
+
 	}
 
 	async function addTask(title) {
-		const currentGroup = get(groupId);
-		console.log('adding task for group: ', currentGroup);
-		if (!currentGroup) {
+		console.log('adding task for group: ', currentGroupId);
+		if (!currentGroupId) {
 			taskMsg.set('No Group ID is set');
 			return;
 		}
@@ -69,9 +74,9 @@
 		taskMsg.set('');
 
 		try {
-			const response = await createTask(currentGroup, title);
+			const response = await createTask(currentGroupId, title);
 			if (response.ok) {
-				await updateGroupData(currentGroup);
+				await updateGroupData(currentGroupId);
 				tasks.set(groupData.tasks.map(task => ({
 					id: task.taskId,
 					description: task.title,
@@ -88,7 +93,7 @@
 			taskMsg.set('Failed to add task');
 			console.error('task error ', e);
 		}
-		await updateGroupData(currentGroup);
+		await updateGroupData(currentGroupId);
 	}
 
 	function toggleCompletion(taskId) {
@@ -127,12 +132,6 @@
 	}
 
 	async function saveAllAvailabilities() {
-		const currentGroupId = $groupId;
-		if (!currentGroupId) {
-			console.error('No group ID is set.');
-			return;
-		}
-
 		const allAvailabilityData = [];
 
 		for (const [date, slots] of Object.entries($availability)) {
@@ -160,6 +159,7 @@
 				.map((data) => `${data.date} from ${data.start} to ${data.end}`)
 				.join(', ');
 			successMsg.set('All availabilities saved successfully ' + times);
+			console.log("GroupID", currentGroupId);
 			console.log('Saved times:', JSON.stringify(availableTimes));
 		} catch (error) {
 			successMsg.set('Failed to save availability');
@@ -169,7 +169,6 @@
 	}
 
 	async function removeAvailability(selectedDay, selectedHour) {
-		const currentGroupId = get(groupId);
 		const formattedHour = `${selectedHour < 10 ? `0${selectedHour}` : selectedHour}:00`;
 		const currentData = await getGroup(currentGroupId);
 		const matchingAvailability = currentData.availabilities.find(avail =>
@@ -198,7 +197,6 @@
 	}
 
 	async function deleteTaskWrapper(taskId) {
-		const currentGroupId = get(groupId);
 		try {
 			await deleteTask(currentGroupId, taskId);
 			tasks.update(currentTasks => {
@@ -224,7 +222,7 @@
 				<img src="../users.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Members</span>
 			</button>
-			<button class="invite-button">Invite Link!</button>
+			<button on:click={() => navigator.clipboard.writeText(`${window.location.origin}/dashboard?groupId=${get(groupId)}`)} class="invite-button">Invite Link!</button>
 		</div>
 
 		<div class="chatbox">
