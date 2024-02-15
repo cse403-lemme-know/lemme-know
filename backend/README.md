@@ -43,7 +43,7 @@ See [`../README.md`](../README.md) for instructions.
   - Precondition: Authentication cookie.
   - Effect: User `1234` joins the group if they weren't in it already.
   - Note: Most group API operations return nothing and instead issue an unsolicited notification for all participating clients to use this API to re-download the group.
-  - Response: `{poll: {options: [{"a": [1234], ..}]}, availabilities: [{availabilityId: 5678, UserId: 5678, date: "9999-12-31", start: "8:00", end: "11:00"}], activities: [{activityId: 5678, Title: "abc", date: "9999-12-31", start: "9:00", end: "10:30", confirmed: [5678]}, ...], tasks: [{taskId: 2345, title: "prepare food & drinks", assignee: 5678, complete: true}, ...], ...}`
+  - Response: `{poll: {options: [{"a": [1234], ..}]}, availabilities: [{availabilityId: 5678, UserId: 5678, date: "9999-09-25", start: "8:00", end: "11:00"}], activities: [{activityId: 5678, Title: "abc", date: "9999-09-25", start: "15:00", end: "16:30", confirmed: [5678]}, ...], tasks: [{taskId: 2345, title: "prepare food & drinks", assignee: 5678, complete: true}, ...], ...}`
 - Request: `PATCH /api/group/1234/ {name: "Best Friends", calendarMode: "date" | "dayOfWeek"}`
   - Precondition: Authentication cookie of user in group `1234`.
   - Effect: Updates any group `1234` setting(s) passed in object.
@@ -57,10 +57,10 @@ See [`../README.md`](../README.md) for instructions.
   - Response: `{groupId: 1234}`.
 
 #### Activity
-- Request: `PATCH /api/group/1234/activity/ {title: "abc", date: "9999-12-31", start: "9:00", end: "10:30"}`
+- Request: `PATCH /api/group/1234/activity/ {title: "abc", date: "9999-09-25", start: "15:00", end: "16:30"}`
   - Precondition: Authentication cookie of user in group `1234`, activity doesn't overlap with others.
   - Effect: Create new scheduled activity.
-- Request: `PATCH /api/group/1234/activity/5678/ {title: "abc", date: "9999-12-31", start: "9:00", end: "10:30", confirm: true}`
+- Request: `PATCH /api/group/1234/activity/5678/ {title: "abc", date: "2024-09-25", start: "15:00", end: "15:30", confirm: true}`
   - Precondition: Authentication cookie of user in group `1234`, activity doesn't overlap with others.
   - Effect: Edit scheduled activity, notably by marking whether the requesting user confirms their attendance. If the date, start, or end is changed, the availability of others will be erased.
 - Request: `DELETE /api/group/1234/activity/5678/`
@@ -68,7 +68,7 @@ See [`../README.md`](../README.md) for instructions.
   - Effect: Delete scheduled activity by ID.
 
 #### Availability
-- Request: `PATCH /api/group/1234/availability/ {date: "9999-12-31", start: "9:00", end: "10:30"}`
+- Request: `PATCH /api/group/1234/availability/ {date: "9999-09-25", start: "15:00", end: "16:30"}`
   - Precondition: Authentication cookie of user in group `1234`.
   - Effect: Create new scheduled availability in group.
 - Request: `DELETE /api/group/1234/availability/5678/`
