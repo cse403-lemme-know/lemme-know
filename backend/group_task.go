@@ -11,7 +11,7 @@ import (
 
 const (
 	taskTitleMinLen = 1
-	taskTitleMaxLen = 64
+	taskTitleMaxLen = 50
 )
 
 // New/updated task sent over JSON.

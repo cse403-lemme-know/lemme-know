@@ -9,6 +9,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	chatMessageMinLen = 1
+	chatMessageMaxLen = 500
+)
+
 // Chat sent over JSON.
 type GetChatResponse struct {
 	Messages []GetChatResponseMessage `json:"messages"`
@@ -76,6 +81,11 @@ func RestGroupChatAPI(router *mux.Router, database Database, notification Notifi
 				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return
 			}
+
+			if invalidString(w, request.Content, chatMessageMinLen, chatMessageMaxLen) {
+				return
+			}
+
 			message := Message{
 				GroupID:   group.GroupID,
 				Sender:    user.UserID,

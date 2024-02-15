@@ -10,7 +10,7 @@ import (
 )
 
 const groupNameMinLen = 1
-const groupNameMaxLen = 64
+const groupNameMaxLen = 50
 
 // Group sent over JSON.
 type GetGroupResponse struct {

@@ -11,7 +11,7 @@ import (
 
 const (
 	pollTitleMinLen = 1
-	pollTitleMaxLen = 64
+	pollTitleMaxLen = 50
 )
 
 // New poll sent over JSON.
