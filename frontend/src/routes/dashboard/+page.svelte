@@ -24,9 +24,10 @@
 		function initializeAvailability(start, end) {
 			let days = {};
 
+			let loopEndDate = end.add(1, 'day');
 			for (
 				let current = start;
-				current.isBefore(end.add(1, 'day'));
+				current.isBefore(loopEndDate);
 				current = current.add(1, 'day')
 			) {
 				const dateString = current.format('YYYY-MM-DD');
