@@ -3,7 +3,7 @@
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { startDate, endDate, groupId, userId } from '$lib/stores';
-	import {createAvailability, createTask, deleteAvailability, getGroup, getUser} from '$lib/model';
+	import {createAvailability, createTask, deleteAvailability, getGroup, deleteTask} from '$lib/model';
 	let start, end;
 	let availableTimes = [];
 	let availability = writable({});
@@ -53,7 +53,7 @@
 		});
 	}
 
-	async function addTask(taskDescription, assigneeName) {
+	async function addTask(title) {
 		const currentGroup = get(groupId);
 		console.log('adding task for group: ', currentGroup);
 		if (!currentGroup) {
@@ -61,27 +61,25 @@
 			return;
 		}
 
-		if (!taskDescription.trim()) {
-			taskMsg.set('Task description is required.');
-			return;
-		}
+		// if (!taskDescription.trim()) {
+		// 	taskMsg.set('Task description is required.');
+		// 	return;
+		// }
 		taskMsg.set('');
 
 		try {
-			const response = await createTask(currentGroup, taskDescription, assigneeName);
+			const response = await createTask(currentGroup, title);
 			if (response.ok) {
-				tasks.update((currentTasks) => {
-					const newTask = {
-						id: currentTasks.length + 1,
-						description: taskDescription,
-						assignedTo: assigneeName,
-						completed: false
-					};
-					return [...currentTasks, newTask];
-				});
+				await updateGroupData(currentGroup);
+				tasks.set(groupData.tasks.map(task => ({
+					id: task.taskId,
+					description: task.title,
+					assignedTo: task.assignee,
+					completed: task.complete
+				})));
 				taskInput = '';
 				assignedInput = '';
-				taskMsg.set(`Task added: ${taskDescription}`);
+				taskMsg.set(`Task added: ${title}`);
 			} else {
 				taskMsg.set(`Failed to add task: server error`);
 			}
@@ -89,9 +87,9 @@
 			taskMsg.set('Failed to add task');
 			console.error('task error ', e);
 		}
+		await updateGroupData(currentGroup);
 	}
 
-	/** @param {number} taskId */
 	function toggleCompletion(taskId) {
 		tasks.update((currentTasks) => {
 			const index = currentTasks.findIndex((t) => t.id === taskId);
@@ -186,17 +184,27 @@
 		} else {
 			console.error("No matching availability found to delete");
 		}
-
-
 	}
 
 	async function updateGroupData(groupId) {
 		try {
 			const updated = await getGroup(groupId);
 			groupData = updated;
-			console.log("group after deletion ", groupData);
+			console.log("group after update: ", groupData);
 		} catch (e) {
 			console.error(e);
+		}
+	}
+
+	async function deleteTaskWrapper(taskId) {
+		const currentGroupId = get(groupId);
+		try {
+			await deleteTask(currentGroupId, taskId);
+			tasks.update(currentTasks => {
+				return currentTasks.filter(task => task.id !== taskId);
+			});
+		} catch (error) {
+			console.error(error);
 		}
 	}
 
@@ -267,7 +275,7 @@
 			{#if $successMsg}
 				<p>{$successMsg}</p>
 			{/if}
-			<form on:submit|preventDefault={() => addTask(taskInput, assignedInput)}>
+			<form on:submit|preventDefault={() => addTask(taskInput)}>
 				<input
 					type="text"
 					bind:value={taskInput}
@@ -296,8 +304,9 @@
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
 					{#if task.assignedTo}
-						<span>Assigned to: {task.assignedTo}</span>
+						<span class={task.completed ? 'completed-task' : ''}>Assigned to: {task.assignedTo}</span>
 					{/if}
+					<button class="delete-task" on:click={() => deleteTaskWrapper(task.id)}>delete</button>
 				</div>
 			{/each}
 		</div>
@@ -465,6 +474,8 @@
 		accent-color: #879db7;
 		transform: scale(1.5);
 		cursor: pointer;
+		margin-left: -7.5rem;
+		margin-right: -7.5rem;
 	}
 
 	.task-item .completed-task {
@@ -473,8 +484,9 @@
 	}
 
 	.task-item span {
-		margin-left: 1rem;
+		margin-right: 1rem;
 		color: #333;
+		text-align: center;
 		font-weight: bold;
 	}
 
@@ -555,6 +567,24 @@
 
 	.invite-button:hover {
 		background-color: #afaeae;
+		color: white;
+	}
+
+	.delete-task {
+		background-color: #879db7;
+		color: black;
+		border: none;
+		cursor: pointer;
+		margin-left: 1.5rem;
+		padding: 0.5rem 1rem;
+		display: inline-block;
+		text-align: center;
+		font-size: 1rem;
+		border-radius: 0.3rem;
+	}
+
+	.delete-task:hover {
+		background-color: gray;
 		color: white;
 	}
 </style>

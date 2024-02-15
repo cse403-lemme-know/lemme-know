@@ -70,6 +70,21 @@ async function createTask(groupId, title) {
 	}
 }
 
+async function deleteTask(groupId, taskId) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/task/${taskId}/`, {
+			method: 'DELETE'
+		});
+		if (response.ok) {
+			console.log('Task deleted successfully');
+		} else {
+			console.error('Failed to delete task');
+		}
+	} catch (e) {
+		console.error('Error deleting task:', e);
+	}
+}
+
 async function getGroup(groupId) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/${groupId}/`, {
@@ -89,4 +104,4 @@ async function getGroup(groupId) {
 
 getUser().then(console.log);
 
-export { getUser, createGroup, createAvailability, createTask, deleteAvailability, getGroup };
+export { getUser, createGroup, createAvailability, createTask, deleteAvailability, getGroup, deleteTask };
