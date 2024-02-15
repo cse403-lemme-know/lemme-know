@@ -104,5 +104,7 @@ func getVAPIDKeys(database Database) (string, string, error) {
 		}
 	}
 	splits := strings.Split(keys, ":")
+	// Never out of bounds since we either created the string or
+	// ensured it had exactly one delimeter.
 	return splits[0], splits[1], nil
 }

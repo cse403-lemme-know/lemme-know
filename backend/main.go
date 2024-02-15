@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -22,15 +21,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
-
-// marshal JSON, failing on any error.
-func mustMarshal(v any) json.RawMessage {
-	json, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
-	}
-	return json
-}
 
 // Creates a function that can handle JSON events from AWS services.
 func newLambdaHandler(database Database, notification Notification) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
@@ -238,16 +228,6 @@ func runLocalService(port uint16, ctx context.Context) error {
 // Allow exotic HTTP methods, credentials.
 func applyCors(handler http.Handler) http.Handler {
 	return handlers.CORS(handlers.AllowCredentials(), handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"}))(handler)
-}
-
-// Returns true if and only if executing in an AWS Lambda function.
-func isOnLambda() bool {
-	return os.Getenv("LAMBDA_TASK_ROOT") != ""
-}
-
-// Returns Unix time in milliseconds.
-func unixMillis() uint64 {
-	return uint64(time.Now().UnixMilli())
 }
 
 func main() {

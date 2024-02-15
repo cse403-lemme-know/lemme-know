@@ -57,18 +57,20 @@ func RestGroupActivityAPI(router *mux.Router, database Database, notification No
 					}
 					if request.Title != "" && request.Title != activity.Title {
 						group.Activities[i].Title = request.Title
-						group.Activities[i].Confirmed = []UserID{}
 					}
 					if request.Date != "" && request.Date != activity.Date {
 						group.Activities[i].Date = request.Date
+						// If the date changes, those that confirmed may no longer be able to attend.
 						group.Activities[i].Confirmed = []UserID{}
 					}
 					if request.Start != "" && request.Start != activity.Start {
 						group.Activities[i].Start = request.Start
+						// If the start changes, those that confirmed may no longer be able to attend.
 						group.Activities[i].Confirmed = []UserID{}
 					}
 					if request.End != "" && request.End != activity.End {
 						group.Activities[i].End = request.End
+						// If the end changes, those that confirmed may no longer be able to attend.
 						group.Activities[i].Confirmed = []UserID{}
 					}
 					if request.Confirm != nil {
