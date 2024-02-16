@@ -1,3 +1,5 @@
+import { browser } from '$app/environment';
+
 // @ts-nocheck
 async function getUser() {
 	try {
@@ -127,7 +129,24 @@ async function fetchMessages(groupID, start, end) {
 	}
 }
 
-getUser().then(console.log);
+let webSocket;
+
+if (browser) {
+	async function openWebSocket() {
+
+		const webSocketProtocol = location.protocol == "http:" ? "ws:" : "wss:";
+		webSocket = new WebSocket(`${webSocketProtocol}//${location.host}/ws/`);
+		webSocket.onopen = console.log;
+		webSocket.onmessage = console.log;
+		webSocket.onerror = console.log;
+		webSocket.onclose = console.log;
+	}
+
+	getUser().then(user => {
+		console.log(user);
+		openWebSocket();
+	});
+}
 
 export {
 	getUser,
