@@ -1,4 +1,12 @@
 import { browser } from '$app/environment';
+import { writable } from 'svelte/store';
+
+// Mapping of group ID to group (from backend).
+export const groups = writable({});
+// Mapping of user ID to user (from backend);
+export const users = writable({});
+// Mapping of group ID to list of chat messages (from backend);
+export const messages = writable({});
 
 // @ts-nocheck
 async function getUser() {
@@ -6,6 +14,19 @@ async function getUser() {
 		const response = await fetch(`//${location.host}/api/user/`);
 		const user = await response.json();
 		return user;
+	} catch (e) {
+		return null;
+	}
+}
+
+/**
+ * @param {number} groupId
+ */
+async function getGroup(groupId) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/`);
+		const group = await response.json();
+		return group;
 	} catch (e) {
 		return null;
 	}
@@ -137,7 +158,33 @@ if (browser) {
 		const webSocketProtocol = location.protocol == "http:" ? "ws:" : "wss:";
 		webSocket = new WebSocket(`${webSocketProtocol}//${location.host}/ws/`);
 		webSocket.onopen = console.log;
-		webSocket.onmessage = console.log;
+		webSocket.onmessage = event => {
+			console.log(event);
+			const message = JSON.parse(event.data);
+			console.log(message);
+			if (message.group) {
+				getGroup(message.group.groupId || message.group.groupID).then(group => {
+					console.log(group);
+					groups.update(existing => {
+						return { [message.group.groupId]: group, ...existing }
+					});
+				})
+			}
+			if (message.user) {
+				users.update(existing => {
+					return { [message.user.userId]: message.user, ...existing };
+				})
+			}
+			if (message.message) {
+				messages.update(existing => {
+					if (!(message.message.groupId in existing)) {
+						existing[message.message.groupId] = [];
+					}
+					existing[message.message.groupId].push(message.message);
+					return existing;
+				})
+			}
+		};
 		webSocket.onerror = console.log;
 		webSocket.onclose = console.log;
 	}
