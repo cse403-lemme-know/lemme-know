@@ -32,13 +32,23 @@ async function getGroup(groupId) {
 	}
 }
 
-async function createGroup(name) {
+async function refreshGroup(groupId) {
+	getGroup(groupId).then(group => {
+		console.log(group);
+		groups.update(existing => {
+			return { [groupId]: group, ...existing }
+		});
+	})
+}
+
+async function createGroup(name, startDate, endDate) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/`, {
 			method: 'PATCH',
-			body: JSON.stringify({ name })
+			body: JSON.stringify({ name, calendarMode: `${startDate} to ${endDate}` })
 		});
 		const result = await response.json();
+		refreshGroup(result.groupId);
 		return result.groupId;
 	} catch (e) {
 		return null;
@@ -163,12 +173,7 @@ if (browser) {
 			const message = JSON.parse(event.data);
 			console.log(message);
 			if (message.group) {
-				getGroup(message.group.groupId || message.group.groupID).then(group => {
-					console.log(group);
-					groups.update(existing => {
-						return { [message.group.groupId]: group, ...existing }
-					});
-				})
+				refreshGroup(message.group.groupId);
 			}
 			if (message.user) {
 				users.update(existing => {

@@ -4,14 +4,17 @@
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
-	import { startDate, endDate, groupId } from '$lib/stores';
+	import { groupId } from '$lib/stores';
+	import { groups } from '$lib/model';
 	import { createAvailability, createTask } from '$lib/model';
 	import PollCreationModal from './PollCreationModal.svelte';
+	import { goto } from '$app/navigation';
 
 	let start, end;
 	let availableTimes = [];
 	let availability = writable({});
 	let successMsg = writable('');
+	$: group = groups[$groupId];
 
 	let tasks = writable([]);
 	let taskMsg = writable('');
@@ -21,11 +24,14 @@
 	let isPoll = writable(false);
 
 	onMount(async () => {
-		start = get(startDate);
-		end = get(endDate);
+		if (!group) {
+			goto("/");
+			return;
+		}
+		const calendarMode = group.calendarMode.split(" to ")
 
-		start = dayjs(start);
-		end = dayjs(end);
+		start = dayjs(calendarMode[0]);
+		end = dayjs(calendarMode[1]);
 
 		function initializeAvailability(start, end) {
 			let days = {};
