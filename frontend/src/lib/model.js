@@ -1,12 +1,10 @@
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
 
-// Mapping of group ID to group (from backend).
+// Mapping of group ID to {...group, messages: []} (from backend).
 export const groups = writable({});
 // Mapping of user ID to user (from backend);
 export const users = writable({});
-// Mapping of group ID to list of chat messages (from backend);
-export const messages = writable({});
 
 // @ts-nocheck
 async function getUser() {
@@ -36,7 +34,7 @@ export async function refreshGroup(groupId) {
 	const group = await getGroup(groupId);
 	console.log(group);
 	groups.update(existing => {
-		return { [groupId]: group, ...existing }
+		return { [groupId]: {...group, messages:  existing[groupId] ? existing[groupId].messages : [] }, ...existing }
 	});
 }
 
@@ -180,11 +178,11 @@ if (browser) {
 				})
 			}
 			if (message.message) {
-				messages.update(existing => {
+				groups.update(existing => {
 					if (!(message.message.groupId in existing)) {
 						existing[message.message.groupId] = [];
 					}
-					existing[message.message.groupId].push(message.message);
+					existing[message.message.groupId].messages.push(message.message);
 					return existing;
 				})
 			}

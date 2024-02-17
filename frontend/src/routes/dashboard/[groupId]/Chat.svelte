@@ -1,8 +1,9 @@
 <script>
 	import PollCreationModal from "./PollCreationModal.svelte";
+	import { sendMessage } from "$lib/model";
 
+	export let groupId;
     export let group;
-	let messages = [];
 	let content = '';
     export let isPoll = false;
 	/**
@@ -10,11 +11,8 @@
 	 */
 	function handleSendMessage() {
 		if (content.trim() !== '') {
-			messages = [...messages, { text: content, sender: 'user' }];
-			content = content.trim();
-			// sendMessage($groupId, content);
+			sendMessage(groupId, content.trim());
 			content = '';
-			// need to handle Fetch messages
 		}
 	}
 	/**
@@ -30,15 +28,17 @@
 
 <div class="chatbox">
     <div class="messages">
-        {#each messages as message (message.text)}
-            <div class:message class:message.sender={message.sender}>
-                {#if message.sender === 'user'}
-                    <strong class="user-message">You:</strong> {message.text}
-                {:else if message.sender === 'system'}
-                    <em class="system-message">{message.text}</em>
-                {/if}
-            </div>
-        {/each}
+		{#if group}
+			{#each group.messages as message (message.timestamp)}
+				<div class:message class:message.sender={message.sender}>
+					{#if true}
+						<strong class="user-message">You:</strong> {message.content}
+					{:else if message.sender === 'system'}
+						<em class="system-message">{message.text}</em>
+					{/if}
+				</div>
+			{/each}
+		{/if}
     </div>
     <div class="poll">
         {#if isPoll}
@@ -74,7 +74,8 @@
 	.messages {
 		flex-grow: 1;
 		display: flex;
-		flex-direction: column-reverse; /* Reverse the order of messages */
+		flex-direction: column;
+		justify-content: end;
 	}
 
 	.message {

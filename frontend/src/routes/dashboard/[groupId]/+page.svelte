@@ -184,7 +184,7 @@
 			</button>
 		</div>
 
-		<Chat {group} bind:isPoll={isPoll}/>
+		<Chat {groupId} {group} bind:isPoll={isPoll}/>
 
 		<div class="calendar-container">
 			<span class="calendar-title">AVAILABILITY CALENDAR</span>
