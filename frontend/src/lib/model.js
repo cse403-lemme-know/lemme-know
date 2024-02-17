@@ -32,7 +32,7 @@ async function getGroup(groupId) {
 	}
 }
 
-async function refreshGroup(groupId) {
+export async function refreshGroup(groupId) {
 	const group = await getGroup(groupId);
 	console.log(group);
 	groups.update(existing => {

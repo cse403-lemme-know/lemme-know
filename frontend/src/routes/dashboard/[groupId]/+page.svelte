@@ -5,7 +5,7 @@
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { groups } from '$lib/model';
-	import { createAvailability, createTask } from '$lib/model';
+	import { createAvailability, createTask, refreshGroup } from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
 	import { page } from '$app/stores';
@@ -25,11 +25,17 @@
 	let isPoll = false;
 
 	onMount(async () => {
-		if (!group) {
-			goto("/");
-			return;
+		// TODO: Refactor to avoid needing this.
+		let g = group;
+		if (!g) {
+			await refreshGroup(groupId);
+			g = get(groups)[groupId];
+			if (!g) {
+				goto("/");
+				return;
+			}
 		}
-		const calendarMode = group.calendarMode.split(" to ")
+		const calendarMode = g.calendarMode.split(" to ")
 
 		start = dayjs(calendarMode[0]);
 		end = dayjs(calendarMode[1]);
