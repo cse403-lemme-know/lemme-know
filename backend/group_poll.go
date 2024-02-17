@@ -9,6 +9,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	pollTitleMinLen = 1
+	pollTitleMaxLen = 50
+)
+
 // New poll sent over JSON.
 type PutPollRequest struct {
 	Title   string   `json:"title"`
@@ -39,6 +44,10 @@ func RestGroupPollAPI(router *mux.Router, database Database, notification Notifi
 				return
 			}
 
+			if invalidString(w, request.Title, pollTitleMinLen, pollTitleMaxLen) {
+				return
+			}
+
 			var options = []PollOption{}
 
 			for _, name := range request.Options {
@@ -63,6 +72,11 @@ func RestGroupPollAPI(router *mux.Router, database Database, notification Notifi
 			var request PatchPollRequest
 			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 				http.Error(w, "could not decode body", http.StatusBadRequest)
+				return
+			}
+
+			if group.Poll == nil {
+				http.Error(w, "no such poll", http.StatusNotFound)
 				return
 			}
 

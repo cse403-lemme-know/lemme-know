@@ -192,7 +192,7 @@ func (dynamoDB *DynamoDB) DeleteUser(userID UserID) error {
 
 // Creates a new group in the database.
 //
-// Returns an error if a group with the same `GroupIP`
+// Returns an error if a group with the same `GroupID`
 // already exists, or if the operation may have failed.
 func (dynamoDB *DynamoDB) CreateGroup(groupInfo Group) error {
 	return dynamoDB.groups.Put(groupInfo).If("attribute_not_exists(GroupID)").Run()
@@ -258,7 +258,7 @@ func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
 }
 
 func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
-	return dynamoDB.messages.Put(message).If("attribute_not_exists(Timestamp)").Run()
+	return dynamoDB.messages.Put(message).If("attribute_not_exists($)", "Timestamp").Run()
 }
 
 func (dynamoDB *DynamoDB) ReadConnection(connectionID ConnectionID) (*UserID, error) {

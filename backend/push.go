@@ -11,14 +11,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var VAPIDPublicKey string
-var VAPIDPrivateKey string
-
-func init() {
-	VAPIDPublicKey = os.Getenv("VAPID_PUBLIC_KEY")
-	VAPIDPrivateKey = os.Getenv("VAPID_PRIVATE_KEY")
-}
-
 type GetPushResponse struct {
 	VAPIDPublicKey string `json:"vapidPublicKey"`
 }
@@ -86,10 +78,16 @@ func WebPush(data any, subscription webpush.Subscription, database Database) err
 	return nil
 }
 
+// For "Voluntary Application server Identification"
+//
 // Returns private and public VAPID keys, generating and
 // storing new ones if needed.
 func getVAPIDKeys(database Database) (string, string, error) {
-	keys, err := database.ReadVariable("VAPID_KEYS")
+	// Use a single variable so there is never inconsistency
+	// between the public and private keys.
+	variableName := "VAPID_KEYS"
+
+	keys, err := database.ReadVariable(variableName)
 	if err != nil {
 		return "", "", err
 	}
@@ -99,11 +97,14 @@ func getVAPIDKeys(database Database) (string, string, error) {
 			return "", "", err
 		}
 		keys = privateKey + ":" + publicKey
-		err = database.WriteVariable("VAPID_KEYS", keys)
+		err = database.WriteVariable(variableName, keys)
 		if err != nil {
+			// Key is not useful unless we have saved it for next time.
 			return "", "", err
 		}
 	}
 	splits := strings.Split(keys, ":")
+	// Never out of bounds since we either created the string or
+	// ensured it had exactly one delimeter.
 	return splits[0], splits[1], nil
 }
