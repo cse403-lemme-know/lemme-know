@@ -45,8 +45,9 @@ func newLambdaHandler(database Database, notification Notification) func(context
 		// Check if the event is an AWS API Gateway HTTP WebSocket event.
 		var ws events.APIGatewayWebsocketProxyRequest
 		if err := json.Unmarshal(event, &ws); err == nil && ws.RequestContext.ConnectionID != "" {
-			isConnect := ws.RequestContext.EventType == "Connect"
-			isDisconnect := ws.RequestContext.EventType == "Disconnect"
+			isConnect := ws.RequestContext.EventType == "CONNECT"
+			isDisconnect := ws.RequestContext.EventType == "DISCONNECT"
+
 			var connectUserID *UserID = nil
 
 			if isConnect {
@@ -60,15 +61,18 @@ func newLambdaHandler(database Database, notification Notification) func(context
 					// Unreachable.
 					panic(err)
 				}
-				for key, value := range ws.Headers {
-					request.Header.Add(key, value)
-				}
+				// Redundant with multi-value headers.
+				/*
+					for key, value := range ws.Headers {
+						request.Header.Add(key, value)
+					}
+				*/
 				for key, values := range ws.MultiValueHeaders {
 					for _, value := range values {
 						request.Header.Add(key, value)
 					}
 				}
-				log.Printf("ws req: %v", request)
+				//log.Printf("ws req: %v", request)
 				user, err := CheckCookie(request, database)
 				if err != nil {
 					return events.APIGatewayProxyResponse{}, err
