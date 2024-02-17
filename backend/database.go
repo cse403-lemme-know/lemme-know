@@ -304,10 +304,11 @@ type memoryMessageID struct {
 
 func NewMemoryDatabase() *MemoryDatabase {
 	return &MemoryDatabase{
-		users:     make(map[UserID]User),
-		groups:    make(map[GroupID]Group),
-		messages:  make(map[memoryMessageID]Message),
-		variables: make(map[string]string),
+		users:       make(map[UserID]User),
+		groups:      make(map[GroupID]Group),
+		messages:    make(map[memoryMessageID]Message),
+		connections: make(map[ConnectionID]UserID),
+		variables:   make(map[string]string),
 	}
 }
 
