@@ -32,7 +32,7 @@
 			{#each group.messages as message (message.timestamp)}
 				<div class:message class:message.sender={message.sender}>
 					{#if true}
-						<strong class="user-message">You:</strong> {message.content}
+						<strong class="user-message">{message.sender}:</strong> {message.content}
 					{:else if message.sender === 'system'}
 						<em class="system-message">{message.text}</em>
 					{/if}
