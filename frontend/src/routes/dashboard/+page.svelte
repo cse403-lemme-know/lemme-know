@@ -14,7 +14,7 @@
 	let availableTimes = [];
 	let availability = writable({});
 	let successMsg = writable('');
-	$: group = groups[$groupId];
+	$: group = $groups[$groupId];
 
 	let tasks = writable([]);
 	let taskMsg = writable('');

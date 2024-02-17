@@ -86,9 +86,10 @@ func RestGroupAPI(router *mux.Router, database Database, notification Notificati
 			return
 		}
 		group := Group{
-			GroupID: GenerateID(),
-			Name:    request.Name,
-			Members: []UserID{user.UserID},
+			GroupID:      GenerateID(),
+			Name:         request.Name,
+			Members:      []UserID{user.UserID},
+			CalendarMode: request.CalendarMode,
 		}
 		if err := database.CreateGroup(group); err != nil {
 			http.Error(w, "could not create group", http.StatusInternalServerError)

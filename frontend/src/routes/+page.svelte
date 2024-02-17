@@ -19,7 +19,8 @@
 				if (!groupName || groupName.trim().length === 0) {
 					errorMsg = 'Please enter a group name';
 				} else {
-					const createGroupId = await createGroup(groupName, dayjs(startDate).format('YYYY-MM-DD'), dayjs(endDate).format('YYYY-MM-DD'));
+					const calendarMode =`${dayjs(startDate).format('YYYY-MM-DD')} to ${ dayjs(endDate).format('YYYY-MM-DD')}`;
+					const createGroupId = await createGroup(groupName, calendarMode);
 					if (createGroupId) {
 						console.log('Group created with ID:', createGroupId);
 						groupId.set(createGroupId);
