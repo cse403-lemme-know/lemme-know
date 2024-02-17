@@ -18,7 +18,9 @@ LemmeKnow is a group activity planning platform with an integrated calendar to s
 - [`frontend/`](./frontend/) contains the frontend website
 - [`backend/`](./backend/) contains the backend serverless function 
 - [`terraform/`](./terraform/) contains infrastructure definitions
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) offers advice on contributing.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) offers advice on contributing
+- [`.github/workflows/`](./.github/workflows/) contains the CI
+  - [here](https://github.com/cse403-lemmeknow/lemmeknow/actions) is the build history
 
 ## Prerequisites
 

@@ -9,6 +9,7 @@ build:
 
 test:
 	npm install
+	npx playwright install
 	npm run test
 	npm run test:unit
 
