@@ -23,7 +23,7 @@ You can run `make lint` in [`frontend/`](./frontend/) or [`backend/`](./backend/
 ## Contributing tests
 
 ### Backend
-You may add tests for `filename.go` by adding `filename_test.go`, consisting of functions with the `Test` suffix and the appropriate arguments. Full instructions can be found [here](https://go.dev/doc/tutorial/add-a-test).
+You may add tests for `filename.go` by adding `filename_test.go`, consisting of functions with the `Test` prefix and the appropriate arguments. Full instructions can be found [here](https://go.dev/doc/tutorial/add-a-test).
 
 One unit test function should test one implementation function, possible with multiple argument variations or for multiple output or side effect criteria. Integration tests are primarily in `main_test.go`.
 
