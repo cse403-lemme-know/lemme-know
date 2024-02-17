@@ -23,11 +23,11 @@ resource "aws_dynamodb_table" "user" {
 resource "aws_dynamodb_table" "message" {
   name         = "lemmeknow-messages"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "MessageId"
+  hash_key     = "GroupID"
   range_key    = "Timestamp"
 
   attribute {
-    name = "MessageId"
+    name = "GroupID"
     type = "N"
   }
 

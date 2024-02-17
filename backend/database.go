@@ -258,7 +258,7 @@ func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
 }
 
 func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
-	return dynamoDB.messages.Put(message).If("attribute_not_exists(Timestamp)").Run()
+	return dynamoDB.messages.Put(message).If("attribute_not_exists($)", "Timestamp").Run()
 }
 
 func (dynamoDB *DynamoDB) ReadConnection(connectionID ConnectionID) (*UserID, error) {

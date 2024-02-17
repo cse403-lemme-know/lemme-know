@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
@@ -93,7 +94,7 @@ func RestGroupChatAPI(router *mux.Router, database Database, notification Notifi
 				Content:   request.Content,
 			}
 			if err := database.CreateMessage(message); err != nil {
-				http.Error(w, "could not create message", http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("could not create message: %v", err), http.StatusInternalServerError)
 				return
 			}
 
