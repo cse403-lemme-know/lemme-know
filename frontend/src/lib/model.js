@@ -161,38 +161,37 @@ async function fetchMessages(groupID, start, end) {
 }
 
 let webSocket;
+async function openWebSocket() {
+	const webSocketProtocol = location.protocol == 'http:' ? 'ws:' : 'wss:';
+	webSocket = new WebSocket(`${webSocketProtocol}//${location.host}/ws/`);
+	webSocket.onopen = console.log;
+	webSocket.onmessage = (event) => {
+		console.log(event);
+		const message = JSON.parse(event.data);
+		console.log(message);
+		if (message.group) {
+			refreshGroup(message.group.groupId);
+		}
+		if (message.user) {
+			users.update((existing) => {
+				return { [message.user.userId]: message.user, ...existing };
+			});
+		}
+		if (message.message) {
+			groups.update((existing) => {
+				if (!(message.message.groupId in existing)) {
+					existing[message.message.groupId] = [];
+				}
+				existing[message.message.groupId].messages.push(message.message);
+				return existing;
+			});
+		}
+	};
+	webSocket.onerror = console.log;
+	webSocket.onclose = console.log;
+}
 
 if (browser) {
-	async function openWebSocket() {
-		const webSocketProtocol = location.protocol == 'http:' ? 'ws:' : 'wss:';
-		webSocket = new WebSocket(`${webSocketProtocol}//${location.host}/ws/`);
-		webSocket.onopen = console.log;
-		webSocket.onmessage = (event) => {
-			console.log(event);
-			const message = JSON.parse(event.data);
-			console.log(message);
-			if (message.group) {
-				refreshGroup(message.group.groupId);
-			}
-			if (message.user) {
-				users.update((existing) => {
-					return { [message.user.userId]: message.user, ...existing };
-				});
-			}
-			if (message.message) {
-				groups.update((existing) => {
-					if (!(message.message.groupId in existing)) {
-						existing[message.message.groupId] = [];
-					}
-					existing[message.message.groupId].messages.push(message.message);
-					return existing;
-				});
-			}
-		};
-		webSocket.onerror = console.log;
-		webSocket.onclose = console.log;
-	}
-
 	getUser().then((user) => {
 		console.log(user);
 		openWebSocket();
