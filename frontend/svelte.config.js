@@ -9,7 +9,9 @@ const config = {
 		handler(warning);
 	},
 	kit: {
-		adapter: adapter()
+		adapter: adapter({
+			fallback: 'index.html' 
+		})
 	}
 };
 

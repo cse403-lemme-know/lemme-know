@@ -3,7 +3,6 @@
 	import { Datepicker } from 'svelte-calendar';
 	import dayjs from 'dayjs';
 	import { createGroup } from '$lib/model.js';
-	import { groupId } from '$lib/stores';
 	let name = 'LemmeKnow';
 	let groupName = '';
 	let startDate = undefined;
@@ -23,8 +22,7 @@
 					const createGroupId = await createGroup(groupName, calendarMode);
 					if (createGroupId) {
 						console.log('Group created with ID:', createGroupId);
-						groupId.set(createGroupId);
-						goto('/dashboard');
+						goto(`/dashboard/${createGroupId}`);
 					} else {
 						errorMsg = 'Failed to create group';
 					}

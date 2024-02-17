@@ -4,18 +4,19 @@
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
-	import { groupId } from '$lib/stores';
 	import { groups } from '$lib/model';
 	import { createAvailability, createTask } from '$lib/model';
-	import PollCreationModal from './PollCreationModal.svelte';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
+	import { page } from '$app/stores';
+
+  	$: groupId = $page.params.groupId;
 
 	let start, end;
 	let availableTimes = [];
 	let availability = writable({});
 	let successMsg = writable('');
-	$: group = $groups[$groupId];
+	$: group = $groups[groupId];
 
 	let tasks = writable([]);
 	let taskMsg = writable('');
@@ -115,7 +116,7 @@
 	}
 
 	async function saveAllAvailabilities() {
-		const currentGroupId = $groupId;
+		const currentGroupId = groupId;
 		console.log('current group ', currentGroupId);
 		if (!currentGroupId) {
 			console.error('No group ID is set.');
