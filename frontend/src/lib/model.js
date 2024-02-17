@@ -1,3 +1,11 @@
+import { browser } from '$app/environment';
+import { writable } from 'svelte/store';
+
+// Mapping of group ID to {...group, messages: []} (from backend).
+export const groups = writable({});
+// Mapping of user ID to user (from backend);
+export const users = writable({});
+
 // @ts-nocheck
 async function getUser() {
 	try {
@@ -9,13 +17,38 @@ async function getUser() {
 	}
 }
 
-async function createGroup(name) {
+/**
+ * @param {number} groupId
+ */
+async function getGroup(groupId) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/`);
+		const group = await response.json();
+		return group;
+	} catch (e) {
+		return null;
+	}
+}
+
+export async function refreshGroup(groupId) {
+	const group = await getGroup(groupId);
+	console.log(group);
+	groups.update((existing) => {
+		return {
+			[groupId]: { ...group, messages: existing[groupId] ? existing[groupId].messages : [] },
+			...existing
+		};
+	});
+}
+
+async function createGroup(name, calendarMode) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/`, {
 			method: 'PATCH',
-			body: JSON.stringify({ name })
+			body: JSON.stringify({ name, calendarMode })
 		});
 		const result = await response.json();
+		await refreshGroup(result.groupId);
 		return result.groupId;
 	} catch (e) {
 		return null;
@@ -127,7 +160,43 @@ async function fetchMessages(groupID, start, end) {
 	}
 }
 
-getUser().then(console.log);
+let webSocket;
+async function openWebSocket() {
+	const webSocketProtocol = location.protocol == 'http:' ? 'ws:' : 'wss:';
+	webSocket = new WebSocket(`${webSocketProtocol}//${location.host}/ws/`);
+	webSocket.onopen = console.log;
+	webSocket.onmessage = (event) => {
+		console.log(event);
+		const message = JSON.parse(event.data);
+		console.log(message);
+		if (message.group) {
+			refreshGroup(message.group.groupId);
+		}
+		if (message.user) {
+			users.update((existing) => {
+				return { [message.user.userId]: message.user, ...existing };
+			});
+		}
+		if (message.message) {
+			groups.update((existing) => {
+				if (!(message.message.groupId in existing)) {
+					existing[message.message.groupId] = [];
+				}
+				existing[message.message.groupId].messages.push(message.message);
+				return existing;
+			});
+		}
+	};
+	webSocket.onerror = console.log;
+	webSocket.onclose = console.log;
+}
+
+if (browser) {
+	getUser().then((user) => {
+		console.log(user);
+		openWebSocket();
+	});
+}
 
 export {
 	getUser,
