@@ -10,7 +10,7 @@
 	import Chat from './Chat.svelte';
 	import { page } from '$app/stores';
 
-  	$: groupId = $page.params.groupId;
+	$: groupId = $page.params.groupId;
 
 	let start, end;
 	let availableTimes = [];
@@ -31,11 +31,11 @@
 			await refreshGroup(groupId);
 			g = get(groups)[groupId];
 			if (!g) {
-				goto("/");
+				goto('/');
 				return;
 			}
 		}
-		const calendarMode = g.calendarMode.split(" to ")
+		const calendarMode = g.calendarMode.split(' to ');
 
 		start = dayjs(calendarMode[0]);
 		end = dayjs(calendarMode[1]);
@@ -184,7 +184,7 @@
 			</button>
 		</div>
 
-		<Chat {groupId} {group} bind:isPoll={isPoll}/>
+		<Chat {groupId} {group} bind:isPoll />
 
 		<div class="calendar-container">
 			<span class="calendar-title">AVAILABILITY CALENDAR</span>

@@ -1,11 +1,11 @@
 <script>
-	import PollCreationModal from "./PollCreationModal.svelte";
-	import { sendMessage } from "$lib/model";
+	import PollCreationModal from './PollCreationModal.svelte';
+	import { sendMessage } from '$lib/model';
 
 	export let groupId;
-    export let group;
+	export let group;
 	let content = '';
-    export let isPoll = false;
+	export let isPoll = false;
 	/**
 	 * Send a message to the chat.
 	 */
@@ -27,7 +27,7 @@
 </script>
 
 <div class="chatbox">
-    <div class="messages">
+	<div class="messages">
 		{#if group}
 			{#each group.messages as message (message.timestamp)}
 				<div class:message class:message.sender={message.sender}>
@@ -39,25 +39,25 @@
 				</div>
 			{/each}
 		{/if}
-    </div>
-    <div class="poll">
-        {#if isPoll}
-            <PollCreationModal />
-        {/if}
-    </div>
-    <div class="input-bar">
-        <input
-            class="input"
-            bind:value={content}
-            placeholder="Type your message..."
-            on:keydown={handleKeyPress}
-        />
-        <button on:click={handleSendMessage} on:keyup={handleSendMessage}>Send Message</button>
-    </div>
+	</div>
+	<div class="poll">
+		{#if isPoll}
+			<PollCreationModal />
+		{/if}
+	</div>
+	<div class="input-bar">
+		<input
+			class="input"
+			bind:value={content}
+			placeholder="Type your message..."
+			on:keydown={handleKeyPress}
+		/>
+		<button on:click={handleSendMessage} on:keyup={handleSendMessage}>Send Message</button>
+	</div>
 </div>
 
 <style>
-    /* chatbox style */
+	/* chatbox style */
 	.chatbox {
 		display: flex;
 		flex-direction: column;
