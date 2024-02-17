@@ -262,23 +262,23 @@ func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
 }
 
 func (dynamoDB *DynamoDB) ReadConnection(connectionID ConnectionID) (*UserID, error) {
-	panic("unimplemented")
+	return nil, fmt.Errorf("unimplemented")
 }
 
 func (dynamoDB *DynamoDB) WriteConnection(connectionID ConnectionID, userID UserID) error {
-	panic("unimplemented")
+	return fmt.Errorf("unimplemented")
 }
 
 func (dynamoDB *DynamoDB) DeleteConnection(connectionID ConnectionID) error {
-	panic("unimplemented")
+	return fmt.Errorf("unimplemented")
 }
 
 func (dynamoDB *DynamoDB) ReadVariable(name string) (string, error) {
-	panic("unimplemented")
+	return "", fmt.Errorf("unimplemented")
 }
 
 func (dynamoDB *DynamoDB) WriteVariable(name string, value string) error {
-	panic("unimplemented")
+	return fmt.Errorf("unimplemented")
 }
 
 func printDatabase(database Database) error {
@@ -304,10 +304,11 @@ type memoryMessageID struct {
 
 func NewMemoryDatabase() *MemoryDatabase {
 	return &MemoryDatabase{
-		users:     make(map[UserID]User),
-		groups:    make(map[GroupID]Group),
-		messages:  make(map[memoryMessageID]Message),
-		variables: make(map[string]string),
+		users:       make(map[UserID]User),
+		groups:      make(map[GroupID]Group),
+		messages:    make(map[memoryMessageID]Message),
+		connections: make(map[ConnectionID]UserID),
+		variables:   make(map[string]string),
 	}
 }
 
