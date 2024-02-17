@@ -50,4 +50,4 @@ Some tests, notably DynamoDB unit tests, have dependencies best suited for insta
 
 ## Deploying
 
-After building, you may deploy to the AWS cloud ([instructions](./terraform/README.md#provisioning-infrastructure)).
+After building both frontend and backend, you may deploy to the AWS cloud ([instructions](./terraform/README.md#provisioning-infrastructure)).
