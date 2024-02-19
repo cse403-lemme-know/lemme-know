@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.1
-	github.com/guregu/dynamo v1.21.0
+	github.com/guregu/dynamo v1.22.0
 	github.com/stretchr/testify v1.8.4
 )
 
@@ -25,6 +25,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
