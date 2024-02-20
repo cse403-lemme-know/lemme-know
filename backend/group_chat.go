@@ -104,6 +104,14 @@ func RestGroupChatAPI(router *mux.Router, database Database, notification Notifi
 				Sender:    message.Sender,
 				Content:   message.Content,
 			}}, database, notification)
+			pushGroup(group, MessagePushed{
+				Message: MessagePushedMessage{
+					Group:     group.Name,
+					Timestamp: message.Timestamp,
+					Sender:    user.Name,
+					Content:   message.Content,
+				},
+			}, database)
 
 			WriteJSON(w, nil)
 		}

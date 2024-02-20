@@ -23,7 +23,7 @@ type GroupChanged struct {
 
 // ID of the group that changed, so it can be redownloaded via REST API.
 type GroupChangedGroup struct {
-	GroupID GroupID `json:"groupID"`
+	GroupID GroupID `json:"groupId"`
 }
 
 // Notifiation that a user relevant to the client (share a group) changed.
