@@ -262,23 +262,44 @@ func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
 }
 
 func (dynamoDB *DynamoDB) ReadConnection(connectionID ConnectionID) (*UserID, error) {
-	return nil, fmt.Errorf("unimplemented")
+	var connection Connection
+	err := dynamoDB.connections.Get("ConnectionID", connectionID).One(&connection)
+
+	if errors.Is(err, dynamo.ErrNotFound) {
+		return nil, nil
+	}
+	return &connection.UserID, err
 }
 
 func (dynamoDB *DynamoDB) WriteConnection(connectionID ConnectionID, userID UserID) error {
-	return fmt.Errorf("unimplemented")
+	connection := Connection{
+		ConnectionID: connectionID,
+		UserID:       userID,
+	}
+	return dynamoDB.connections.Put(connection).If("attribute_not_exists(ConnectionID)").Run()
 }
 
 func (dynamoDB *DynamoDB) DeleteConnection(connectionID ConnectionID) error {
-	return fmt.Errorf("unimplemented")
+	err := dynamoDB.connections.Delete("ConnectionID", connectionID).If("attribute_exists(ConnectionID)").Run()
+	return err
 }
 
 func (dynamoDB *DynamoDB) ReadVariable(name string) (string, error) {
-	return "", fmt.Errorf("unimplemented")
+	var variable Variable
+	err := dynamoDB.connections.Get("Name", name).One(&variable)
+
+	if errors.Is(err, dynamo.ErrNotFound) {
+		return "", nil
+	}
+	return variable.Value, err
 }
 
 func (dynamoDB *DynamoDB) WriteVariable(name string, value string) error {
-	return fmt.Errorf("unimplemented")
+	variable := Variable{
+		Name:  name,
+		Value: value,
+	}
+	return dynamoDB.variables.Put(variable).If("attribute_not_exists(Name)").Run()
 }
 
 func printDatabase(database Database) error {
