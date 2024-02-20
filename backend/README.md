@@ -22,9 +22,9 @@ See [`../README.md`](../README.md) for instructions.
   - Precondition: Authentication cookie
   - Effect: Adds WebPush subscription.
   - Messages:
-    - `{message: {groupId: 1234, timestamp: 123456789, sender: "Bob", content: "hello", ...}`
+    - `{message: {group: "Friends", timestamp: 123456789, sender: "Bob", content: "hello", ...}`
       - Meaning: Delivers a chat message.
-    - `{reminder: {groupId: 1234, timestamp: 123456789, content: "hello", ...}`
+    - `{reminder: {group: "Friends", timestamp: 123456789, content: "hello", ...}`
       - Meaning: Delivers a reminder.
 
 ### User

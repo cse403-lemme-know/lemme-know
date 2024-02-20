@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	webpush "github.com/Appboy/webpush-go"
 	"github.com/gorilla/mux"
@@ -16,6 +17,51 @@ type GetPushResponse struct {
 }
 
 type PatchPushRequest = webpush.Subscription
+
+type MessagePushed struct {
+	Message MessagePushedMessage `json:"message"`
+}
+
+type MessagePushedMessage struct {
+	Group     string `json:"group"`
+	Timestamp uint64 `json:"timestamp"`
+	Sender    string `json:"sender"`
+	Content   string `json:"content"`
+}
+
+type ReminderPushed struct {
+	Reminder ReminderPushedReminder `json:"reminder"`
+}
+
+type ReminderPushedReminder struct {
+	Group     string `json:"group"`
+	Timestamp uint64 `json:"timestamp"`
+	Content   string `json:"content"`
+}
+
+// Send a best-effort push notification to all group members.
+func pushGroup(group *Group, data any, database Database) {
+	// Update all members in parallel.
+	var wait sync.WaitGroup
+	for _, userID := range group.Members {
+		userID := userID
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			user, err := database.ReadUser(userID)
+			if err != nil || user == nil {
+				// Ignore errors as notification is best-effort.
+				return
+			}
+			// Update all a member's connections serially.
+			for _, subscription := range user.Subscriptions {
+				// Ignore errors as notification is best-effort.
+				_ = webPush(data, subscription, database)
+			}
+		}()
+	}
+	wait.Wait()
+}
 
 func RestPushAPI(router *mux.Router, database Database, notification Notification) {
 	router.Use(AuthenticateMiddleware(database))
@@ -55,7 +101,7 @@ func RestPushAPI(router *mux.Router, database Database, notification Notificatio
 	})
 }
 
-func WebPush(data any, subscription webpush.Subscription, database Database) error {
+func webPush(data any, subscription webpush.Subscription, database Database) error {
 	json, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("could not marshal push to JSON: %w", err)
