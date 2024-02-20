@@ -286,7 +286,7 @@ func (dynamoDB *DynamoDB) DeleteConnection(connectionID ConnectionID) error {
 
 func (dynamoDB *DynamoDB) ReadVariable(name string) (string, error) {
 	var variable Variable
-	err := dynamoDB.connections.Get("Name", name).One(&variable)
+	err := dynamoDB.variables.Get("Name", name).One(&variable)
 
 	if errors.Is(err, dynamo.ErrNotFound) {
 		return "", nil
@@ -299,7 +299,7 @@ func (dynamoDB *DynamoDB) WriteVariable(name string, value string) error {
 		Name:  name,
 		Value: value,
 	}
-	return dynamoDB.variables.Put(variable).If("attribute_not_exists(Name)").Run()
+	return dynamoDB.variables.Put(variable).If("attribute_not_exists($)", "Name").Run()
 }
 
 func printDatabase(database Database) error {
