@@ -5,7 +5,7 @@
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { groups } from '$lib/model';
-	import { createAvailability, deleteTask, createTask, refreshGroup, getGroup, deleteAvailability } from '$lib/model';
+	import { createAvailability, createTask, refreshGroup } from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
 	import { page } from '$app/stores';
@@ -16,6 +16,7 @@
 	let availableTimes = [];
 	let availability = writable({});
 	let successMsg = writable('');
+	$: group = $groups[groupId];
 	let groupData = {};
 	$: group = $groups[groupId];
 
@@ -121,6 +122,13 @@
 	}
 
 	async function saveAllAvailabilities() {
+		const currentGroupId = groupId;
+		console.log('current group ', currentGroupId);
+		if (!currentGroupId) {
+			console.error('No group ID is set.');
+			return;
+		}
+
 		const allAvailabilityData = [];
 
 		for (const [date, slots] of Object.entries($availability)) {

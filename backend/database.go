@@ -145,7 +145,7 @@ func (dynamoDB *DynamoDB) CreateUser(userInfo User) error {
 // an error if the operation could not be completed.
 func (dynamoDB *DynamoDB) ReadUser(userID UserID) (*User, error) {
 	var user User
-	err := dynamoDB.users.Get("UserID", userID).Consistent(true).One(&user)
+	err := dynamoDB.users.Get("UserID", userID).One(&user)
 
 	if errors.Is(err, dynamo.ErrNotFound) {
 		return nil, nil
@@ -204,7 +204,7 @@ func (dynamoDB *DynamoDB) CreateGroup(groupInfo Group) error {
 // an error if the operation could not be completed.
 func (dynamoDB *DynamoDB) ReadGroup(groupID GroupID) (*Group, error) {
 	var group Group
-	err := dynamoDB.groups.Get("GroupID", groupID).Consistent(true).One(&group)
+	err := dynamoDB.groups.Get("GroupID", groupID).One(&group)
 
 	if errors.Is(err, dynamo.ErrNotFound) {
 		return nil, nil
@@ -245,7 +245,7 @@ func (dynamoDB *DynamoDB) UpdateGroup(groupID GroupID, transaction func(*Group) 
 func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error) {
 	var messages []Message
 	const limit = 5
-	err := dynamoDB.messages.Get("GroupID", groupID).Range("Timestamp", "BETWEEN", startTime, endTime).Consistent(true).Limit(limit).All(&messages)
+	err := dynamoDB.messages.Get("GroupID", groupID).Range("Timestamp", "BETWEEN", startTime, endTime).Limit(limit).All(&messages)
 	return messages, len(messages) >= limit, err
 }
 

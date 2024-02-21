@@ -180,7 +180,127 @@ async function getGroup(groupId) {
 
 
 getUser().then(console.log);
+async function createPoll(groupId, title, options) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/poll/`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ title, options })
+		});
+		if (response.status === 200) {
+			console.log('success for creating poll');
+		}
+	} catch (e) {
+		return null;
+	}
+}
 
+async function updateVotes(groupID, votes) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupID}/poll/`, {
+			method: 'PATCH',
+			body: JSON.stringify({ votes })
+		});
+		if (response.status === 200) {
+			console.log('success for updating votes');
+		}
+	} catch (e) {
+		return null;
+	}
+}
+
+async function deletePoll(groupID) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupID}/poll/`, {
+			method: 'DELETE'
+		});
+		if (response.status === 200) {
+			console.log('success for deleting poll');
+		}
+	} catch (e) {
+		return null;
+	}
+}
+
+async function sendMessage(groupID, content) {
+	try {
+		return await fetch(`//${location.host}/api/group/${groupID}/chat/`, {
+			method: 'PATCH',
+			body: JSON.stringify({ content })
+		});
+	} catch (e) {
+		return null;
+	}
+}
+
+async function fetchMessages(groupID, start, end) {
+	try {
+		const response = await fetch(
+			`//${location.host}/api/group/${groupID}/chat/?` + new URLSearchParams({ start, end }),
+			{
+				method: 'GET'
+			}
+		);
+		const result = await response.json();
+		if (result.continue == true) {
+			result.messages[result.messages.length - 1].timestamp + 1;
+		}
+	} catch (e) {
+		return null;
+	}
+}
+
+let webSocket;
+async function openWebSocket() {
+	const webSocketProtocol = location.protocol == 'http:' ? 'ws:' : 'wss:';
+	webSocket = new WebSocket(`${webSocketProtocol}//${location.host}/ws/`);
+	webSocket.onopen = console.log;
+	webSocket.onmessage = (event) => {
+		console.log(event);
+		const message = JSON.parse(event.data);
+		console.log(message);
+		if (message.group) {
+			refreshGroup(message.group.groupId);
+		}
+		if (message.user) {
+			users.update((existing) => {
+				return { [message.user.userId]: message.user, ...existing };
+			});
+		}
+		if (message.message) {
+			groups.update((existing) => {
+				if (!(message.message.groupId in existing)) {
+					existing[message.message.groupId] = [];
+				}
+				existing[message.message.groupId].messages.push(message.message);
+				return existing;
+			});
+		}
+	};
+	webSocket.onerror = console.log;
+	webSocket.onclose = console.log;
+}
+
+if (browser) {
+	getUser().then((user) => {
+		console.log(user);
+		openWebSocket();
+	});
+}
+
+export {
+	getUser,
+	createGroup,
+	createAvailability,
+	createTask,
+	createPoll,
+	updateVotes,
+	deletePoll,
+	sendMessage,
+	fetchMessages
+};
 async function sendMessage(groupID, content) {
 	try {
 		return await fetch(`//${location.host}/api/group/${groupID}/chat/`, {
