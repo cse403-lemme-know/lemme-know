@@ -18,7 +18,9 @@ LemmeKnow is a group activity planning platform with an integrated calendar to s
 - [`frontend/`](./frontend/) contains the frontend website
 - [`backend/`](./backend/) contains the backend serverless function 
 - [`terraform/`](./terraform/) contains infrastructure definitions
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) offers advice on contributing.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) offers advice on contributing
+- [`.github/workflows/`](./.github/workflows/) contains the CI
+  - [here](https://github.com/cse403-lemmeknow/lemmeknow/actions) is the build history
 
 ## Prerequisites
 
@@ -36,16 +38,18 @@ The first entry in each component's `Makefile` will run it locally, so simply ty
 
 By default, the fronted will host http://localhost:5173/ and the backend will host http://localhost:8080. If you run both, the backend will reverse-proxy the frontend, so navigate to the latter URL only.
 
-## Building
-
-Each `Makefile` includes a `build` step, so simply type `make build` in [`frontend/`](`frontend/`) and/or [`backend/`](./backend/). The frontend will build to `frontend/build/*` and the backend will build to `backend/bin/bootstrap.zip`
-
 ## Testing
 
 Each `Makefile` includes a `test` step, so simply type `make test` in [`frontend/`](`frontend/`) and/or [`backend/`](./backend/).
 
 Some tests, notably DynamoDB unit tests, have dependencies best suited for installation in a CI workflow or Docker container. To run *all* tests locally, run `act` ([instructions](#prerequisites)) in this directory.
 
+## Building
+
+Building is not necessary to run locally, but it is essential for cloud deployment.
+
+Each `Makefile` includes a `build` step, so simply type `make build` in [`frontend/`](`frontend/`) and/or [`backend/`](./backend/). The frontend will build to `frontend/build/*` and the backend will build to `backend/bin/bootstrap.zip`
+
 ## Deploying
 
-After building, you may deploy to the AWS cloud ([instructions](./terraform/README.md#provisioning-infrastructure)).
+After building both frontend and backend, you may deploy to the AWS cloud ([instructions](./terraform/README.md#provisioning-infrastructure)).

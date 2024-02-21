@@ -192,7 +192,7 @@ func (dynamoDB *DynamoDB) DeleteUser(userID UserID) error {
 
 // Creates a new group in the database.
 //
-// Returns an error if a group with the same `GroupIP`
+// Returns an error if a group with the same `GroupID`
 // already exists, or if the operation may have failed.
 func (dynamoDB *DynamoDB) CreateGroup(groupInfo Group) error {
 	return dynamoDB.groups.Put(groupInfo).If("attribute_not_exists(GroupID)").Run()
@@ -258,27 +258,48 @@ func (dynamoDB *DynamoDB) DeleteGroup(groupID GroupID) error {
 }
 
 func (dynamoDB *DynamoDB) CreateMessage(message Message) error {
-	return dynamoDB.messages.Put(message).If("attribute_not_exists(Timestamp)").Run()
+	return dynamoDB.messages.Put(message).If("attribute_not_exists($)", "Timestamp").Run()
 }
 
 func (dynamoDB *DynamoDB) ReadConnection(connectionID ConnectionID) (*UserID, error) {
-	panic("unimplemented")
+	var connection Connection
+	err := dynamoDB.connections.Get("ConnectionID", connectionID).One(&connection)
+
+	if errors.Is(err, dynamo.ErrNotFound) {
+		return nil, nil
+	}
+	return &connection.UserID, err
 }
 
 func (dynamoDB *DynamoDB) WriteConnection(connectionID ConnectionID, userID UserID) error {
-	panic("unimplemented")
+	connection := Connection{
+		ConnectionID: connectionID,
+		UserID:       userID,
+	}
+	return dynamoDB.connections.Put(connection).If("attribute_not_exists(ConnectionID)").Run()
 }
 
 func (dynamoDB *DynamoDB) DeleteConnection(connectionID ConnectionID) error {
-	panic("unimplemented")
+	err := dynamoDB.connections.Delete("ConnectionID", connectionID).If("attribute_exists(ConnectionID)").Run()
+	return err
 }
 
 func (dynamoDB *DynamoDB) ReadVariable(name string) (string, error) {
-	panic("unimplemented")
+	var variable Variable
+	err := dynamoDB.variables.Get("Name", name).One(&variable)
+
+	if errors.Is(err, dynamo.ErrNotFound) {
+		return "", nil
+	}
+	return variable.Value, err
 }
 
 func (dynamoDB *DynamoDB) WriteVariable(name string, value string) error {
-	panic("unimplemented")
+	variable := Variable{
+		Name:  name,
+		Value: value,
+	}
+	return dynamoDB.variables.Put(variable).If("attribute_not_exists($)", "Name").Run()
 }
 
 func printDatabase(database Database) error {
@@ -304,10 +325,11 @@ type memoryMessageID struct {
 
 func NewMemoryDatabase() *MemoryDatabase {
 	return &MemoryDatabase{
-		users:     make(map[UserID]User),
-		groups:    make(map[GroupID]Group),
-		messages:  make(map[memoryMessageID]Message),
-		variables: make(map[string]string),
+		users:       make(map[UserID]User),
+		groups:      make(map[GroupID]Group),
+		messages:    make(map[memoryMessageID]Message),
+		connections: make(map[ConnectionID]UserID),
+		variables:   make(map[string]string),
 	}
 }
 

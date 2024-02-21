@@ -10,10 +10,11 @@ import (
 
 // New activity sent over JSON.
 type PatchActivityRequest struct {
-	Title string `json:"title"`
-	Date  string `json:"date"`
-	Start string `json:"start"`
-	End   string `json:"end"`
+	Title   string `json:"title"`
+	Date    string `json:"date"`
+	Start   string `json:"start"`
+	End     string `json:"end"`
+	Confirm *bool  `json:"confirm"`
 }
 
 // API's related to activities within a group.
@@ -32,7 +33,64 @@ func RestGroupActivityAPI(router *mux.Router, database Database, notification No
 			return
 		}
 
+		if !slices.ContainsFunc(group.Activities, func(a Activity) bool { return a.ActivityID == activityID }) {
+			http.Error(w, "activity not found", http.StatusNotFound)
+			return
+		}
+
 		switch r.Method {
+		case http.MethodPatch:
+			var request PatchActivityRequest
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				http.Error(w, "could not decode body", http.StatusBadRequest)
+				return
+			}
+
+			if (request.Date != "" && invalidDate(w, request.Date)) || (request.Start != "" && invalidTime(w, request.Start)) || (request.End != "" && invalidTime(w, request.End)) {
+				return
+			}
+
+			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
+				for i, activity := range group.Activities {
+					if activity.ActivityID != activityID {
+						continue
+					}
+					if request.Title != "" && request.Title != activity.Title {
+						group.Activities[i].Title = request.Title
+					}
+					if request.Date != "" && request.Date != activity.Date {
+						group.Activities[i].Date = request.Date
+						// If the date changes, those that confirmed may no longer be able to attend.
+						group.Activities[i].Confirmed = []UserID{}
+					}
+					if request.Start != "" && request.Start != activity.Start {
+						group.Activities[i].Start = request.Start
+						// If the start changes, those that confirmed may no longer be able to attend.
+						group.Activities[i].Confirmed = []UserID{}
+					}
+					if request.End != "" && request.End != activity.End {
+						group.Activities[i].End = request.End
+						// If the end changes, those that confirmed may no longer be able to attend.
+						group.Activities[i].Confirmed = []UserID{}
+					}
+					if request.Confirm != nil {
+						if *request.Confirm {
+							if !slices.Contains(group.Activities[i].Confirmed, user.UserID) {
+								group.Activities[i].Confirmed = append(group.Activities[i].Confirmed, user.UserID)
+							}
+						} else {
+							group.Activities[i].Confirmed = slices.DeleteFunc(group.Activities[i].Confirmed, func(u UserID) bool { return u == user.UserID })
+						}
+					}
+				}
+
+				return nil
+			}, database, notification); err != nil {
+				http.Error(w, "could not create activity", http.StatusInternalServerError)
+				return
+			}
+
+			WriteJSON(w, nil)
 		case http.MethodDelete:
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				group.Activities = slices.DeleteFunc(group.Activities, func(activity Activity) bool { return activity.ActivityID == activityID })
@@ -58,6 +116,10 @@ func RestGroupActivityAPI(router *mux.Router, database Database, notification No
 			return
 		}
 
+		if invalidDate(w, request.Date) || invalidTime(w, request.Start) || invalidTime(w, request.End) {
+			return
+		}
+
 		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
 
@@ -67,6 +129,10 @@ func RestGroupActivityAPI(router *mux.Router, database Database, notification No
 		}
 
 		if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
+			confirmed := []UserID{}
+			if request.Confirm != nil && *request.Confirm {
+				confirmed = append(confirmed, user.UserID)
+			}
 			group.Activities = append(group.Activities, Activity{
 				ActivityID: GenerateID(),
 				Title:      request.Title,

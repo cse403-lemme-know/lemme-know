@@ -1,34 +1,45 @@
 <script>
+	// @ts-nocheck
+
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
-	import { startDate, endDate, groupId, userId } from '$lib/stores';
-	import {createAvailability, createTask, deleteAvailability, getGroup, deleteTask} from '$lib/model';
+	import { groups } from '$lib/model';
+	import { createAvailability, deleteTask, createTask, refreshGroup, getGroup, deleteAvailability } from '$lib/model';
+	import { goto } from '$app/navigation';
+	import Chat from './Chat.svelte';
+	import { page } from '$app/stores';
+
+	$: groupId = $page.params.groupId;
+
 	let start, end;
 	let availableTimes = [];
 	let availability = writable({});
 	let successMsg = writable('');
 	let groupData = {};
+	$: group = $groups[groupId];
 
 	let tasks = writable([]);
 	let taskMsg = writable('');
 	let taskInput = '';
 	let assignedInput = '';
-	let currentGroupId = '';
+	let isPoll = false;
 
 	onMount(async () => {
-		const queryParams = new URLSearchParams(window.location.search);
-		currentGroupId = queryParams.get('groupId');
-		console.log("groupid here", currentGroupId);
-		start = get(startDate);
-		end = get(endDate);
-		start = dayjs(start);
-		end = dayjs(end);
-
-		if (currentGroupId) {
-			groupId.set(currentGroupId);
-			groupData = await getGroup(currentGroupId);
+		// TODO: Refactor to avoid needing this.
+		let g = group;
+		if (!g) {
+			await refreshGroup(groupId);
+			g = get(groups)[groupId];
+			if (!g) {
+				goto('/');
+				return;
+			}
 		}
+		const calendarMode = g.calendarMode.split(' to ');
+
+		start = dayjs(calendarMode[0]);
+		end = dayjs(calendarMode[1]);
 
 		function initializeAvailability(start, end) {
 			let days = {};
@@ -57,12 +68,11 @@
 			a[day][hour] = !a[day][hour];
 			return a;
 		});
-
 	}
 
 	async function addTask(title) {
-		console.log('adding task for group: ', currentGroupId);
-		if (!currentGroupId) {
+		console.log('adding task for group: ', groupId);
+		if (!groupId) {
 			taskMsg.set('No Group ID is set');
 			return;
 		}
@@ -74,9 +84,9 @@
 		taskMsg.set('');
 
 		try {
-			const response = await createTask(currentGroupId, title);
+			const response = await createTask(groupId, title);
 			if (response.ok) {
-				await updateGroupData(currentGroupId);
+				await updateGroupData(groupId);
 				tasks.set(groupData.tasks.map(task => ({
 					id: task.taskId,
 					description: task.title,
@@ -93,7 +103,7 @@
 			taskMsg.set('Failed to add task');
 			console.error('task error ', e);
 		}
-		await updateGroupData(currentGroupId);
+		await updateGroupData(groupId);
 	}
 
 	function toggleCompletion(taskId) {
@@ -106,29 +116,8 @@
 		});
 	}
 
-	// for chat box
-	let messages = [];
-	let newMessage = '';
-
-	/**
-	 * Send a message to the chat.
-	 */
-	function sendMessage() {
-		if (newMessage.trim() !== '') {
-			messages = [...messages, { text: newMessage, sender: 'user' }];
-			newMessage = '';
-			// add logic here to handle the response from a server or another user.
-		}
-	}
-
-	/**
-	 * send message if hit enter
-	 * @param event
-	 */
-	function handleKeyPress(event) {
-		if (event.key === 'Enter') {
-			sendMessage();
-		}
+	function openPoll() {
+		isPoll = true;
 	}
 
 	async function saveAllAvailabilities() {
@@ -152,14 +141,14 @@
 
 		try {
 			for (const availabilityData of allAvailabilityData) {
-				createAvailability(currentGroupId, availabilityData);
+				createAvailability(groupId, availabilityData);
 			}
 
 			const times = allAvailabilityData
 				.map((data) => `${data.date} from ${data.start} to ${data.end}`)
 				.join(', ');
 			successMsg.set('All availabilities saved successfully ' + times);
-			console.log("GroupID", currentGroupId);
+			console.log("GroupID", groupId);
 			console.log('Saved times:', JSON.stringify(availableTimes));
 		} catch (error) {
 			successMsg.set('Failed to save availability');
@@ -170,16 +159,16 @@
 
 	async function removeAvailability(selectedDay, selectedHour) {
 		const formattedHour = `${selectedHour < 10 ? `0${selectedHour}` : selectedHour}:00`;
-		const currentData = await getGroup(currentGroupId);
+		const currentData = await getGroup(groupId);
 		const matchingAvailability = currentData.availabilities.find(avail =>
 				avail.date === selectedDay && avail.start === formattedHour
 		);
 
-		console.log(currentGroupId);
+		console.log(groupId);
 		if (matchingAvailability) {
-			await deleteAvailability(currentGroupId, matchingAvailability.availabilityId);
+			await deleteAvailability(groupId, matchingAvailability.availabilityId);
 			console.log("making an attempt to delete availability with id: ", matchingAvailability.availabilityId);
-			await updateGroupData(currentGroupId);
+			await updateGroupData(groupId);
 			console.log(`Deleted availability with ID: ${matchingAvailability.availabilityId}`);
 		} else {
 			console.error("No matching availability found to delete");
@@ -198,7 +187,7 @@
 
 	async function deleteTaskWrapper(taskId) {
 		try {
-			await deleteTask(currentGroupId, taskId);
+			await deleteTask(groupId, taskId);
 			tasks.update(currentTasks => {
 				return currentTasks.filter(task => task.id !== taskId);
 			});
@@ -222,32 +211,14 @@
 				<img src="../users.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Members</span>
 			</button>
-			<button on:click={() => navigator.clipboard.writeText(`${window.location.origin}/dashboard?groupId=${get(groupId)}`)} class="invite-button">Invite Link!</button>
+			<button class="menu-button" on:click={openPoll}>
+				<img src="../poll.png" alt="menu bar" class="user-icon" />
+				<span class="members-title">Create Poll</span>
+			</button>
+			<button on:click={() => navigator.clipboard.writeText(`${window.location.origin}/dashboard/${get(groupId)}`)} class="invite-button">Invite Link!</button>
 		</div>
 
-		<div class="chatbox">
-			<div class="messages">
-				{#each messages as message (message.text)}
-					<div class:message class:message.sender={message.sender}>
-						{#if message.sender === 'user'}
-							<strong class="user-message">You:</strong> {message.text}
-						{:else if message.sender === 'system'}
-							<em class="system-message">{message.text}</em>
-						{/if}
-					</div>
-				{/each}
-			</div>
-
-			<div class="input-bar">
-				<input
-					class="input"
-					bind:value={newMessage}
-					placeholder="Type your message..."
-					on:keydown={handleKeyPress}
-				/>
-				<button on:click={sendMessage} on:keyup={sendMessage}>Send Message</button>
-			</div>
-		</div>
+		<Chat {groupId} {group} bind:isPoll />
 
 		<div class="calendar-container">
 			<span class="calendar-title">AVAILABILITY CALENDAR</span>
@@ -391,7 +362,9 @@
 	.menu-button:hover .user-icon {
 		transform: scale(1.2);
 	}
-
+	.menu-button:hover .poll-icon {
+		transform: scale(1.2);
+	}
 	.content-wrap {
 		display: flex;
 		flex-direction: row;
@@ -441,7 +414,7 @@
 		border: 2px solid transparent;
 	}
 
-	button {
+	:global(button) {
 		padding: 0.5rem 1rem;
 		background-color: #2774d0;
 		color: white;
@@ -452,7 +425,7 @@
 		cursor: pointer;
 	}
 
-	button:hover {
+	:global(button:hover) {
 		background-color: gray;
 		color: white;
 	}
@@ -489,54 +462,12 @@
 		font-weight: bold;
 	}
 
-	button[type='submit']:disabled {
+	:global(button[type='submit']:disabled) {
 		background-color: #ccc;
 		cursor: not-allowed;
 	}
-	/* chatbox style */
-	.chatbox {
-		display: flex;
-		flex-direction: column;
-		border: 2px solid #ccc;
-		padding: 4rem 6rem 2rem 6rem;
-		max-width: calc(90% - 10px);
-		height: 700px;
-		border-radius: 8px;
-		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-		overflow-y: auto; /* Add scrollbar when content exceeds the height */
-		margin-right: 2rem;
-	}
 
-	.messages {
-		flex-grow: 1;
-		display: flex;
-		flex-direction: column-reverse; /* Reverse the order of messages */
-	}
-
-	.message {
-		margin: 8px 0;
-		padding: 8px;
-		background-color: #f0f0f0;
-		border-radius: 4px;
-	}
-
-	.user-message {
-		background-color: #e6f7ff;
-		text-align: right;
-	}
-
-	.system-message {
-		color: #888;
-		font-style: italic;
-	}
-
-	.input-bar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-top: 10px;
-	}
-	input {
+	:global(input) {
 		padding: 0.5rem;
 		margin-bottom: 0.5rem;
 		width: 80%;
@@ -548,7 +479,7 @@
 		border: 2px solid transparent;
 	}
 
-	button {
+	:global(button) {
 		flex-shrink: 0;
 	}
 

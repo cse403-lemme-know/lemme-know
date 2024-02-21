@@ -2,10 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"slices"
 
 	"github.com/gorilla/mux"
+)
+
+const (
+	taskTitleMinLen = 1
+	taskTitleMaxLen = 50
 )
 
 // New/updated task sent over JSON.
@@ -39,6 +45,13 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 				return
 			}
 
+			if invalidString(w, request.Title, 0, taskTitleMaxLen) {
+				return
+			}
+			if request.Assignee != nil && !group.IsMember(*request.Assignee) {
+				http.Error(w, "assignee not in group", http.StatusBadRequest)
+			}
+
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 				for _, task := range group.Tasks {
 					if task.TaskID != taskID {
@@ -48,6 +61,9 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 						task.Title = request.Title
 					}
 					if request.Assignee != nil {
+						if !group.IsMember(*request.Assignee) {
+							return fmt.Errorf("assignee is not a member")
+						}
 						task.Assignee = *request.Assignee
 					}
 					if request.Completed != nil {
@@ -84,6 +100,10 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 		var request PatchTaskRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			http.Error(w, "could not decode body", http.StatusBadRequest)
+			return
+		}
+
+		if invalidString(w, request.Title, taskTitleMinLen, taskTitleMaxLen) {
 			return
 		}
 

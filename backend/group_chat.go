@@ -2,11 +2,17 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+)
+
+const (
+	chatMessageMinLen = 1
+	chatMessageMaxLen = 500
 )
 
 // Chat sent over JSON.
@@ -76,6 +82,11 @@ func RestGroupChatAPI(router *mux.Router, database Database, notification Notifi
 				http.Error(w, "could not decode body", http.StatusBadRequest)
 				return
 			}
+
+			if invalidString(w, request.Content, chatMessageMinLen, chatMessageMaxLen) {
+				return
+			}
+
 			message := Message{
 				GroupID:   group.GroupID,
 				Sender:    user.UserID,
@@ -83,7 +94,7 @@ func RestGroupChatAPI(router *mux.Router, database Database, notification Notifi
 				Content:   request.Content,
 			}
 			if err := database.CreateMessage(message); err != nil {
-				http.Error(w, "could not create message", http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("could not create message: %v", err), http.StatusInternalServerError)
 				return
 			}
 
@@ -93,6 +104,14 @@ func RestGroupChatAPI(router *mux.Router, database Database, notification Notifi
 				Sender:    message.Sender,
 				Content:   message.Content,
 			}}, database, notification)
+			pushGroup(group, MessagePushed{
+				Message: MessagePushedMessage{
+					Group:     group.Name,
+					Timestamp: message.Timestamp,
+					Sender:    user.Name,
+					Content:   message.Content,
+				},
+			}, database)
 
 			WriteJSON(w, nil)
 		}

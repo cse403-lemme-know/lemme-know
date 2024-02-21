@@ -68,6 +68,10 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database, notificatio
 			return
 		}
 
+		if invalidDate(w, request.Date) || invalidTime(w, request.Start) || invalidTime(w, request.End) {
+			return
+		}
+
 		user := r.Context().Value(UserKey).(*User)
 		group := r.Context().Value(GroupKey).(*Group)
 

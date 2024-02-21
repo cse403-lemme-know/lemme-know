@@ -16,28 +16,34 @@ import (
 
 type ConnectionID = string
 
+// Notification that a group relevant to the client changed.
 type GroupChanged struct {
 	Group GroupChangedGroup `json:"group"`
 }
 
+// ID of the group that changed, so it can be redownloaded via REST API.
 type GroupChangedGroup struct {
-	GroupID GroupID `json:"groupID"`
+	GroupID GroupID `json:"groupId"`
 }
 
+// Notifiation that a user relevant to the client (share a group) changed.
 type UserChanged struct {
 	User UserChangedUser `json:"user"`
 }
 
+// The user that changed.
 type UserChangedUser struct {
 	UserID UserID `json:"userId"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
 }
 
+// Notification that a chat message should be received.
 type MessageReceived struct {
 	Message MessageReceivedMessage `json:"message"`
 }
 
+// The chat message that should be received.
 type MessageReceivedMessage struct {
 	GroupID   GroupID `json:"groupId"`
 	Timestamp uint64  `json:"timestamp"`
@@ -51,12 +57,14 @@ type MessageReceivedMessage struct {
 func notifyGroup(group *Group, data any, database Database, notification Notification) {
 	dataOrGroupChanged := data
 	if dataOrGroupChanged == nil {
+		// The defaeult (group-changed notification).
 		dataOrGroupChanged = GroupChanged{
 			Group: GroupChangedGroup{
 				GroupID: group.GroupID,
 			},
 		}
 	}
+	// Update all members in parallel.
 	var wait sync.WaitGroup
 	for _, userID := range group.Members {
 		userID := userID
@@ -68,6 +76,7 @@ func notifyGroup(group *Group, data any, database Database, notification Notific
 				// Ignore errors as notification is best-effort.
 				return
 			}
+			// Update all a member's connections serially.
 			for _, connectionID := range user.Connections {
 				// Ignore errors as notification is best-effort.
 				_ = notification.Notify(connectionID, dataOrGroupChanged)
@@ -83,6 +92,7 @@ func notifyGroup(group *Group, data any, database Database, notification Notific
 // Errors are passed through from `Database.UpdateGroup`. Notification is
 // skipped in the case of an error.
 func updateAndNotifyGroup(groupID GroupID, transaction func(*Group) error, database Database, notification Notification) error {
+	// Read the group from the transaction that suceeds.
 	var g *Group = nil
 	err := database.UpdateGroup(groupID, func(group *Group) error {
 		g = group
@@ -109,6 +119,7 @@ func updateUserAndNotifyGroups(userID UserID, transaction func(*User) error, dat
 	if err != nil {
 		return err
 	}
+	// Notify all groups in parallel.
 	var wait sync.WaitGroup
 	for _, groupID := range u.Groups {
 		groupID := groupID

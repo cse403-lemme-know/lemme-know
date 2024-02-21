@@ -2,31 +2,31 @@
 	import { goto } from '$app/navigation';
 	import { Datepicker } from 'svelte-calendar';
 	import dayjs from 'dayjs';
-	import { writable } from 'svelte/store';
 	import { createGroup } from '$lib/model.js';
-	import { startDate, endDate, groupName, groupId } from '$lib/stores';
 	let name = 'LemmeKnow';
-	let errorMsg = writable('');
+	let groupName = '';
+	let startDate = undefined;
+	let endDate = undefined;
+	let errorMsg = '';
 
 	async function handleButtonClick() {
-		if ($startDate && $endDate) {
-			if (dayjs($startDate).isAfter($endDate)) {
-				$errorMsg = 'Start date must be before the end date';
+		if (startDate && endDate) {
+			if (dayjs(startDate).isAfter(endDate)) {
+				errorMsg = 'Start date must be before the end date';
 			} else {
-				$errorMsg = '';
-				if (!$groupName || $groupName.trim().length === 0) {
-					$errorMsg = 'Please enter a group name';
+				errorMsg = '';
+				if (!groupName || groupName.trim().length === 0) {
+					errorMsg = 'Please enter a group name';
 				} else {
-					startDate.set($startDate);
-					endDate.set($endDate);
-					groupName.set($groupName);
-					const createGroupId = await createGroup($groupName);
+					const calendarMode = `${dayjs(startDate).format('YYYY-MM-DD')} to ${dayjs(endDate).format(
+						'YYYY-MM-DD'
+					)}`;
+					const createGroupId = await createGroup(groupName, calendarMode);
 					if (createGroupId) {
 						console.log('Group created with ID:', createGroupId);
-						groupId.set(createGroupId);
-						goto(`/dashboard?groupId=${createGroupId}`);
+						goto(`/dashboard/${createGroupId}`);
 					} else {
-						$errorMsg = 'Failed to create group';
+						errorMsg = 'Failed to create group';
 					}
 				}
 			}
@@ -52,14 +52,14 @@
 		</div>
 		<div class="date-picker-container">
 			<label for="startDate">Start Date:</label>
-			<Datepicker bind:selected={$startDate} />
+			<Datepicker bind:selected={startDate} />
 			<label for="endDate">End Date:</label>
-			<Datepicker bind:selected={$endDate} />
+			<Datepicker bind:selected={endDate} />
 		</div>
 		<div class="input-container">
-			<input type="text" bind:value={$groupName} placeholder="Enter Group name.." />
+			<input type="text" bind:value={groupName} placeholder="Enter Group name.." />
 			<button on:click={handleButtonClick}>Let me know!</button>
-			<span class="errorMsg">{$errorMsg}</span>
+			<span class="errorMsg">{errorMsg}</span>
 		</div>
 		<div class="container">
 			<img src="/road.png" alt="group of friends driving in the car" />

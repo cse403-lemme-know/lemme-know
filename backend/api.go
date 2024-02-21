@@ -74,6 +74,7 @@ func WebSocket(database Database, connectionID ConnectionID, userID *UserID) err
 		}
 		return database.DeleteConnection(connectionID)
 	} else {
+		_ = database.WriteConnection(connectionID, *userID)
 		return database.UpdateUser(*userID, func(user *User) error {
 			user.Connections = append(user.Connections, connectionID)
 			return nil
