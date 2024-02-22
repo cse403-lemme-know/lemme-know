@@ -162,7 +162,7 @@ func TestHTTPService(t *testing.T) {
 
 	// Test: send chat.
 	patchChatRequest := PatchChatRequest{
-		Content: "hello",
+		Content: "hi shit",
 	}
 	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/chat/", port, groupID), patchChatRequest)
 	assert.Nil(t, err)
@@ -177,7 +177,7 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, false, getChatResponse.Continue)
 	assert.Equal(t, 1, len(getChatResponse.Messages))
 	assert.Equal(t, userID, getChatResponse.Messages[0].Sender)
-	assert.Equal(t, patchChatRequest.Content, getChatResponse.Messages[0].Content)
+	assert.Equal(t, "hi s***", getChatResponse.Messages[0].Content)
 
 	// Test: create activity.
 	patchActivityRequest := PatchActivityRequest{

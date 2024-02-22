@@ -91,7 +91,7 @@ func RestGroupChatAPI(router *mux.Router, database Database, notification Notifi
 				GroupID:   group.GroupID,
 				Sender:    user.UserID,
 				Timestamp: unixMillis(),
-				Content:   request.Content,
+				Content:   censor(request.Content),
 			}
 			if err := database.CreateMessage(message); err != nil {
 				http.Error(w, fmt.Sprintf("could not create message: %v", err), http.StatusInternalServerError)

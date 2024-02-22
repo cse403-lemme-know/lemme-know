@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/finnbear/moderation"
 )
 
 // Returns true if and only if executing in an AWS Lambda function.
@@ -118,4 +120,9 @@ func invalidCalendarMode(w http.ResponseWriter, input string) bool {
 		return true
 	}
 	return false
+}
+
+func censor(input string) string {
+	output, _ := moderation.Censor(input, moderation.Inappropriate)
+	return output
 }
