@@ -30,6 +30,18 @@ func mustMarshal(v any) json.RawMessage {
 	return json
 }
 
+// Checks if it is possible to append an item to a collection while remaining
+// within the specified limit.
+//
+// If returns true, error has been sent and should return.
+func invalidAppend[T any](w http.ResponseWriter, collection []T, limit uint) bool {
+	if uint(len(collection)) >= limit {
+		http.Error(w, "too many items", http.StatusBadRequest)
+		return true
+	}
+	return false
+}
+
 // Checks a string for validity.
 //
 // If returns true, error has been sent and should return.

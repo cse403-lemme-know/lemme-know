@@ -8,6 +8,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	groupMaxActivities = 256
+)
+
 // New activity sent over JSON.
 type PatchActivityRequest struct {
 	Title   string `json:"title"`
@@ -125,6 +129,10 @@ func RestGroupActivityAPI(router *mux.Router, database Database, notification No
 
 		if !group.IsMember(user.UserID) {
 			http.Error(w, "not a member of group", http.StatusUnauthorized)
+			return
+		}
+
+		if invalidAppend(w, group.Activities, groupMaxActivities) {
 			return
 		}
 

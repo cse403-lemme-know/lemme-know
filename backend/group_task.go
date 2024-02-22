@@ -12,6 +12,7 @@ import (
 const (
 	taskTitleMinLen = 1
 	taskTitleMaxLen = 50
+	groupMaxTasks   = 32
 )
 
 // New/updated task sent over JSON.
@@ -112,6 +113,10 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 
 		if !group.IsMember(user.UserID) {
 			http.Error(w, "not a member of group", http.StatusUnauthorized)
+			return
+		}
+
+		if invalidAppend(w, group.Tasks, groupMaxTasks) {
 			return
 		}
 
