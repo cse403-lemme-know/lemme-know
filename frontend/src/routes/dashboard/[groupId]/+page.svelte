@@ -25,7 +25,6 @@
 	let successMsg = writable('');
 	$: group = $groups[groupId];
 	let groupData = {};
-	$: group = $groups[groupId];
 
 	let tasks = writable([]);
 	let taskMsg = writable('');
