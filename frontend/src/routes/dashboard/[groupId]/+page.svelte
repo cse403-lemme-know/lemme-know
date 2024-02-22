@@ -230,9 +230,14 @@
 				<span class="members-title">Create Poll</span>
 			</button>
 			<button
-				on:click={() =>
-					navigator.clipboard.writeText(`${window.location.origin}/dashboard/${get(groupId)}`)}
-				class="invite-button">Invite Link!</button
+				on:click={() => {
+					navigator.clipboard.writeText(`${window.location.origin}/dashboard/${groupId}`);
+					document.querySelector('.invite-button').innerText = 'Copied to Clipboard!';
+					setTimeout(() => {
+						document.querySelector('.invite-button').innerText = 'Copy Invite Link!';
+					}, 1500);
+				}}
+				class="invite-button">Copy Invite Link!</button
 			>
 		</div>
 
