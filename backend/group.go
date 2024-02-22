@@ -263,25 +263,25 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				return
 			}
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
-				slices.DeleteFunc(group.Members, func(member UserID) bool {
+				group.Members = slices.DeleteFunc(group.Members, func(member UserID) bool {
 					return member == user.UserID
 				})
-				slices.DeleteFunc(group.Availabilities, func(availability Availability) bool {
+				group.Availabilities = slices.DeleteFunc(group.Availabilities, func(availability Availability) bool {
 					return availability.UserID == user.UserID
 				})
 				for _, activity := range group.Activities {
-					slices.DeleteFunc(activity.Confirmed, func(confirmed UserID) bool {
+					activity.Confirmed = slices.DeleteFunc(activity.Confirmed, func(confirmed UserID) bool {
 						return confirmed == user.UserID
 					})
 				}
 				// TODO: suboptimal. ideally tasks could be reverted to
 				// no assignee, but that complicates the protocol.
-				slices.DeleteFunc(group.Tasks, func(task Task) bool {
+				group.Tasks = slices.DeleteFunc(group.Tasks, func(task Task) bool {
 					return task.Assignee == user.UserID
 				})
 				if group.Poll != nil {
 					for _, option := range group.Poll.Options {
-						slices.DeleteFunc(option.Votes, func(vote UserID) bool {
+						option.Votes = slices.DeleteFunc(option.Votes, func(vote UserID) bool {
 							return vote == user.UserID
 						})
 					}
@@ -292,7 +292,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				return
 			}
 			if err := database.UpdateUser(user.UserID, func(user *User) error {
-				slices.DeleteFunc(user.Groups, func(groupID GroupID) bool { return groupID == group.GroupID })
+				user.Groups = slices.DeleteFunc(user.Groups, func(groupID GroupID) bool { return groupID == group.GroupID })
 				return nil
 			}); err != nil {
 				http.Error(w, "could not leave group (part 2)", http.StatusInternalServerError)

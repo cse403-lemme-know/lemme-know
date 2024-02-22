@@ -17,19 +17,6 @@ async function getUser() {
 	}
 }
 
-/**
- * @param {number} groupId
- */
-async function getGroup(groupId) {
-	try {
-		const response = await fetch(`//${location.host}/api/group/${groupId}/`);
-		const group = await response.json();
-		return group;
-	} catch (e) {
-		return null;
-	}
-}
-
 export async function refreshGroup(groupId) {
 	const group = await getGroup(groupId);
 	console.log(group);
@@ -73,6 +60,24 @@ async function createAvailability(groupId, availability) {
 	}
 }
 
+async function deleteAvailability(groupId, availabilityId) {
+	try {
+		const response = await fetch(
+			`//${location.host}/api/group/${groupId}/availability/${availabilityId}/`,
+			{
+				method: 'DELETE'
+			}
+		);
+		if (response.ok) {
+			console.log('Availability deleted successfully');
+		} else {
+			console.error('Failed to delete availability');
+		}
+	} catch (e) {
+		console.error('Error deleting availability:', e);
+	}
+}
+
 async function createTask(groupId, title) {
 	try {
 		return await fetch(`//${location.host}/api/group/${groupId}/task/`, {
@@ -88,6 +93,35 @@ async function createTask(groupId, title) {
 	}
 }
 
+async function deleteTask(groupId, taskId) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/task/${taskId}/`, {
+			method: 'DELETE'
+		});
+		if (response.ok) {
+			console.log('Task deleted successfully');
+		} else {
+			console.error('Failed to delete task');
+		}
+	} catch (e) {
+		console.error('Error deleting task:', e);
+	}
+}
+
+/**
+ * @param {number} groupId
+ */
+async function getGroup(groupId) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/`);
+		const group = await response.json();
+		return group;
+	} catch (e) {
+		return null;
+	}
+}
+
+getUser().then(console.log);
 async function createPoll(groupId, title, options) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/${groupId}/poll/`, {
@@ -207,5 +241,8 @@ export {
 	updateVotes,
 	deletePoll,
 	sendMessage,
-	fetchMessages
+	fetchMessages,
+	getGroup,
+	deleteTask,
+	deleteAvailability
 };

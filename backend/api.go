@@ -65,7 +65,7 @@ func WebSocket(database Database, connectionID ConnectionID, userID *UserID) err
 			return fmt.Errorf("unknown connection")
 		}
 		if err := database.UpdateUser(*userID, func(user *User) error {
-			slices.DeleteFunc(user.Connections, func(c ConnectionID) bool {
+			user.Connections = slices.DeleteFunc(user.Connections, func(c ConnectionID) bool {
 				return c == connectionID
 			})
 			return nil

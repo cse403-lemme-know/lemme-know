@@ -3,9 +3,16 @@
 
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
-	import { writable, get } from 'svelte/store';
-	import { groups } from '$lib/model';
-	import { createAvailability, createTask, refreshGroup } from '$lib/model';
+	import { get, writable } from 'svelte/store';
+	import {
+		createAvailability,
+		createTask,
+		deleteAvailability,
+		deleteTask,
+		getGroup,
+		groups,
+		refreshGroup
+	} from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
 	import { page } from '$app/stores';
@@ -17,6 +24,7 @@
 	let availability = writable({});
 	let successMsg = writable('');
 	$: group = $groups[groupId];
+	let groupData = {};
 
 	let tasks = writable([]);
 	let taskMsg = writable('');
@@ -36,18 +44,16 @@
 			}
 		}
 		const calendarMode = g.calendarMode.split(' to ');
+		const dateFormat = 'YYYY-MM-DD';
+		console.log(calendarMode);
 
-		start = dayjs(calendarMode[0]);
-		end = dayjs(calendarMode[1]);
+		start = dayjs(calendarMode[0], dateFormat);
+		end = dayjs(calendarMode[1], dateFormat);
 
 		function initializeAvailability(start, end) {
 			let days = {};
-
-			for (
-				let current = start;
-				current.isBefore(end.add(1, 'day'));
-				current = current.add(1, 'day')
-			) {
+			let loopEndDate = end.add(1, 'day');
+			for (let current = start; current.isBefore(loopEndDate); current = current.add(1, 'day')) {
 				const dateString = current.format('YYYY-MM-DD');
 				days[dateString] = new Array(24).fill(false);
 			}
@@ -68,35 +74,34 @@
 		});
 	}
 
-	async function addTask(taskDescription, assigneeName) {
-		const currentGroup = get(groupId);
-		console.log('adding task for group: ', currentGroup);
-		if (!currentGroup) {
+	async function addTask(title) {
+		console.log('adding task for group: ', groupId);
+		if (!groupId) {
 			taskMsg.set('No Group ID is set');
 			return;
 		}
 
-		if (!taskDescription.trim()) {
-			taskMsg.set('Task description is required.');
-			return;
-		}
+		// if (!taskDescription.trim()) {
+		// 	taskMsg.set('Task description is required.');
+		// 	return;
+		// }
 		taskMsg.set('');
 
 		try {
-			const response = await createTask(currentGroup, taskDescription, assigneeName);
+			const response = await createTask(groupId, title);
 			if (response.ok) {
-				tasks.update((currentTasks) => {
-					const newTask = {
-						id: currentTasks.length + 1,
-						description: taskDescription,
-						assignedTo: assigneeName,
-						completed: false
-					};
-					return [...currentTasks, newTask];
-				});
+				await updateGroupData(groupId);
+				tasks.set(
+					groupData.tasks.map((task) => ({
+						id: task.taskId,
+						description: task.title,
+						assignedTo: task.assignee,
+						completed: task.complete
+					}))
+				);
 				taskInput = '';
 				assignedInput = '';
-				taskMsg.set(`Task added: ${taskDescription}`);
+				taskMsg.set(`Task added: ${title}`);
 			} else {
 				taskMsg.set(`Failed to add task: server error`);
 			}
@@ -104,9 +109,9 @@
 			taskMsg.set('Failed to add task');
 			console.error('task error ', e);
 		}
+		await updateGroupData(groupId);
 	}
 
-	/** @param {number} taskId */
 	function toggleCompletion(taskId) {
 		tasks.update((currentTasks) => {
 			const index = currentTasks.findIndex((t) => t.id === taskId);
@@ -149,18 +154,60 @@
 
 		try {
 			for (const availabilityData of allAvailabilityData) {
-				createAvailability(currentGroupId, availabilityData);
+				createAvailability(groupId, availabilityData);
 			}
 
 			const times = allAvailabilityData
 				.map((data) => `${data.date} from ${data.start} to ${data.end}`)
 				.join(', ');
 			successMsg.set('All availabilities saved successfully ' + times);
+			console.log('GroupID', groupId);
 			console.log('Saved times:', JSON.stringify(availableTimes));
 		} catch (error) {
 			successMsg.set('Failed to save availability');
 			console.error('Failed to save availability with error', error);
 			availableTimes = {};
+		}
+	}
+
+	async function removeAvailability(selectedDay, selectedHour) {
+		const formattedHour = `${selectedHour < 10 ? `0${selectedHour}` : selectedHour}:00`;
+		const currentData = await getGroup(groupId);
+		const matchingAvailability = currentData.availabilities.find(
+			(avail) => avail.date === selectedDay && avail.start === formattedHour
+		);
+
+		console.log(groupId);
+		if (matchingAvailability) {
+			await deleteAvailability(groupId, matchingAvailability.availabilityId);
+			console.log(
+				'making an attempt to delete availability with id: ',
+				matchingAvailability.availabilityId
+			);
+			await updateGroupData(groupId);
+			console.log(`Deleted availability with ID: ${matchingAvailability.availabilityId}`);
+		} else {
+			console.error('No matching availability found to delete');
+		}
+	}
+
+	async function updateGroupData(groupId) {
+		try {
+			groupData = await getGroup(groupId);
+			console.log('group after update: ', groupData);
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
+	async function deleteTaskWrapper(taskId) {
+		try {
+			await deleteTask(groupId, taskId);
+			tasks.update((currentTasks) => {
+				return currentTasks.filter((task) => task.id !== taskId);
+			});
+		} catch (error) {
+			console.error(error);
 		}
 	}
 </script>
@@ -182,6 +229,11 @@
 				<img src="../poll.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Create Poll</span>
 			</button>
+			<button
+				on:click={() =>
+					navigator.clipboard.writeText(`${window.location.origin}/dashboard/${get(groupId)}`)}
+				class="invite-button">Invite Link!</button
+			>
 		</div>
 
 		<Chat {groupId} {group} bind:isPoll />
@@ -199,6 +251,11 @@
 								on:keypress={() => toggleSlot(day, hour)}
 							>
 								{hour}:00
+								{#if available}
+									<button on:click|preventDefault={() => removeAvailability(day, hour)}
+										>Delete</button
+									>
+								{/if}
 							</div>
 						{/each}
 					</div>
@@ -208,7 +265,7 @@
 			{#if $successMsg}
 				<p>{$successMsg}</p>
 			{/if}
-			<form on:submit|preventDefault={() => addTask(taskInput, assignedInput)}>
+			<form on:submit|preventDefault={() => addTask(taskInput)}>
 				<input
 					type="text"
 					bind:value={taskInput}
@@ -237,8 +294,11 @@
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
 					{#if task.assignedTo}
-						<span>Assigned to: {task.assignedTo}</span>
+						<span class={task.completed ? 'completed-task' : ''}
+							>Assigned to: {task.assignedTo}</span
+						>
 					{/if}
+					<button class="delete-task" on:click={() => deleteTaskWrapper(task.id)}>delete</button>
 				</div>
 			{/each}
 		</div>
@@ -408,6 +468,8 @@
 		accent-color: #879db7;
 		transform: scale(1.5);
 		cursor: pointer;
+		margin-left: -7.5rem;
+		margin-right: -7.5rem;
 	}
 
 	.task-item .completed-task {
@@ -416,8 +478,9 @@
 	}
 
 	.task-item span {
-		margin-left: 1rem;
+		margin-right: 1rem;
 		color: #333;
+		text-align: center;
 		font-weight: bold;
 	}
 
@@ -440,5 +503,38 @@
 
 	:global(button) {
 		flex-shrink: 0;
+	}
+
+	.invite-button {
+		display: block;
+		margin: 1rem auto;
+		background-color: #76a6e7;
+		font-weight: bolder;
+		font-family: 'Baloo Bhai 2';
+		font-size: large;
+		color: black;
+	}
+
+	.invite-button:hover {
+		background-color: #afaeae;
+		color: white;
+	}
+
+	.delete-task {
+		background-color: #879db7;
+		color: black;
+		border: none;
+		cursor: pointer;
+		margin-left: 1.5rem;
+		padding: 0.5rem 1rem;
+		display: inline-block;
+		text-align: center;
+		font-size: 1rem;
+		border-radius: 0.3rem;
+	}
+
+	.delete-task:hover {
+		background-color: gray;
+		color: white;
 	}
 </style>
