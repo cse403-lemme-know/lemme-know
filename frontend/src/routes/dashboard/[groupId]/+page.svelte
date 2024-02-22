@@ -5,7 +5,7 @@
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { groups } from '$lib/model';
-	import { createAvailability, createTask, refreshGroup } from '$lib/model';
+	import { createAvailability, createTask, refreshGroup, deleteAvailability, getGroup, deleteTask } from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
 	import { page } from '$app/stores';
@@ -38,30 +38,32 @@
 			}
 		}
 		const calendarMode = g.calendarMode.split(' to ');
+		const dateFormat = 'YYYY-MM-DD';
+		console.log(calendarMode);
 
-		start = dayjs(calendarMode[0]);
-		end = dayjs(calendarMode[1]);
+
+		start = dayjs(calendarMode[0], dateFormat);
+		end = dayjs(calendarMode[1], dateFormat);
 
 		function initializeAvailability(start, end) {
 			let days = {};
-
 			let loopEndDate = end.add(1, 'day');
-			for (
-				let current = start;
-				current.isBefore(loopEndDate);
-				current = current.add(1, 'day')
-			) {
+			for (let current = start; current.isBefore(loopEndDate); current = current.add(1, 'day')) {
 				const dateString = current.format('YYYY-MM-DD');
 				days[dateString] = new Array(24).fill(false);
 			}
 			availability.set(days);
 		}
+		console.log("start:", start);
+		console.log("end:", end);
+		initializeAvailability(start, end);
 
-		if (start.isValid() && end.isValid()) {
-			initializeAvailability(start, end);
-		} else {
-			console.error('Invalid start or end date');
-		}
+		//
+		// if (start.isValid() && end.isValid()) {
+		// 	initializeAvailability(start, end);
+		// } else {
+		// 	console.error('Invalid start or end date');
+		// }
 	});
 
 	function toggleSlot(day, hour) {
