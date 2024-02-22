@@ -1,21 +1,21 @@
 <script>
 	// @ts-nocheck
 
-	import { onMount } from 'svelte';
+	import {onMount} from 'svelte';
 	import dayjs from 'dayjs';
-	import { writable, get } from 'svelte/store';
-	import { groups } from '$lib/model';
+	import {get, writable} from 'svelte/store';
 	import {
 		createAvailability,
 		createTask,
-		refreshGroup,
 		deleteAvailability,
+		deleteTask,
 		getGroup,
-		deleteTask
+		groups,
+		refreshGroup
 	} from '$lib/model';
-	import { goto } from '$app/navigation';
+	import {goto} from '$app/navigation';
 	import Chat from './Chat.svelte';
-	import { page } from '$app/stores';
+	import {page} from '$app/stores';
 
 	$: groupId = $page.params.groupId;
 
@@ -194,8 +194,7 @@
 
 	async function updateGroupData(groupId) {
 		try {
-			const updated = await getGroup(groupId);
-			groupData = updated;
+			groupData = await getGroup(groupId);
 			console.log('group after update: ', groupData);
 		} catch (e) {
 			console.error(e);
