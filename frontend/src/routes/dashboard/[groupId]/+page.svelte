@@ -1,9 +1,9 @@
 <script>
 	// @ts-nocheck
 
-	import {onMount} from 'svelte';
+	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
-	import {get, writable} from 'svelte/store';
+	import { get, writable } from 'svelte/store';
 	import {
 		createAvailability,
 		createTask,
@@ -13,9 +13,9 @@
 		groups,
 		refreshGroup
 	} from '$lib/model';
-	import {goto} from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
-	import {page} from '$app/stores';
+	import { page } from '$app/stores';
 
 	$: groupId = $page.params.groupId;
 
