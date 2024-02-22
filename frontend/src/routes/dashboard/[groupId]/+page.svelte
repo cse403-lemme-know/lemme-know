@@ -5,7 +5,14 @@
 	import dayjs from 'dayjs';
 	import { writable, get } from 'svelte/store';
 	import { groups } from '$lib/model';
-	import { createAvailability, createTask, refreshGroup, deleteAvailability, getGroup, deleteTask } from '$lib/model';
+	import {
+		createAvailability,
+		createTask,
+		refreshGroup,
+		deleteAvailability,
+		getGroup,
+		deleteTask
+	} from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
 	import { page } from '$app/stores';
@@ -41,7 +48,6 @@
 		const dateFormat = 'YYYY-MM-DD';
 		console.log(calendarMode);
 
-
 		start = dayjs(calendarMode[0], dateFormat);
 		end = dayjs(calendarMode[1], dateFormat);
 
@@ -54,16 +60,12 @@
 			}
 			availability.set(days);
 		}
-		console.log("start:", start);
-		console.log("end:", end);
-		initializeAvailability(start, end);
 
-		//
-		// if (start.isValid() && end.isValid()) {
-		// 	initializeAvailability(start, end);
-		// } else {
-		// 	console.error('Invalid start or end date');
-		// }
+		if (start.isValid() && end.isValid()) {
+			initializeAvailability(start, end);
+		} else {
+			console.error('Invalid start or end date');
+		}
 	});
 
 	function toggleSlot(day, hour) {
@@ -90,12 +92,14 @@
 			const response = await createTask(groupId, title);
 			if (response.ok) {
 				await updateGroupData(groupId);
-				tasks.set(groupData.tasks.map(task => ({
-					id: task.taskId,
-					description: task.title,
-					assignedTo: task.assignee,
-					completed: task.complete
-				})));
+				tasks.set(
+					groupData.tasks.map((task) => ({
+						id: task.taskId,
+						description: task.title,
+						assignedTo: task.assignee,
+						completed: task.complete
+					}))
+				);
 				taskInput = '';
 				assignedInput = '';
 				taskMsg.set(`Task added: ${title}`);
@@ -158,7 +162,7 @@
 				.map((data) => `${data.date} from ${data.start} to ${data.end}`)
 				.join(', ');
 			successMsg.set('All availabilities saved successfully ' + times);
-			console.log("GroupID", groupId);
+			console.log('GroupID', groupId);
 			console.log('Saved times:', JSON.stringify(availableTimes));
 		} catch (error) {
 			successMsg.set('Failed to save availability');
@@ -170,18 +174,21 @@
 	async function removeAvailability(selectedDay, selectedHour) {
 		const formattedHour = `${selectedHour < 10 ? `0${selectedHour}` : selectedHour}:00`;
 		const currentData = await getGroup(groupId);
-		const matchingAvailability = currentData.availabilities.find(avail =>
-				avail.date === selectedDay && avail.start === formattedHour
+		const matchingAvailability = currentData.availabilities.find(
+			(avail) => avail.date === selectedDay && avail.start === formattedHour
 		);
 
 		console.log(groupId);
 		if (matchingAvailability) {
 			await deleteAvailability(groupId, matchingAvailability.availabilityId);
-			console.log("making an attempt to delete availability with id: ", matchingAvailability.availabilityId);
+			console.log(
+				'making an attempt to delete availability with id: ',
+				matchingAvailability.availabilityId
+			);
 			await updateGroupData(groupId);
 			console.log(`Deleted availability with ID: ${matchingAvailability.availabilityId}`);
 		} else {
-			console.error("No matching availability found to delete");
+			console.error('No matching availability found to delete');
 		}
 	}
 
@@ -189,7 +196,7 @@
 		try {
 			const updated = await getGroup(groupId);
 			groupData = updated;
-			console.log("group after update: ", groupData);
+			console.log('group after update: ', groupData);
 		} catch (e) {
 			console.error(e);
 		}
@@ -198,14 +205,13 @@
 	async function deleteTaskWrapper(taskId) {
 		try {
 			await deleteTask(groupId, taskId);
-			tasks.update(currentTasks => {
-				return currentTasks.filter(task => task.id !== taskId);
+			tasks.update((currentTasks) => {
+				return currentTasks.filter((task) => task.id !== taskId);
 			});
 		} catch (error) {
 			console.error(error);
 		}
 	}
-
 </script>
 
 <header />
@@ -225,7 +231,11 @@
 				<img src="../poll.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Create Poll</span>
 			</button>
-			<button on:click={() => navigator.clipboard.writeText(`${window.location.origin}/dashboard/${get(groupId)}`)} class="invite-button">Invite Link!</button>
+			<button
+				on:click={() =>
+					navigator.clipboard.writeText(`${window.location.origin}/dashboard/${get(groupId)}`)}
+				class="invite-button">Invite Link!</button
+			>
 		</div>
 
 		<Chat {groupId} {group} bind:isPoll />
@@ -244,7 +254,9 @@
 							>
 								{hour}:00
 								{#if available}
-									<button on:click|preventDefault={() => removeAvailability(day, hour)}>Delete</button>
+									<button on:click|preventDefault={() => removeAvailability(day, hour)}
+										>Delete</button
+									>
 								{/if}
 							</div>
 						{/each}
@@ -284,7 +296,9 @@
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
 					{#if task.assignedTo}
-						<span class={task.completed ? 'completed-task' : ''}>Assigned to: {task.assignedTo}</span>
+						<span class={task.completed ? 'completed-task' : ''}
+							>Assigned to: {task.assignedTo}</span
+						>
 					{/if}
 					<button class="delete-task" on:click={() => deleteTaskWrapper(task.id)}>delete</button>
 				</div>
@@ -498,11 +512,9 @@
 		margin: 1rem auto;
 		background-color: #76a6e7;
 		font-weight: bolder;
-		font-family: "Baloo Bhai 2";
+		font-family: 'Baloo Bhai 2';
 		font-size: large;
 		color: black;
-
-
 	}
 
 	.invite-button:hover {

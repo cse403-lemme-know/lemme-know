@@ -62,9 +62,12 @@ async function createAvailability(groupId, availability) {
 
 async function deleteAvailability(groupId, availabilityId) {
 	try {
-		const response = await fetch(`//${location.host}/api/group/${groupId}/availability/${availabilityId}/`, {
-			method: 'DELETE'
-		});
+		const response = await fetch(
+			`//${location.host}/api/group/${groupId}/availability/${availabilityId}/`,
+			{
+				method: 'DELETE'
+			}
+		);
 		if (response.ok) {
 			console.log('Availability deleted successfully');
 		} else {
@@ -74,7 +77,6 @@ async function deleteAvailability(groupId, availabilityId) {
 		console.error('Error deleting availability:', e);
 	}
 }
-
 
 async function createTask(groupId, title) {
 	try {
@@ -106,7 +108,6 @@ async function deleteTask(groupId, taskId) {
 	}
 }
 
-
 /**
  * @param {number} groupId
  */
@@ -119,7 +120,6 @@ async function getGroup(groupId) {
 		return null;
 	}
 }
-
 
 getUser().then(console.log);
 async function createPoll(groupId, title, options) {
@@ -138,7 +138,6 @@ async function createPoll(groupId, title, options) {
 		return null;
 	}
 }
-
 
 async function updateVotes(groupID, votes) {
 	try {
@@ -243,7 +242,7 @@ export {
 	deletePoll,
 	sendMessage,
 	fetchMessages,
-    getGroup,
-    deleteTask,
-    deleteAvailability
+	getGroup,
+	deleteTask,
+	deleteAvailability
 };
