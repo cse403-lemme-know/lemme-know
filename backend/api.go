@@ -11,6 +11,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	userMaxConnections = 8
+)
+
 // HTTP multiplexer for the root path.
 func RestRoot(router *mux.Router, database Database, notification Notification) {
 	RestApi(AddHandler(router, "/api"), database, notification)
@@ -76,6 +80,9 @@ func WebSocket(database Database, connectionID ConnectionID, userID *UserID) err
 	} else {
 		_ = database.WriteConnection(connectionID, *userID)
 		return database.UpdateUser(*userID, func(user *User) error {
+			if len(user.Connections) >= userMaxConnections {
+				user.Connections = slices.Delete(user.Connections, 0, 1)
+			}
 			user.Connections = append(user.Connections, connectionID)
 			return nil
 		})

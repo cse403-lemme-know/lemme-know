@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	groupNameMinLen = 1
-	groupNameMaxLen = 50
+	groupNameMinLen  = 1
+	groupNameMaxLen  = 50
+	maxGroupsPerUser = 64
 )
 
 // Group sent over JSON.
@@ -162,6 +163,9 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 		switch r.Method {
 		case http.MethodGet:
 			if !group.IsMember(user.UserID) {
+				if invalidAppend(w, user.Groups, maxGroupsPerUser) {
+					return
+				}
 				if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 					group.Members = append(group.Members, user.UserID)
 					return nil

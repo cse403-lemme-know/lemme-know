@@ -8,6 +8,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	groupMaxAvailabilities = 256
+)
+
 // New availability sent over JSON.
 type PatchAvailabilityRequest struct {
 	Date  string `json:"date"`
@@ -77,6 +81,10 @@ func RestGroupAvailabilityAPI(router *mux.Router, database Database, notificatio
 
 		if !group.IsMember(user.UserID) {
 			http.Error(w, "not a member of group", http.StatusUnauthorized)
+			return
+		}
+
+		if invalidAppend(w, group.Availabilities, groupMaxAvailabilities) {
 			return
 		}
 
