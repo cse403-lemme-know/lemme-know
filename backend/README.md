@@ -31,6 +31,8 @@ See [`../README.md`](../README.md) for instructions.
 - Request: `GET /api/user/`
   - Effect: Creates a new user and sets authentication cookie unless already authenticated.
   - Response: `{userId: 1234, name: "Alex", groups: [1234], ...}`
+- Request: `GET /api/user/1234/`
+  - Response: `{userId: 1234, name: "Alex", groups: [1234], ...}`
 - Request: `PATCH /api/user/ {name: "Alex", status: "online" | "busy" | "offline"}`
   - Precondition: Authentication cookie.
   - Effect: overwrites whichever profile settings were sent in the object.
