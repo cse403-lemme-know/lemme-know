@@ -12,6 +12,7 @@ import (
 const (
 	pollTitleMinLen = 1
 	pollTitleMaxLen = 50
+	pollMaxOptions  = 4
 )
 
 // New poll sent over JSON.
@@ -51,6 +52,9 @@ func RestGroupPollAPI(router *mux.Router, database Database, notification Notifi
 			var options = []PollOption{}
 
 			for _, name := range request.Options {
+				if invalidAppend(w, options, pollMaxOptions) {
+					return
+				}
 				options = append(options, PollOption{Name: name, Votes: []UserID{}})
 			}
 
