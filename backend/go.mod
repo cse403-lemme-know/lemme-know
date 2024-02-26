@@ -7,8 +7,9 @@ toolchain go1.21.6
 require (
 	github.com/Appboy/webpush-go v0.0.0-20221006204155-f206645c3cb7
 	github.com/aws/aws-lambda-go v1.46.0
-	github.com/aws/aws-sdk-go v1.50.20
+	github.com/aws/aws-sdk-go v1.50.25
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.1
+	github.com/finnbear/moderation v0.11.4
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.1
@@ -20,7 +21,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
-	github.com/finnbear/moderation v0.11.4 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
