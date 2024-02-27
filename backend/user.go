@@ -23,8 +23,51 @@ type PatchUserRequest struct {
 	Status string `json:"status"`
 }
 
+type SubjectUserKeyType struct{}
+
+// Used for looking up user, the subject of a specific request, out of request context.
+var SubjectUserKey = SubjectUserKeyType(struct{}{})
+
+// API's related to a specific group.
+func RestSpecificUserAPI(router *mux.Router, database Database) {
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := ParseUint64PathParameter(w, r, "userID")
+			if !ok {
+				return
+			}
+			subjectUser, err := database.ReadUser(userID)
+			if err != nil {
+				http.Error(w, "could not read user", http.StatusInternalServerError)
+				return
+			}
+			if subjectUser == nil {
+				http.Error(w, "no such user", http.StatusNotFound)
+				return
+			}
+			rWithContext := r.WithContext(context.WithValue(r.Context(), SubjectUserKey, subjectUser))
+			next.ServeHTTP(w, rWithContext)
+		})
+	})
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		subjectUser := r.Context().Value(SubjectUserKey).(*User)
+		switch r.Method {
+		case http.MethodGet:
+			WriteJSON(w, GetUserResponse{
+				UserID: subjectUser.UserID,
+				Name:   subjectUser.Name,
+				Groups: subjectUser.Groups,
+				Status: subjectUser.Status,
+			})
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+}
+
 // User-related API's.
 func RestUserAPI(router *mux.Router, database Database, notification Notification) {
+	RestSpecificUserAPI(AddHandler(router, "/{userID}"), database)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		user, err := CheckCookie(r, database)
 		if err != nil {
@@ -55,7 +98,7 @@ func RestUserAPI(router *mux.Router, database Database, notification Notificatio
 				UserID: user.UserID,
 				Name:   user.Name,
 				Groups: user.Groups,
-				Status: "online",
+				Status: user.Status,
 			})
 		case http.MethodPatch:
 			var request PatchUserRequest

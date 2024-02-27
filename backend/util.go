@@ -123,7 +123,7 @@ func invalidCalendarMode(w http.ResponseWriter, input string) bool {
 }
 
 func censor(input string) string {
-	output, _ := moderation.Censor(input, moderation.Inappropriate)
+	output, _ := moderation.Censor(input, moderation.Inappropriate&moderation.Moderate)
 	return output
 }
 
