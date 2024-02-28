@@ -119,14 +119,14 @@ async function updateTask(groupId, taskId, taskData) {
 		});
 		if (response.ok) {
 			console.log('Task updated successfully');
-			return true; // Indicate success without expecting a response body
+			return true;
 		} else {
 			console.error('Failed to update task, server responded with status:', response.status);
-			return false; // Indicate failure
+			return false;
 		}
 	} catch (e) {
 		console.error('Error updating task:', e);
-		return false; // Indicate failure
+		return false;
 	}
 }
 

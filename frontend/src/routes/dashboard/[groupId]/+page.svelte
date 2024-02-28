@@ -48,9 +48,9 @@
 		const calendarMode = g.calendarMode.split(' to ');
 		const dateFormat = 'YYYY-MM-DD';
 		console.log(calendarMode);
-		const user = await getUser()
+		const user = await getUser();
 		currentUserID = user?.userId;
-		console.log("current user id:", currentUserID);
+		console.log('current user id:', currentUserID);
 
 		start = dayjs(calendarMode[0], dateFormat);
 		end = dayjs(calendarMode[1], dateFormat);
@@ -138,7 +138,6 @@
 					}))
 				);
 				taskInput = '';
-				// assignedInput = '';
 				taskMsg.set(`Task added: ${title}`);
 			} else {
 				taskMsg.set(`Failed to add task: server error`);
@@ -151,17 +150,17 @@
 	}
 
 	async function toggleCompletion(taskId) {
-		const task = $tasks.find(t => t.taskId === taskId);
+		const task = $tasks.find((t) => t.taskId === taskId);
 		if (task) {
 			try {
 				const newCompletedStatus = !task.completed;
-				console.log("status", newCompletedStatus);
+				console.log('status', newCompletedStatus);
 				const success = await updateTask(groupId, taskId, { completed: newCompletedStatus });
 
 				if (success) {
-					tasks.update(currentTasks => {
-						return currentTasks.map(t =>
-								t.taskId === taskId ? { ...t, completed: newCompletedStatus } : t
+					tasks.update((currentTasks) => {
+						return currentTasks.map((t) =>
+							t.taskId === taskId ? { ...t, completed: newCompletedStatus } : t
 						);
 					});
 				} else {
@@ -265,14 +264,27 @@
 	}
 
 	async function assignTaskToUser(taskId) {
-		console.log("taskid:", taskId);
+		console.log('taskid:', taskId);
 		const taskData = {
 			assignee: currentUserID
 		};
-		await updateTask(groupId, taskId, taskData);
-		console.log("before: ", groupData);
+		const success = await updateTask(groupId, taskId, taskData);
+		if (success) {
+			tasks.update((currentTasks) => {
+				return currentTasks.map((t) => {
+					if (t.taskId === taskId) {
+						return { ...t, assignee: currentUserID };
+					}
+					return t;
+				});
+			});
+			console.log('Task assigned');
+		} else {
+			console.error('Failed to assign task.');
+		}
+		console.log('before: ', groupData);
 		await updateGroupData(groupId);
-		console.log("after: ", groupData);
+		console.log('after: ', groupData);
 	}
 </script>
 
@@ -364,12 +376,13 @@
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
 					{#if task.assignee}
-						<span class={task.completed ? 'completed-task' : ''}
-							>Assigned to: {task.assignee}</span
-						>
+						<span class={task.completed ? 'completed-task' : ''}>Assigned to: {task.assignee}</span>
 					{/if}
-					<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}>delete</button>
-					<button on:click={() => assignTaskToUser(task.taskId)}>Self Assign</button>
+					<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}>delete</button
+					>
+					<button class="self-assign" on:click={() => assignTaskToUser(task.taskId)}
+						>Self Assign</button
+					>
 				</div>
 			{/each}
 		</div>
@@ -542,8 +555,8 @@
 		accent-color: #879db7;
 		transform: scale(1.5);
 		cursor: pointer;
-		margin-left: -7.5rem;
-		margin-right: -7.5rem;
+		margin-left: -4rem;
+		margin-right: -4rem;
 	}
 
 	.task-item .completed-task {
@@ -608,6 +621,24 @@
 	}
 
 	.delete-task:hover {
+		background-color: gray;
+		color: white;
+	}
+
+	.self-assign {
+		background-color: #879db7;
+		color: black;
+		border: none;
+		cursor: pointer;
+		margin-left: 1.5rem;
+		padding: 0.5rem 1rem;
+		display: inline-block;
+		text-align: center;
+		font-size: 1rem;
+		border-radius: 0.3rem;
+	}
+
+	.self-assign:hover {
 		background-color: gray;
 		color: white;
 	}
