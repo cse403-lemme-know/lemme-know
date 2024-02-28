@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -16,15 +17,18 @@ const (
 )
 
 // HTTP multiplexer for the root path.
-func RestRoot(router *mux.Router, database Database, notification Notification) {
-	RestApi(AddHandler(router, "/api"), database, notification)
+func RestRoot(router *mux.Router, database Database, notification Notification, scheduler Scheduler) {
+	RestApi(AddHandler(router, "/api"), database, notification, scheduler)
 }
 
 // HTTP multiplexer for the API.
-func RestApi(router *mux.Router, database Database, notification Notification) {
+func RestApi(router *mux.Router, database Database, notification Notification, scheduler Scheduler) {
 	RestUserAPI(AddHandler(router, "/user"), database, notification)
 	RestGroupAPI(AddHandler(router, "/group"), database, notification)
 	RestPushAPI(AddHandler(router, "/push"), database, notification)
+	router.HandleFunc("/schedule", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("%v", scheduler.Schedule(time.Now().Add(time.Second), nil))))
+	})
 }
 
 // Adds a nested multiplexer at a relative path prefix.

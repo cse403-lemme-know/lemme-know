@@ -23,11 +23,11 @@ import (
 )
 
 // Creates a function that can handle JSON events from AWS services.
-func newLambdaHandler(database Database, notification Notification) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
+func newLambdaHandler(database Database, notification Notification, scheduler Scheduler) func(context context.Context, event json.RawMessage) (events.APIGatewayProxyResponse, error) {
 	router := mux.NewRouter()
 
 	// Expose the entire Rest API.
-	RestRoot(router, database, notification)
+	RestRoot(router, database, notification, scheduler)
 
 	handler := applyCors(router)
 
@@ -117,9 +117,10 @@ func runLambdaService() {
 
 	database := NewDynamoDB(sess)
 	notification := NewApiGateway(sess)
+	scheduler := NewEventBridgeScheduler(sess)
 
 	// Start handling events forever.
-	lambda.Start(newLambdaHandler(database, notification))
+	lambda.Start(newLambdaHandler(database, notification, scheduler))
 }
 
 // Handle events forever on localhost with a volatile database.
@@ -168,7 +169,7 @@ func runLocalService(port uint16, ctx context.Context) error {
 	})
 
 	// Expose the Rest API.
-	RestRoot(router, database, notification)
+	RestRoot(router, database, notification, nil)
 
 	// In addition to the Rest API, reverse proxy to the development client's origin server.
 	clientOrigin, err := url.Parse("http://localhost:5173/")

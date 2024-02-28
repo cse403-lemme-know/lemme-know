@@ -10,6 +10,7 @@ resource "aws_lambda_function" "backend" {
   environment {
     variables = {
       AWS_API_GATEWAY_WS_ENDPOINT = replace(aws_apigatewayv2_stage.backend.invoke_url, "wss:", "https:")
+      AWS_LAMBDA_ARN = "arn:aws:lambda:${var.region}:{aws_caller_identity.account_id}:function:lemmeknow-backend"
       #AWS_REGION                 = var.region
     }
   }
@@ -78,5 +79,13 @@ data "aws_iam_policy_document" "backend_policy" {
     resources = [
       "arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.backend.id}/*/*/*"
     ]
+  }
+  statement {
+    sid = "eventbridge"
+    actions = [
+      "events:PutRule",
+      "events:PutTargets"
+    ]
+    resources = ["*"]
   }
 }
