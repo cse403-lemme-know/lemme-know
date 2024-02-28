@@ -29,7 +29,7 @@
 	let tasks = writable([]);
 	let taskMsg = writable('');
 	let taskInput = '';
-	let assignedInput = '';
+	// let assignedInput = '';
 	let isPoll = false;
 
 	onMount(async () => {
@@ -55,17 +55,54 @@
 			let loopEndDate = end.add(1, 'day');
 			for (let current = start; current.isBefore(loopEndDate); current = current.add(1, 'day')) {
 				const dateString = current.format('YYYY-MM-DD');
-				days[dateString] = new Array(24).fill(false);
+				days[dateString] = new Array(16).fill(false);
 			}
 			availability.set(days);
 		}
 
 		if (start.isValid() && end.isValid()) {
 			initializeAvailability(start, end);
+			await loadExistingAvailabilities();
+			await loadTasks(groupId);
 		} else {
 			console.error('Invalid start or end date');
 		}
 	});
+
+	async function loadExistingAvailabilities() {
+		const groupData = await getGroup(groupId);
+		if (groupData && groupData.availabilities) {
+			const existingAvailabilities = groupData.availabilities;
+			availability.update((a) => {
+				existingAvailabilities.forEach(({ date, start }) => {
+					const hour = parseInt(start.split(':')[0], 10);
+					if (a[date]) {
+						a[date][hour] = true;
+					}
+				});
+				return a;
+			});
+		}
+	}
+
+	async function loadTasks(groupId) {
+		try {
+			const groupData = await getGroup(groupId);
+			if (groupData && groupData.tasks) {
+				tasks.set(
+					groupData.tasks.map((task) => ({
+						id: task.taskId,
+						description: task.title,
+						assignedTo: task.assignee,
+						completed: task.complete
+					}))
+				);
+			}
+		} catch (error) {
+			console.error('Failed to load tasks', error);
+			tasks.set([]);
+		}
+	}
 
 	function toggleSlot(day, hour) {
 		availability.update((a) => {
@@ -100,7 +137,7 @@
 					}))
 				);
 				taskInput = '';
-				assignedInput = '';
+				// assignedInput = '';
 				taskMsg.set(`Task added: ${title}`);
 			} else {
 				taskMsg.set(`Failed to add task: server error`);
@@ -151,6 +188,7 @@
 				}
 			});
 		}
+		console.log('Availabiltiy', availability);
 
 		try {
 			for (const availabilityData of allAvailabilityData) {
@@ -237,8 +275,9 @@
 						document.querySelector('.invite-button').innerText = 'Copy Invite Link!';
 					}, 1500);
 				}}
-				class="invite-button">Copy Invite Link!</button
-			>
+				class="invite-button"
+				>Copy Invite Link!
+			</button>
 		</div>
 
 		<Chat {groupId} {group} bind:isPoll />
@@ -253,9 +292,9 @@
 							<div
 								class="slot {available ? 'available' : ''}"
 								on:click|preventDefault={() => toggleSlot(day, hour)}
-								on:keypress={() => toggleSlot(day, hour)}
+								on:keypress={() => toggleSlot(day, hour + 7)}
 							>
-								{hour}:00
+								{hour + 7}:00
 								{#if available}
 									<button on:click|preventDefault={() => removeAvailability(day, hour)}
 										>Delete</button
@@ -277,12 +316,12 @@
 					placeholder="Enter task description (50 characters max)"
 					maxlength="50"
 				/>
-				<input
-					type="text"
-					bind:value={assignedInput}
-					placeholder="Enter assignee name (50 characters max)"
-					maxlength="50"
-				/>
+				<!--				<input-->
+				<!--					type="text"-->
+				<!--					bind:value={assignedInput}-->
+				<!--					placeholder="Enter assignee name (50 characters max)"-->
+				<!--					maxlength="50"-->
+				<!--				/>-->
 				<button type="submit" disabled={!taskInput.trim()}>Add Task</button>
 
 				{#if $taskMsg}
@@ -324,6 +363,7 @@
 		font-weight: bolder;
 		color: black;
 	}
+
 	.menu-bar {
 		position: relative;
 		display: flex;
@@ -389,9 +429,11 @@
 	.menu-button:hover .user-icon {
 		transform: scale(1.2);
 	}
+
 	.menu-button:hover .poll-icon {
 		transform: scale(1.2);
 	}
+
 	.content-wrap {
 		display: flex;
 		flex-direction: row;
