@@ -55,7 +55,7 @@
 			let loopEndDate = end.add(1, 'day');
 			for (let current = start; current.isBefore(loopEndDate); current = current.add(1, 'day')) {
 				const dateString = current.format('YYYY-MM-DD');
-				days[dateString] = new Array(24).fill(false);
+				days[dateString] = new Array(16).fill(false);
 			}
 			availability.set(days);
 		}
@@ -293,9 +293,9 @@
 							<div
 								class="slot {available ? 'available' : ''}"
 								on:click|preventDefault={() => toggleSlot(day, hour)}
-								on:keypress={() => toggleSlot(day, hour)}
+								on:keypress={() => toggleSlot(day, hour+7)}
 							>
-								{hour}:00
+								{hour+7}:00
 								{#if available}
 									<button on:click|preventDefault={() => removeAvailability(day, hour)}
 										>Delete</button
