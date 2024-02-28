@@ -62,10 +62,27 @@
 
 		if (start.isValid() && end.isValid()) {
 			initializeAvailability(start, end);
+			await loadExistingAvailabilities();
 		} else {
 			console.error('Invalid start or end date');
 		}
 	});
+
+	async function loadExistingAvailabilities() {
+		const groupData = await getGroup(groupId);
+		if (groupData && groupData.availabilities) {
+			const existingAvailabilities = groupData.availabilities;
+			availability.update(a => {
+				existingAvailabilities.forEach(({date, start}) => {
+					const hour = parseInt(start.split(':')[0], 10);
+					if (a[date]) {
+						a[date][hour] = true;
+					}
+				});
+				return a;
+			});
+		}
+	}
 
 	function toggleSlot(day, hour) {
 		availability.update((a) => {
@@ -151,6 +168,7 @@
 				}
 			});
 		}
+		console.log("Availabiltiy", availability);
 
 		try {
 			for (const availabilityData of allAvailabilityData) {
@@ -158,8 +176,8 @@
 			}
 
 			const times = allAvailabilityData
-				.map((data) => `${data.date} from ${data.start} to ${data.end}`)
-				.join(', ');
+					.map((data) => `${data.date} from ${data.start} to ${data.end}`)
+					.join(', ');
 			successMsg.set('All availabilities saved successfully ' + times);
 			console.log('GroupID', groupId);
 			console.log('Saved times:', JSON.stringify(availableTimes));
@@ -174,15 +192,15 @@
 		const formattedHour = `${selectedHour < 10 ? `0${selectedHour}` : selectedHour}:00`;
 		const currentData = await getGroup(groupId);
 		const matchingAvailability = currentData.availabilities.find(
-			(avail) => avail.date === selectedDay && avail.start === formattedHour
+				(avail) => avail.date === selectedDay && avail.start === formattedHour
 		);
 
 		console.log(groupId);
 		if (matchingAvailability) {
 			await deleteAvailability(groupId, matchingAvailability.availabilityId);
 			console.log(
-				'making an attempt to delete availability with id: ',
-				matchingAvailability.availabilityId
+					'making an attempt to delete availability with id: ',
+					matchingAvailability.availabilityId
 			);
 			await updateGroupData(groupId);
 			console.log(`Deleted availability with ID: ${matchingAvailability.availabilityId}`);
@@ -212,36 +230,37 @@
 	}
 </script>
 
-<header />
+<header/>
 
 <main>
 	<div class="content-wrap">
 		<div class="menu-bar">
 			<button class="menu-button">
-				<img src="../menubar.png" alt="menu bar" class="hamburger-icon" />
+				<img src="../menubar.png" alt="menu bar" class="hamburger-icon"/>
 				<span class="logo">LemmeKnow</span>
 			</button>
 			<button class="menu-button">
-				<img src="../users.png" alt="menu bar" class="user-icon" />
+				<img src="../users.png" alt="menu bar" class="user-icon"/>
 				<span class="members-title">Members</span>
 			</button>
 			<button class="menu-button" on:click={openPoll}>
-				<img src="../poll.png" alt="menu bar" class="user-icon" />
+				<img src="../poll.png" alt="menu bar" class="user-icon"/>
 				<span class="members-title">Create Poll</span>
 			</button>
 			<button
-				on:click={() => {
+					on:click={() => {
 					navigator.clipboard.writeText(`${window.location.origin}/dashboard/${groupId}`);
 					document.querySelector('.invite-button').innerText = 'Copied to Clipboard!';
 					setTimeout(() => {
 						document.querySelector('.invite-button').innerText = 'Copy Invite Link!';
 					}, 1500);
 				}}
-				class="invite-button">Copy Invite Link!</button
+					class="invite-button">Copy Invite Link!
+			</button
 			>
 		</div>
 
-		<Chat {groupId} {group} bind:isPoll />
+		<Chat {groupId} {group} bind:isPoll/>
 
 		<div class="calendar-container">
 			<span class="calendar-title">AVAILABILITY CALENDAR</span>
@@ -277,12 +296,12 @@
 					placeholder="Enter task description (50 characters max)"
 					maxlength="50"
 				/>
-				<input
-					type="text"
-					bind:value={assignedInput}
-					placeholder="Enter assignee name (50 characters max)"
-					maxlength="50"
-				/>
+				<!--				<input-->
+				<!--					type="text"-->
+				<!--					bind:value={assignedInput}-->
+				<!--					placeholder="Enter assignee name (50 characters max)"-->
+				<!--					maxlength="50"-->
+				<!--				/>-->
 				<button type="submit" disabled={!taskInput.trim()}>Add Task</button>
 
 				{#if $taskMsg}
@@ -292,15 +311,15 @@
 			{#each $tasks as task (task.id)}
 				<div class="task-item">
 					<input
-						type="checkbox"
-						bind:checked={task.completed}
-						on:click={() => toggleCompletion(task.id)}
-						on:keypress={() => toggleCompletion(task.id)}
+							type="checkbox"
+							bind:checked={task.completed}
+							on:click={() => toggleCompletion(task.id)}
+							on:keypress={() => toggleCompletion(task.id)}
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
 					{#if task.assignedTo}
 						<span class={task.completed ? 'completed-task' : ''}
-							>Assigned to: {task.assignedTo}</span
+						>Assigned to: {task.assignedTo}</span
 						>
 					{/if}
 					<button class="delete-task" on:click={() => deleteTaskWrapper(task.id)}>delete</button>
@@ -324,6 +343,7 @@
 		font-weight: bolder;
 		color: black;
 	}
+
 	.menu-bar {
 		position: relative;
 		display: flex;
@@ -389,9 +409,11 @@
 	.menu-button:hover .user-icon {
 		transform: scale(1.2);
 	}
+
 	.menu-button:hover .poll-icon {
 		transform: scale(1.2);
 	}
+
 	.content-wrap {
 		display: flex;
 		flex-direction: row;
