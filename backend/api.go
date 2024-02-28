@@ -26,6 +26,8 @@ func RestApi(router *mux.Router, database Database, notification Notification, s
 	RestUserAPI(AddHandler(router, "/user"), database, notification)
 	RestGroupAPI(AddHandler(router, "/group"), database, notification)
 	RestPushAPI(AddHandler(router, "/push"), database, notification)
+
+	// temporary API for testing the scheduler.
 	router.HandleFunc("/schedule", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("%v", scheduler.Schedule(time.Now().Add(time.Second), nil))))
 	})
@@ -95,7 +97,7 @@ func WebSocket(database Database, connectionID ConnectionID, userID *UserID) err
 }
 
 // Cron event handler.
-func Cron() error {
+func Cron(data json.RawMessage) error {
 	log.Println("running cron job")
 	return nil
 }

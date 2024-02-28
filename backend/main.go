@@ -99,7 +99,7 @@ func newLambdaHandler(database Database, notification Notification, scheduler Sc
 		var cron events.EventBridgeEvent
 		if err := json.Unmarshal(event, &cron); err == nil && cron.DetailType != "" {
 			log.Println("received EventBridge event")
-			err := Cron()
+			err := Cron(cron.Detail)
 			return events.APIGatewayProxyResponse{}, err
 		}
 
@@ -129,6 +129,7 @@ func runLambdaService() {
 func runLocalService(port uint16, ctx context.Context) error {
 	database := NewMemoryDatabase()
 	notification := NewLocalNotification()
+	scheduler := NewLocalScheduler()
 
 	router := mux.NewRouter()
 	upgrader := websocket.Upgrader{} // use default options
@@ -169,7 +170,7 @@ func runLocalService(port uint16, ctx context.Context) error {
 	})
 
 	// Expose the Rest API.
-	RestRoot(router, database, notification, nil)
+	RestRoot(router, database, notification, scheduler)
 
 	// In addition to the Rest API, reverse proxy to the development client's origin server.
 	clientOrigin, err := url.Parse("http://localhost:5173/")
@@ -218,7 +219,7 @@ func runLocalService(port uint16, ctx context.Context) error {
 			_ = s.Close()
 			return
 		case <-time.After(time.Duration(int64(sleep) * int64(time.Minute))):
-			Cron()
+			Cron(nil)
 		}
 	}()
 

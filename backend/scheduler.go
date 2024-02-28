@@ -56,3 +56,19 @@ func (eventBridgeScheduler *EventBridgeScheduler) Schedule(date time.Time, data 
 	}
 	return nil
 }
+
+type LocalScheduler struct {
+}
+
+func NewLocalScheduler() *LocalScheduler {
+	return &LocalScheduler{}
+}
+
+func (localScheduler *LocalScheduler) Schedule(date time.Time, data any) error {
+	dataJson := mustMarshal(data)
+	go func() {
+		time.Sleep(time.Until(date))
+		Cron(dataJson)
+	}()
+	return nil
+}

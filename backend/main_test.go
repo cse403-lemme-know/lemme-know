@@ -326,12 +326,13 @@ func TestLambdaHandler(t *testing.T) {
 	for _, test := range tests {
 		database := NewMemoryDatabase()
 		notification := NewLocalNotification()
+		scheduler := NewLocalScheduler()
 		context := context.Background()
 		json, err := json.Marshal(test.request)
 		if err != nil {
 			panic(err)
 		}
-		response, err := newLambdaHandler(database, notification)(context, json)
+		response, err := newLambdaHandler(database, notification, scheduler)(context, json)
 		assert.IsType(t, test.err, err)
 		assert.Equal(t, string(test.response), response.Body)
 	}
