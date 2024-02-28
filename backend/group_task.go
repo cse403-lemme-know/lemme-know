@@ -38,6 +38,13 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 			return
 		}
 
+		if !slices.ContainsFunc(group.Tasks, func(task Task) bool {
+			return task.TaskID == taskID
+		}) {
+			http.Error(w, "task not found", http.StatusNotFound)
+			return
+		}
+
 		switch r.Method {
 		case http.MethodPatch:
 			var request PatchTaskRequest
@@ -54,7 +61,8 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 			}
 
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
-				for _, task := range group.Tasks {
+				for i := range group.Tasks {
+					task := &group.Tasks[i]
 					if task.TaskID != taskID {
 						continue
 					}
