@@ -63,6 +63,7 @@
 		if (start.isValid() && end.isValid()) {
 			initializeAvailability(start, end);
 			await loadExistingAvailabilities();
+			await loadTasks(groupId);
 		} else {
 			console.error('Invalid start or end date');
 		}
@@ -83,6 +84,26 @@
 			});
 		}
 	}
+
+	async function loadTasks(groupId) {
+		try {
+			const groupData = await getGroup(groupId);
+			if (groupData && groupData.tasks) {
+				tasks.set(
+						groupData.tasks.map(task => ({
+							id: task.taskId,
+							description: task.title,
+							assignedTo: task.assignee,
+							completed: task.complete
+						}))
+				);
+			}
+		} catch (error) {
+			console.error('Failed to load tasks', error);
+			tasks.set([]);
+		}
+	}
+
 
 	function toggleSlot(day, hour) {
 		availability.update((a) => {
