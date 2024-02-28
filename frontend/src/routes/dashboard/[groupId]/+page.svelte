@@ -29,7 +29,7 @@
 	let tasks = writable([]);
 	let taskMsg = writable('');
 	let taskInput = '';
-	let assignedInput = '';
+	// let assignedInput = '';
 	let isPoll = false;
 
 	onMount(async () => {
@@ -73,8 +73,8 @@
 		const groupData = await getGroup(groupId);
 		if (groupData && groupData.availabilities) {
 			const existingAvailabilities = groupData.availabilities;
-			availability.update(a => {
-				existingAvailabilities.forEach(({date, start}) => {
+			availability.update((a) => {
+				existingAvailabilities.forEach(({ date, start }) => {
 					const hour = parseInt(start.split(':')[0], 10);
 					if (a[date]) {
 						a[date][hour] = true;
@@ -90,12 +90,12 @@
 			const groupData = await getGroup(groupId);
 			if (groupData && groupData.tasks) {
 				tasks.set(
-						groupData.tasks.map(task => ({
-							id: task.taskId,
-							description: task.title,
-							assignedTo: task.assignee,
-							completed: task.complete
-						}))
+					groupData.tasks.map((task) => ({
+						id: task.taskId,
+						description: task.title,
+						assignedTo: task.assignee,
+						completed: task.complete
+					}))
 				);
 			}
 		} catch (error) {
@@ -103,7 +103,6 @@
 			tasks.set([]);
 		}
 	}
-
 
 	function toggleSlot(day, hour) {
 		availability.update((a) => {
@@ -138,7 +137,7 @@
 					}))
 				);
 				taskInput = '';
-				assignedInput = '';
+				// assignedInput = '';
 				taskMsg.set(`Task added: ${title}`);
 			} else {
 				taskMsg.set(`Failed to add task: server error`);
@@ -189,7 +188,7 @@
 				}
 			});
 		}
-		console.log("Availabiltiy", availability);
+		console.log('Availabiltiy', availability);
 
 		try {
 			for (const availabilityData of allAvailabilityData) {
@@ -197,8 +196,8 @@
 			}
 
 			const times = allAvailabilityData
-					.map((data) => `${data.date} from ${data.start} to ${data.end}`)
-					.join(', ');
+				.map((data) => `${data.date} from ${data.start} to ${data.end}`)
+				.join(', ');
 			successMsg.set('All availabilities saved successfully ' + times);
 			console.log('GroupID', groupId);
 			console.log('Saved times:', JSON.stringify(availableTimes));
@@ -213,15 +212,15 @@
 		const formattedHour = `${selectedHour < 10 ? `0${selectedHour}` : selectedHour}:00`;
 		const currentData = await getGroup(groupId);
 		const matchingAvailability = currentData.availabilities.find(
-				(avail) => avail.date === selectedDay && avail.start === formattedHour
+			(avail) => avail.date === selectedDay && avail.start === formattedHour
 		);
 
 		console.log(groupId);
 		if (matchingAvailability) {
 			await deleteAvailability(groupId, matchingAvailability.availabilityId);
 			console.log(
-					'making an attempt to delete availability with id: ',
-					matchingAvailability.availabilityId
+				'making an attempt to delete availability with id: ',
+				matchingAvailability.availabilityId
 			);
 			await updateGroupData(groupId);
 			console.log(`Deleted availability with ID: ${matchingAvailability.availabilityId}`);
@@ -251,37 +250,37 @@
 	}
 </script>
 
-<header/>
+<header />
 
 <main>
 	<div class="content-wrap">
 		<div class="menu-bar">
 			<button class="menu-button">
-				<img src="../menubar.png" alt="menu bar" class="hamburger-icon"/>
+				<img src="../menubar.png" alt="menu bar" class="hamburger-icon" />
 				<span class="logo">LemmeKnow</span>
 			</button>
 			<button class="menu-button">
-				<img src="../users.png" alt="menu bar" class="user-icon"/>
+				<img src="../users.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Members</span>
 			</button>
 			<button class="menu-button" on:click={openPoll}>
-				<img src="../poll.png" alt="menu bar" class="user-icon"/>
+				<img src="../poll.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Create Poll</span>
 			</button>
 			<button
-					on:click={() => {
+				on:click={() => {
 					navigator.clipboard.writeText(`${window.location.origin}/dashboard/${groupId}`);
 					document.querySelector('.invite-button').innerText = 'Copied to Clipboard!';
 					setTimeout(() => {
 						document.querySelector('.invite-button').innerText = 'Copy Invite Link!';
 					}, 1500);
 				}}
-					class="invite-button">Copy Invite Link!
-			</button
-			>
+				class="invite-button"
+				>Copy Invite Link!
+			</button>
 		</div>
 
-		<Chat {groupId} {group} bind:isPoll/>
+		<Chat {groupId} {group} bind:isPoll />
 
 		<div class="calendar-container">
 			<span class="calendar-title">AVAILABILITY CALENDAR</span>
@@ -293,9 +292,9 @@
 							<div
 								class="slot {available ? 'available' : ''}"
 								on:click|preventDefault={() => toggleSlot(day, hour)}
-								on:keypress={() => toggleSlot(day, hour+7)}
+								on:keypress={() => toggleSlot(day, hour + 7)}
 							>
-								{hour+7}:00
+								{hour + 7}:00
 								{#if available}
 									<button on:click|preventDefault={() => removeAvailability(day, hour)}
 										>Delete</button
@@ -332,15 +331,15 @@
 			{#each $tasks as task (task.id)}
 				<div class="task-item">
 					<input
-							type="checkbox"
-							bind:checked={task.completed}
-							on:click={() => toggleCompletion(task.id)}
-							on:keypress={() => toggleCompletion(task.id)}
+						type="checkbox"
+						bind:checked={task.completed}
+						on:click={() => toggleCompletion(task.id)}
+						on:keypress={() => toggleCompletion(task.id)}
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
 					{#if task.assignedTo}
 						<span class={task.completed ? 'completed-task' : ''}
-						>Assigned to: {task.assignedTo}</span
+							>Assigned to: {task.assignedTo}</span
 						>
 					{/if}
 					<button class="delete-task" on:click={() => deleteTaskWrapper(task.id)}>delete</button>
