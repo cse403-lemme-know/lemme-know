@@ -29,7 +29,9 @@ func RestApi(router *mux.Router, database Database, notification Notification, s
 
 	// temporary API for testing the scheduler.
 	router.HandleFunc("/schedule", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(fmt.Sprintf("%v", scheduler.Schedule(time.Now().Add(time.Second), nil))))
+		type Foo struct {
+		}
+		w.Write([]byte(fmt.Sprintf("%v", scheduler.Schedule(time.Now().Add(time.Second), Foo{}))))
 	})
 }
 
