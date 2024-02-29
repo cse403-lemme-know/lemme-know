@@ -57,6 +57,15 @@ func TestHTTPService(t *testing.T) {
 	MustDecode(t, response.Body, &getUserResponse2)
 	assert.Equal(t, getUserResponse.UserID, getUserResponse2.UserID)
 
+	// Test: get specific user.
+	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/user/%d/", port, userID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, 0, len(response.Cookies()))
+	var getUserResponse3 GetUserResponse
+	MustDecode(t, response.Body, &getUserResponse3)
+	assert.Equal(t, getUserResponse.UserID, getUserResponse3.UserID)
+
 	// Test: get push keys
 	response, err = c.Get(fmt.Sprintf("http://localhost:%d/api/push/", port))
 	assert.Nil(t, err)
@@ -162,7 +171,7 @@ func TestHTTPService(t *testing.T) {
 
 	// Test: send chat.
 	patchChatRequest := PatchChatRequest{
-		Content: "hello",
+		Content: "hi shit",
 	}
 	response, err = Patch(c, fmt.Sprintf("http://localhost:%d/api/group/%d/chat/", port, groupID), patchChatRequest)
 	assert.Nil(t, err)
@@ -177,7 +186,7 @@ func TestHTTPService(t *testing.T) {
 	assert.Equal(t, false, getChatResponse.Continue)
 	assert.Equal(t, 1, len(getChatResponse.Messages))
 	assert.Equal(t, userID, getChatResponse.Messages[0].Sender)
-	assert.Equal(t, patchChatRequest.Content, getChatResponse.Messages[0].Content)
+	assert.Equal(t, "hi s***", getChatResponse.Messages[0].Content)
 
 	// Test: create activity.
 	patchActivityRequest := PatchActivityRequest{

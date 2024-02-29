@@ -12,6 +12,7 @@ import (
 const (
 	taskTitleMinLen = 1
 	taskTitleMaxLen = 50
+	groupMaxTasks   = 32
 )
 
 // New/updated task sent over JSON.
@@ -37,6 +38,13 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 			return
 		}
 
+		if !slices.ContainsFunc(group.Tasks, func(task Task) bool {
+			return task.TaskID == taskID
+		}) {
+			http.Error(w, "task not found", http.StatusNotFound)
+			return
+		}
+
 		switch r.Method {
 		case http.MethodPatch:
 			var request PatchTaskRequest
@@ -53,7 +61,8 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 			}
 
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
-				for _, task := range group.Tasks {
+				for i := range group.Tasks {
+					task := &group.Tasks[i]
 					if task.TaskID != taskID {
 						continue
 					}
@@ -112,6 +121,10 @@ func RestGroupTaskAPI(router *mux.Router, database Database, notification Notifi
 
 		if !group.IsMember(user.UserID) {
 			http.Error(w, "not a member of group", http.StatusUnauthorized)
+			return
+		}
+
+		if invalidAppend(w, group.Tasks, groupMaxTasks) {
 			return
 		}
 

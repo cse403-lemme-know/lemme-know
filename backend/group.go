@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	groupNameMinLen = 1
-	groupNameMaxLen = 50
+	groupNameMinLen  = 1
+	groupNameMaxLen  = 50
+	maxGroupsPerUser = 64
 )
 
 // Group sent over JSON.
@@ -100,9 +101,10 @@ func RestGroupAPI(router *mux.Router, database Database, notification Notificati
 			}
 			calendarMode = request.CalendarMode
 		}
+
 		group := Group{
 			GroupID:      GenerateID(),
-			Name:         request.Name,
+			Name:         censor(request.Name),
 			Members:      []UserID{user.UserID},
 			CalendarMode: calendarMode,
 		}
@@ -161,6 +163,9 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 		switch r.Method {
 		case http.MethodGet:
 			if !group.IsMember(user.UserID) {
+				if invalidAppend(w, user.Groups, maxGroupsPerUser) {
+					return
+				}
 				if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
 					group.Members = append(group.Members, user.UserID)
 					return nil
@@ -172,7 +177,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 			}
 
 			response := GetGroupResponse{
-				Name:           group.Name,
+				Name:           censor(group.Name),
 				CalendarMode:   group.CalendarMode,
 				Members:        group.Members,
 				Availabilities: []GetGroupResponseAvailability{},
@@ -182,12 +187,12 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 
 			if group.Poll != nil {
 				response.Poll = &GetGroupResponsePoll{
-					Title:   group.Poll.Title,
+					Title:   censor(group.Poll.Title),
 					Options: []GetGroupResponsePollOption{},
 				}
 				for _, option := range group.Poll.Options {
 					response.Poll.Options = append(response.Poll.Options, GetGroupResponsePollOption{
-						Name:  option.Name,
+						Name:  censor(option.Name),
 						Votes: option.Votes,
 					})
 				}
@@ -196,7 +201,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 			for _, activity := range group.Activities {
 				response.Activities = append(response.Activities, GetGroupResponseActivity{
 					ActivityID: activity.ActivityID,
-					Title:      activity.Title,
+					Title:      censor(activity.Title),
 					Date:       activity.Date,
 					Start:      activity.Start,
 					End:        activity.End,
@@ -217,7 +222,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 			for _, task := range group.Tasks {
 				response.Tasks = append(response.Tasks, GetGroupResponseTask{
 					TaskID:    task.TaskID,
-					Title:     task.Title,
+					Title:     censor(task.Title),
 					Assignee:  task.Assignee,
 					Completed: task.Completed,
 				})

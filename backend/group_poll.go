@@ -12,6 +12,7 @@ import (
 const (
 	pollTitleMinLen = 1
 	pollTitleMaxLen = 50
+	pollMaxOptions  = 4
 )
 
 // New poll sent over JSON.
@@ -51,6 +52,9 @@ func RestGroupPollAPI(router *mux.Router, database Database, notification Notifi
 			var options = []PollOption{}
 
 			for _, name := range request.Options {
+				if invalidAppend(w, options, pollMaxOptions) {
+					return
+				}
 				options = append(options, PollOption{Name: name, Votes: []UserID{}})
 			}
 
@@ -84,13 +88,15 @@ func RestGroupPollAPI(router *mux.Router, database Database, notification Notifi
 				if group.Poll == nil {
 					return fmt.Errorf("no such poll")
 				}
-				for _, option := range group.Poll.Options {
+				for i := range group.Poll.Options {
+					option := &group.Poll.Options[i]
 					option.Votes = slices.DeleteFunc(option.Votes, func(o UserID) bool {
 						return o == user.UserID
 					})
 				}
 				for _, vote := range request.Votes {
-					for _, opt := range group.Poll.Options {
+					for i := range group.Poll.Options {
+						opt := &group.Poll.Options[i]
 						if opt.Name == vote {
 							opt.Votes = append(opt.Votes, user.UserID)
 							break
