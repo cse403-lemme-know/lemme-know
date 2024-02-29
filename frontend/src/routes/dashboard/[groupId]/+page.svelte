@@ -31,7 +31,7 @@
 	let tasks = writable([]);
 	let taskInput = '';
 	let isPoll = false;
-	let commonAvailability = writable({ isLoading: true, slots: []});
+	let commonAvailability = writable({ isLoading: true, slots: [] });
 	let initialLoad = true;
 	let loadingTimeout;
 	let lastCalculated = [];
@@ -85,7 +85,9 @@
 		const currentUser = get(userId);
 		const groupData = await getGroup(groupId);
 		if (groupData && groupData.availabilities) {
-			const userAvailabilities = groupData.availabilities.filter(avail => avail.userId === currentUser);
+			const userAvailabilities = groupData.availabilities.filter(
+				(avail) => avail.userId === currentUser
+			);
 			availability.update((a) => {
 				userAvailabilities.forEach(({ date, start }) => {
 					const hour = parseInt(start.split(':')[0], 10) - 7;
@@ -130,7 +132,7 @@
 			});
 
 			let commonSlots = {};
-			Object.keys(availabilityRanges).forEach(date => {
+			Object.keys(availabilityRanges).forEach((date) => {
 				let ranges = availabilityRanges[date];
 				ranges.sort((a, b) => a.start - b.start);
 
@@ -139,9 +141,17 @@
 					for (let i = index + 1; i < ranges.length; i++) {
 						let nextRange = ranges[i];
 						if (currentRange.end > nextRange.start) {
-							let startOverlap = nextRange.start.isAfter(currentRange.start) ? nextRange.start : currentRange.start;
-							let endOverlap = nextRange.end.isBefore(currentRange.end) ? nextRange.end : currentRange.end;
-							if (!overlapping.some(ov => ov.start.isSame(startOverlap) && ov.end.isSame(endOverlap))) {
+							let startOverlap = nextRange.start.isAfter(currentRange.start)
+								? nextRange.start
+								: currentRange.start;
+							let endOverlap = nextRange.end.isBefore(currentRange.end)
+								? nextRange.end
+								: currentRange.end;
+							if (
+								!overlapping.some(
+									(ov) => ov.start.isSame(startOverlap) && ov.end.isSame(endOverlap)
+								)
+							) {
 								overlapping.push({ start: startOverlap, end: endOverlap });
 							}
 						}
@@ -154,9 +164,11 @@
 			});
 
 			let formattedCommonSlots = [];
-			Object.keys(commonSlots).forEach(date => {
-				commonSlots[date].forEach(slot => {
-					formattedCommonSlots.push(`${date} from ${slot.start.format('HH:mm')} to ${slot.end.format('HH:mm')}`);
+			Object.keys(commonSlots).forEach((date) => {
+				commonSlots[date].forEach((slot) => {
+					formattedCommonSlots.push(
+						`${date} from ${slot.start.format('HH:mm')} to ${slot.end.format('HH:mm')}`
+					);
 				});
 			});
 
@@ -166,13 +178,13 @@
 			} else {
 				if (!initialLoad) {
 					clearTimeout(loadingTimeout);
-					commonAvailability.update(values => ({ ...values, isLoading: false }));
+					commonAvailability.update((values) => ({ ...values, isLoading: false }));
 				}
 			}
 		} else {
 			if (!initialLoad) {
 				clearTimeout(loadingTimeout);
-				commonAvailability.update(values => ({ ...values, isLoading: false }));
+				commonAvailability.update((values) => ({ ...values, isLoading: false }));
 			}
 		}
 
