@@ -29,12 +29,12 @@
 	let groupData = {};
 
 	let tasks = writable([]);
-	let taskMsg = writable('');
 	let taskInput = '';
 	let isPoll = false;
 	let commonAvailability = writable({ isLoading: true, slots: []});
 	let initialLoad = true;
 	let loadingTimeout;
+	let lastCalculated = [];
 
 	onMount(async () => {
 		// TODO: Refactor to avoid needing this.
@@ -98,15 +98,20 @@
 		}
 	}
 
+	function slotsChanged(newSlots, oldSlots) {
+		if (newSlots.length !== oldSlots.length) return true;
+		for (let i = 0; i < newSlots.length; i++) {
+			if (newSlots[i] !== oldSlots[i]) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	async function calculateCommonAvailability() {
 		if (initialLoad) {
 			commonAvailability.set({ isLoading: true, slots: [] });
-		} else {
-			loadingTimeout = setTimeout(() => {
-				commonAvailability.update((currentValue) => ({ ...currentValue, isLoading: true }));
-			}, 500);
 		}
-		commonAvailability.set({ isLoading: true, slots: []});
 		const groupData = await getGroup(groupId);
 		let availabilityRanges = {};
 
@@ -139,8 +144,6 @@
 							if (!overlapping.some(ov => ov.start.isSame(startOverlap) && ov.end.isSame(endOverlap))) {
 								overlapping.push({ start: startOverlap, end: endOverlap });
 							}
-						} else {
-							break;
 						}
 					}
 				});
@@ -157,9 +160,23 @@
 				});
 			});
 
-			clearTimeout(loadingTimeout);
-			commonAvailability.set({ isLoading: false, slots: formattedCommonSlots });
+			if (slotsChanged(formattedCommonSlots, lastCalculated)) {
+				commonAvailability.set({ isLoading: false, slots: formattedCommonSlots });
+				lastCalculated = formattedCommonSlots;
+			} else {
+				if (!initialLoad) {
+					clearTimeout(loadingTimeout);
+					commonAvailability.update(values => ({ ...values, isLoading: false }));
+				}
+			}
+		} else {
+			if (!initialLoad) {
+				clearTimeout(loadingTimeout);
+				commonAvailability.update(values => ({ ...values, isLoading: false }));
+			}
 		}
+
+		initialLoad = false;
 	}
 
 	async function loadTasks(groupId) {
@@ -189,13 +206,9 @@
 	}
 
 	async function addTask(title) {
-		console.log('adding task for group: ', groupId);
 		if (!groupId) {
-			taskMsg.set('No Group ID is set');
 			return;
 		}
-
-		taskMsg.set('');
 
 		try {
 			const response = await createTask(groupId, title);
@@ -210,12 +223,10 @@
 					}))
 				);
 				taskInput = '';
-				taskMsg.set(`Task added: ${title}`);
 			} else {
-				taskMsg.set(`Failed to add task: server error`);
+				console.error('server error');
 			}
 		} catch (e) {
-			taskMsg.set('Failed to add task');
 			console.error('task error ', e);
 		}
 		await updateGroupData(groupId);
@@ -238,7 +249,7 @@
 				} else {
 					console.error('Failed to update task completion on server.');
 				}
-				await updateGroupData(groupId); // to reprint out the groups
+				await updateGroupData(groupId);
 			} catch (error) {
 				console.error('Error updating task completion:', error);
 			}
@@ -417,9 +428,9 @@
 					</div>
 				</div>
 			{/each}
-			<button on:click={saveAllAvailabilities}>Save Availability</button>
+			<button class="save-avail" on:click={saveAllAvailabilities}>SAVE AVAILABILITY</button>
 			{#if $successMsg}
-				<p>{$successMsg}</p>
+				<p class="success-msg">{$successMsg}</p>
 			{/if}
 			<form on:submit|preventDefault={() => addTask(taskInput)}>
 				<input
@@ -429,10 +440,6 @@
 					maxlength="50"
 				/>
 				<button type="submit" disabled={!taskInput.trim()}>Add Task</button>
-
-				{#if $taskMsg}
-					<p>{$taskMsg}</p>
-				{/if}
 			</form>
 			{#each $tasks as task (task.taskId)}
 				<div class="task-item">
@@ -454,7 +461,7 @@
 				</div>
 			{/each}
 			{#if $commonAvailability.isLoading}
-				<div class="common-availability-message">Calculating common availabilities...</div>
+				<div class="common-availability-message">CALCULATING COMMON AVAILABILITIES...</div>
 			{:else if $commonAvailability.slots.length > 0}
 				<div class="common-availability-message">
 					<strong>Common Availabilities:</strong>
@@ -465,7 +472,7 @@
 					</ul>
 				</div>
 			{:else}
-				<div class="common-availability-message">No common availabilities found.</div>
+				<div class="common-availability-message">NO COMMON AVAILABILITIES FOUND.</div>
 			{/if}
 		</div>
 	</div>
@@ -568,6 +575,7 @@
 		flex-wrap: wrap;
 		margin-left: 2rem;
 		margin-top: 3rem;
+		margin-bottom: 0.15rem;
 	}
 
 	.day {
@@ -597,11 +605,11 @@
 		margin-bottom: 0.5rem;
 		margin-top: 0.5rem;
 		width: 80%;
-		max-width: 15rem;
+		max-width: 25rem;
 		text-align: center;
 		font-size: 1rem;
 		background-color: #c9e7e7;
-		border-radius: 15px;
+		border-radius: 10px;
 		border: 2px solid transparent;
 	}
 
@@ -623,20 +631,21 @@
 
 	.task-item {
 		display: flex;
-		margin-bottom: 1rem;
-		margin-top: 0.5rem;
 		padding: 0.5rem;
 		background-color: #f9f9f9;
 		border-radius: 0.2rem;
 		font-family: 'Baloo Bhai 2';
 		align-items: center;
 		font-size: 1.25rem;
+		margin-top: 0;
+		margin-bottom: 0.5rem;
 	}
 
 	.task-item input[type='checkbox'] {
 		accent-color: #879db7;
 		transform: scale(1.5);
 		cursor: pointer;
+		margin-top: -1rem;
 		margin-left: -4rem;
 		margin-right: -4rem;
 	}
@@ -723,5 +732,38 @@
 	.self-assign:hover {
 		background-color: gray;
 		color: white;
+	}
+
+	.common-availability-message {
+		text-align: left;
+		font-family: 'Baloo Da 2';
+		font-style: oblique;
+		margin-top: 1rem;
+		font-size: 1.25rem;
+	}
+
+	.save-avail {
+		background-color: #87c7fa;
+		color: black;
+		border: none;
+		font-weight: bold;
+		cursor: pointer;
+		margin-top: 0.25rem;
+		padding: 0.5rem;
+		display: inline-block;
+		text-align: center;
+		font-size: 1rem;
+		border-radius: 0.3rem;
+		margin-bottom: 1rem;
+	}
+
+	.save-avail:hover {
+		background-color: gray;
+		color: white;
+	}
+
+	.success-msg {
+		margin-top: 0.5rem;
+		margin-bottom: 0.5rem;
 	}
 </style>
