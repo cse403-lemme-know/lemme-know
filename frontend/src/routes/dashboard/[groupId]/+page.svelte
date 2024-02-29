@@ -1,7 +1,7 @@
 <script>
 	// @ts-nocheck
 
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import dayjs from 'dayjs';
 	import { get, writable } from 'svelte/store';
 	import {
@@ -32,6 +32,9 @@
 	let taskMsg = writable('');
 	let taskInput = '';
 	let isPoll = false;
+	let commonAvailability = writable({ isLoading: true, slots: []});
+	let initialLoad = true;
+	let loadingTimeout;
 
 	onMount(async () => {
 		// TODO: Refactor to avoid needing this.
@@ -67,21 +70,95 @@
 		} else {
 			console.error('Invalid start or end date');
 		}
+
+		const pollingInterval = setInterval(async () => {
+			await getGroup(groupId);
+			await calculateCommonAvailability();
+		}, 1000);
+
+		onDestroy(() => {
+			clearInterval(pollingInterval);
+		});
 	});
 
 	async function loadExistingAvailabilities() {
+		const currentUser = get(userId);
 		const groupData = await getGroup(groupId);
 		if (groupData && groupData.availabilities) {
-			const existingAvailabilities = groupData.availabilities;
+			const userAvailabilities = groupData.availabilities.filter(avail => avail.userId === currentUser);
 			availability.update((a) => {
-				existingAvailabilities.forEach(({ date, start }) => {
-					const hour = parseInt(start.split(':')[0], 10);
+				userAvailabilities.forEach(({ date, start }) => {
+					const hour = parseInt(start.split(':')[0], 10) - 7;
 					if (a[date]) {
 						a[date][hour] = true;
 					}
 				});
 				return a;
 			});
+		}
+	}
+
+	async function calculateCommonAvailability() {
+		if (initialLoad) {
+			commonAvailability.set({ isLoading: true, slots: [] });
+		} else {
+			loadingTimeout = setTimeout(() => {
+				commonAvailability.update((currentValue) => ({ ...currentValue, isLoading: true }));
+			}, 500);
+		}
+		commonAvailability.set({ isLoading: true, slots: []});
+		const groupData = await getGroup(groupId);
+		let availabilityRanges = {};
+
+		if (groupData && groupData.availabilities) {
+			groupData.availabilities.forEach(({ userId, date, start, end }) => {
+				const startTime = dayjs(`${date} ${start}`);
+				const endTime = dayjs(`${date} ${end}`);
+				if (!availabilityRanges[date]) {
+					availabilityRanges[date] = [];
+				}
+				availabilityRanges[date].push({
+					userId: userId,
+					start: startTime,
+					end: endTime
+				});
+			});
+
+			let commonSlots = {};
+			Object.keys(availabilityRanges).forEach(date => {
+				let ranges = availabilityRanges[date];
+				ranges.sort((a, b) => a.start - b.start);
+
+				let overlapping = [];
+				ranges.forEach((currentRange, index) => {
+					for (let i = index + 1; i < ranges.length; i++) {
+						let nextRange = ranges[i];
+						if (currentRange.end > nextRange.start) {
+							let startOverlap = nextRange.start.isAfter(currentRange.start) ? nextRange.start : currentRange.start;
+							let endOverlap = nextRange.end.isBefore(currentRange.end) ? nextRange.end : currentRange.end;
+							if (!overlapping.some(ov => ov.start.isSame(startOverlap) && ov.end.isSame(endOverlap))) {
+								overlapping.push({ start: startOverlap, end: endOverlap });
+							}
+						} else {
+							break;
+						}
+					}
+				});
+
+				if (overlapping.length) {
+					commonSlots[date] = overlapping;
+				}
+			});
+
+			let formattedCommonSlots = [];
+			Object.keys(commonSlots).forEach(date => {
+				commonSlots[date].forEach(slot => {
+					formattedCommonSlots.push(`${date} from ${slot.start.format('HH:mm')} to ${slot.end.format('HH:mm')}`);
+				});
+			});
+
+			clearTimeout(loadingTimeout);
+			commonAvailability.set({ isLoading: false, slots: formattedCommonSlots });
 		}
 	}
 
@@ -184,13 +261,14 @@
 
 		for (const [date, slots] of Object.entries($availability)) {
 			slots.forEach((slot, hour) => {
+				hour = hour + 7;
 				if (slot) {
 					const timeId = `${date}_${hour < 10 ? `0${hour}` : hour}:00`;
 					if (!availableTimes.includes(timeId)) {
 						allAvailabilityData.push({
 							date: date,
-							start: `${hour}:00`,
-							end: `${hour + 1}:00`
+							start: `${hour < 10 ? `0${hour}` : hour}:00`,
+							end: `${hour + 1 < 10 ? `0${hour + 1}` : hour + 1}:00`
 						});
 						availableTimes.push(timeId);
 					}
@@ -326,7 +404,7 @@
 							<div
 								class="slot {available ? 'available' : ''}"
 								on:click|preventDefault={() => toggleSlot(day, hour)}
-								on:keypress={() => toggleSlot(day, hour + 7)}
+								on:keypress={() => toggleSlot(day, hour)}
 							>
 								{hour + 7}:00
 								{#if available}
@@ -350,12 +428,6 @@
 					placeholder="Enter task description (50 characters max)"
 					maxlength="50"
 				/>
-				<!--				<input-->
-				<!--					type="text"-->
-				<!--					bind:value={assignedInput}-->
-				<!--					placeholder="Enter assignee name (50 characters max)"-->
-				<!--					maxlength="50"-->
-				<!--				/>-->
 				<button type="submit" disabled={!taskInput.trim()}>Add Task</button>
 
 				{#if $taskMsg}
@@ -381,6 +453,20 @@
 					>
 				</div>
 			{/each}
+			{#if $commonAvailability.isLoading}
+				<div class="common-availability-message">Calculating common availabilities...</div>
+			{:else if $commonAvailability.slots.length > 0}
+				<div class="common-availability-message">
+					<strong>Common Availabilities:</strong>
+					<ul>
+						{#each $commonAvailability.slots as slot}
+							<li>{slot}</li>
+						{/each}
+					</ul>
+				</div>
+			{:else}
+				<div class="common-availability-message">No common availabilities found.</div>
+			{/if}
 		</div>
 	</div>
 </main>
