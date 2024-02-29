@@ -13,7 +13,7 @@
 		groups,
 		refreshGroup,
 		updateTask,
-		getUser
+		userId
 	} from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
@@ -32,7 +32,6 @@
 	let taskMsg = writable('');
 	let taskInput = '';
 	let isPoll = false;
-	let currentUserID;
 
 	onMount(async () => {
 		// TODO: Refactor to avoid needing this.
@@ -47,10 +46,6 @@
 		}
 		const calendarMode = g.calendarMode.split(' to ');
 		const dateFormat = 'YYYY-MM-DD';
-		console.log(calendarMode);
-		const user = await getUser();
-		currentUserID = user?.userId;
-		console.log('current user id:', currentUserID);
 
 		start = dayjs(calendarMode[0], dateFormat);
 		end = dayjs(calendarMode[1], dateFormat);
@@ -265,15 +260,16 @@
 
 	async function assignTaskToUser(taskId) {
 		console.log('taskid:', taskId);
+		console.log('user id:', userId);
 		const taskData = {
-			assignee: currentUserID
+			assignee: $userId
 		};
 		const success = await updateTask(groupId, taskId, taskData);
 		if (success) {
 			tasks.update((currentTasks) => {
 				return currentTasks.map((t) => {
 					if (t.taskId === taskId) {
-						return { ...t, assignee: currentUserID };
+						return { ...t, assignee: $userId };
 					}
 					return t;
 				});

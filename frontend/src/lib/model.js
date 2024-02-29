@@ -6,6 +6,8 @@ export const groups = writable({});
 // Mapping of user ID to user (from backend);
 export const users = writable({});
 
+export const userId = writable(null);
+
 // @ts-nocheck
 async function getUser() {
 	try {
@@ -143,7 +145,10 @@ async function getGroup(groupId) {
 	}
 }
 
-getUser().then(console.log);
+getUser().then((user) => {
+	userId.set(user.userId);
+});
+
 async function createPoll(groupId, title, options) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/${groupId}/poll/`, {
