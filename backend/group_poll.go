@@ -88,13 +88,15 @@ func RestGroupPollAPI(router *mux.Router, database Database, notification Notifi
 				if group.Poll == nil {
 					return fmt.Errorf("no such poll")
 				}
-				for _, option := range group.Poll.Options {
+				for i := range group.Poll.Options {
+					option := &group.Poll.Options[i]
 					option.Votes = slices.DeleteFunc(option.Votes, func(o UserID) bool {
 						return o == user.UserID
 					})
 				}
 				for _, vote := range request.Votes {
-					for _, opt := range group.Poll.Options {
+					for i := range group.Poll.Options {
+						opt := &group.Poll.Options[i]
 						if opt.Name == vote {
 							opt.Votes = append(opt.Votes, user.UserID)
 							break

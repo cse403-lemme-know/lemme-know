@@ -6,6 +6,8 @@ export const groups = writable({});
 // Mapping of user ID to user (from backend);
 export const users = writable({});
 
+export const userId = writable(null);
+
 // @ts-nocheck
 async function getUser() {
 	try {
@@ -108,6 +110,28 @@ async function deleteTask(groupId, taskId) {
 	}
 }
 
+async function updateTask(groupId, taskId, taskData) {
+	try {
+		const response = await fetch(`//${location.host}/api/group/${groupId}/task/${taskId}/`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(taskData)
+		});
+		if (response.ok) {
+			console.log('Task updated successfully');
+			return true;
+		} else {
+			console.error('Failed to update task, server responded with status:', response.status);
+			return false;
+		}
+	} catch (e) {
+		console.error('Error updating task:', e);
+		return false;
+	}
+}
+
 /**
  * @param {number} groupId
  */
@@ -121,7 +145,10 @@ async function getGroup(groupId) {
 	}
 }
 
-getUser().then(console.log);
+getUser().then((user) => {
+	userId.set(user.userId);
+});
+
 async function createPoll(groupId, title, options) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/${groupId}/poll/`, {
@@ -244,5 +271,6 @@ export {
 	fetchMessages,
 	getGroup,
 	deleteTask,
-	deleteAvailability
+	deleteAvailability,
+	updateTask
 };

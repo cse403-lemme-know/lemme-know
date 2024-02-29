@@ -11,7 +11,9 @@
 		deleteTask,
 		getGroup,
 		groups,
-		refreshGroup
+		refreshGroup,
+		updateTask,
+		userId
 	} from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
@@ -29,7 +31,6 @@
 	let tasks = writable([]);
 	let taskMsg = writable('');
 	let taskInput = '';
-	// let assignedInput = '';
 	let isPoll = false;
 
 	onMount(async () => {
@@ -45,7 +46,6 @@
 		}
 		const calendarMode = g.calendarMode.split(' to ');
 		const dateFormat = 'YYYY-MM-DD';
-		console.log(calendarMode);
 
 		start = dayjs(calendarMode[0], dateFormat);
 		end = dayjs(calendarMode[1], dateFormat);
@@ -91,10 +91,10 @@
 			if (groupData && groupData.tasks) {
 				tasks.set(
 					groupData.tasks.map((task) => ({
-						id: task.taskId,
-						description: task.title,
-						assignedTo: task.assignee,
-						completed: task.complete
+						taskId: task.taskId,
+						title: task.title,
+						assignee: task.assignee,
+						completed: task.completed
 					}))
 				);
 			}
@@ -118,10 +118,6 @@
 			return;
 		}
 
-		// if (!taskDescription.trim()) {
-		// 	taskMsg.set('Task description is required.');
-		// 	return;
-		// }
 		taskMsg.set('');
 
 		try {
@@ -130,14 +126,13 @@
 				await updateGroupData(groupId);
 				tasks.set(
 					groupData.tasks.map((task) => ({
-						id: task.taskId,
-						description: task.title,
-						assignedTo: task.assignee,
-						completed: task.complete
+						taskId: task.taskId,
+						title: task.title,
+						assignee: task.assignee,
+						completed: task.completed
 					}))
 				);
 				taskInput = '';
-				// assignedInput = '';
 				taskMsg.set(`Task added: ${title}`);
 			} else {
 				taskMsg.set(`Failed to add task: server error`);
@@ -149,14 +144,28 @@
 		await updateGroupData(groupId);
 	}
 
-	function toggleCompletion(taskId) {
-		tasks.update((currentTasks) => {
-			const index = currentTasks.findIndex((t) => t.id === taskId);
-			if (index !== -1) {
-				currentTasks[index].completed = !currentTasks[index].completed;
+	async function toggleCompletion(taskId) {
+		const task = $tasks.find((t) => t.taskId === taskId);
+		if (task) {
+			try {
+				const newCompletedStatus = !task.completed;
+				console.log('status', newCompletedStatus);
+				const success = await updateTask(groupId, taskId, { completed: newCompletedStatus });
+
+				if (success) {
+					tasks.update((currentTasks) => {
+						return currentTasks.map((t) =>
+							t.taskId === taskId ? { ...t, completed: newCompletedStatus } : t
+						);
+					});
+				} else {
+					console.error('Failed to update task completion on server.');
+				}
+				await updateGroupData(groupId); // to reprint out the groups
+			} catch (error) {
+				console.error('Error updating task completion:', error);
 			}
-			return currentTasks;
-		});
+		}
 	}
 
 	function openPoll() {
@@ -242,11 +251,36 @@
 		try {
 			await deleteTask(groupId, taskId);
 			tasks.update((currentTasks) => {
-				return currentTasks.filter((task) => task.id !== taskId);
+				return currentTasks.filter((task) => task.taskId !== taskId);
 			});
 		} catch (error) {
 			console.error(error);
 		}
+	}
+
+	async function assignTaskToUser(taskId) {
+		console.log('taskid:', taskId);
+		console.log('user id:', userId);
+		const taskData = {
+			assignee: $userId
+		};
+		const success = await updateTask(groupId, taskId, taskData);
+		if (success) {
+			tasks.update((currentTasks) => {
+				return currentTasks.map((t) => {
+					if (t.taskId === taskId) {
+						return { ...t, assignee: $userId };
+					}
+					return t;
+				});
+			});
+			console.log('Task assigned');
+		} else {
+			console.error('Failed to assign task.');
+		}
+		console.log('before: ', groupData);
+		await updateGroupData(groupId);
+		console.log('after: ', groupData);
 	}
 </script>
 
@@ -328,21 +362,23 @@
 					<p>{$taskMsg}</p>
 				{/if}
 			</form>
-			{#each $tasks as task (task.id)}
+			{#each $tasks as task (task.taskId)}
 				<div class="task-item">
 					<input
 						type="checkbox"
 						bind:checked={task.completed}
-						on:click={() => toggleCompletion(task.id)}
-						on:keypress={() => toggleCompletion(task.id)}
+						on:click={() => toggleCompletion(task.taskId)}
+						on:keypress={() => toggleCompletion(task.taskId)}
 					/>
-					<span class={task.completed ? 'completed-task' : ''}>{task.description}</span>
-					{#if task.assignedTo}
-						<span class={task.completed ? 'completed-task' : ''}
-							>Assigned to: {task.assignedTo}</span
-						>
+					<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
+					{#if task.assignee}
+						<span class={task.completed ? 'completed-task' : ''}>Assigned to: {task.assignee}</span>
 					{/if}
-					<button class="delete-task" on:click={() => deleteTaskWrapper(task.id)}>delete</button>
+					<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}>delete</button
+					>
+					<button class="self-assign" on:click={() => assignTaskToUser(task.taskId)}
+						>Self Assign</button
+					>
 				</div>
 			{/each}
 		</div>
@@ -515,8 +551,8 @@
 		accent-color: #879db7;
 		transform: scale(1.5);
 		cursor: pointer;
-		margin-left: -7.5rem;
-		margin-right: -7.5rem;
+		margin-left: -4rem;
+		margin-right: -4rem;
 	}
 
 	.task-item .completed-task {
@@ -581,6 +617,24 @@
 	}
 
 	.delete-task:hover {
+		background-color: gray;
+		color: white;
+	}
+
+	.self-assign {
+		background-color: #879db7;
+		color: black;
+		border: none;
+		cursor: pointer;
+		margin-left: 1.5rem;
+		padding: 0.5rem 1rem;
+		display: inline-block;
+		text-align: center;
+		font-size: 1rem;
+		border-radius: 0.3rem;
+	}
+
+	.self-assign:hover {
 		background-color: gray;
 		color: white;
 	}

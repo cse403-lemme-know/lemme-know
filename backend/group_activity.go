@@ -55,7 +55,8 @@ func RestGroupActivityAPI(router *mux.Router, database Database, notification No
 			}
 
 			if err := updateAndNotifyGroup(group.GroupID, func(group *Group) error {
-				for i, activity := range group.Activities {
+				for i := range group.Activities {
+					activity := &group.Activities[i]
 					if activity.ActivityID != activityID {
 						continue
 					}
