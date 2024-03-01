@@ -26,6 +26,10 @@
 	let availability = writable({});
 	let successMsg = writable('');
 	$: group = $groups[groupId];
+	$: calculateCommonAvailability(group);
+	$: console.log(`group changed: ${group}`);
+
+
 	let groupData = {};
 
 	let tasks = writable([]);
@@ -110,11 +114,11 @@
 		return false;
 	}
 
-	async function calculateCommonAvailability() {
+	async function calculateCommonAvailability(groupData) {
 		if (initialLoad) {
 			commonAvailability.set({ isLoading: true, slots: [] });
 		}
-		const groupData = await getGroup(groupId);
+		// const groupData = await getGroup(groupId);
 		let availabilityRanges = {};
 
 		if (groupData && groupData.availabilities) {
