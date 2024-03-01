@@ -12,9 +12,9 @@ import (
 // User sent over JSON.
 type GetUserResponse struct {
 	UserID UserID    `json:"userId"`
-	Name   string    `json:"name,omitempty"`
+	Name   string    `json:"name"`
 	Status string    `json:"status"`
-	Groups []GroupID `json:"groups,omitempty"`
+	Groups []GroupID `json:"groups"`
 }
 
 // User edit sent over JSON.

@@ -18,7 +18,7 @@ const (
 // Group sent over JSON.
 type GetGroupResponse struct {
 	Name           string                         `json:"name"`
-	Members        []UserID                       `json:"members,omitempty"`
+	Members        []UserID                       `json:"members"`
 	Poll           *GetGroupResponsePoll          `json:"poll"`
 	Availabilities []GetGroupResponseAvailability `json:"availabilities"`
 	Activities     []GetGroupResponseActivity     `json:"activities"`
