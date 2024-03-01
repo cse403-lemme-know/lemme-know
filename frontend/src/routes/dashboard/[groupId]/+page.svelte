@@ -26,19 +26,13 @@
 	let availability = writable({});
 	let successMsg = writable('');
 	$: group = $groups[groupId];
-	$: calculateCommonAvailability(group);
-	$: console.log(`group changed: ${group}`);
-
+	$: commonAvailability = calculateCommonAvailability(group);
 
 	let groupData = {};
 
 	let tasks = writable([]);
 	let taskInput = '';
 	let isPoll = false;
-	let commonAvailability = writable({ isLoading: true, slots: [] });
-	let initialLoad = true;
-	let loadingTimeout;
-	let lastCalculated = [];
 
 	onMount(async () => {
 		// TODO: Refactor to avoid needing this.
@@ -74,15 +68,6 @@
 		} else {
 			console.error('Invalid start or end date');
 		}
-
-		const pollingInterval = setInterval(async () => {
-			await getGroup(groupId);
-			await calculateCommonAvailability();
-		}, 1000);
-
-		onDestroy(() => {
-			clearInterval(pollingInterval);
-		});
 	});
 
 	async function loadExistingAvailabilities() {
@@ -114,85 +99,67 @@
 		return false;
 	}
 
-	async function calculateCommonAvailability(groupData) {
-		if (initialLoad) {
-			commonAvailability.set({ isLoading: true, slots: [] });
+	function calculateCommonAvailability(groupData) {
+		if (!groupData) {
+			return { isLoading: true, slots: [] };
 		}
-		// const groupData = await getGroup(groupId);
+
+		// date -> [{userId, start, end}]
 		let availabilityRanges = {};
 
-		if (groupData && groupData.availabilities) {
-			groupData.availabilities.forEach(({ userId, date, start, end }) => {
-				const startTime = dayjs(`${date} ${start}`);
-				const endTime = dayjs(`${date} ${end}`);
-				if (!availabilityRanges[date]) {
-					availabilityRanges[date] = [];
-				}
-				availabilityRanges[date].push({
-					userId: userId,
-					start: startTime,
-					end: endTime
-				});
+		groupData.availabilities.forEach(({ userId, date, start, end }) => {
+			const startTime = dayjs(`${date} ${start}`);
+			const endTime = dayjs(`${date} ${end}`);
+			if (!availabilityRanges[date]) {
+				availabilityRanges[date] = [];
+			}
+			availabilityRanges[date].push({
+				userId: userId,
+				start: startTime,
+				end: endTime
 			});
+		});
 
-			let commonSlots = {};
-			Object.keys(availabilityRanges).forEach((date) => {
-				let ranges = availabilityRanges[date];
-				ranges.sort((a, b) => a.start - b.start);
+		let commonSlots = {};
+		Object.keys(availabilityRanges).forEach((date) => {
+			let ranges = availabilityRanges[date];
+			ranges.sort((a, b) => a.start - b.start);
 
-				let overlapping = [];
-				ranges.forEach((currentRange, index) => {
-					for (let i = index + 1; i < ranges.length; i++) {
-						let nextRange = ranges[i];
-						if (currentRange.end > nextRange.start) {
-							let startOverlap = nextRange.start.isAfter(currentRange.start)
-								? nextRange.start
-								: currentRange.start;
-							let endOverlap = nextRange.end.isBefore(currentRange.end)
-								? nextRange.end
-								: currentRange.end;
-							if (
-								!overlapping.some(
-									(ov) => ov.start.isSame(startOverlap) && ov.end.isSame(endOverlap)
-								)
-							) {
-								overlapping.push({ start: startOverlap, end: endOverlap });
-							}
+			let overlapping = [];
+			ranges.forEach((currentRange, index) => {
+				for (let i = index + 1; i < ranges.length; i++) {
+					let nextRange = ranges[i];
+					if (currentRange.end > nextRange.start) {
+						let startOverlap = nextRange.start.isAfter(currentRange.start)
+							? nextRange.start
+							: currentRange.start;
+						let endOverlap = nextRange.end.isBefore(currentRange.end)
+							? nextRange.end
+							: currentRange.end;
+						if (
+							!overlapping.some((ov) => ov.start.isSame(startOverlap) && ov.end.isSame(endOverlap))
+						) {
+							overlapping.push({ start: startOverlap, end: endOverlap });
 						}
 					}
-				});
-
-				if (overlapping.length) {
-					commonSlots[date] = overlapping;
 				}
 			});
 
-			let formattedCommonSlots = [];
-			Object.keys(commonSlots).forEach((date) => {
-				commonSlots[date].forEach((slot) => {
-					formattedCommonSlots.push(
-						`${date} from ${slot.start.format('HH:mm')} to ${slot.end.format('HH:mm')}`
-					);
-				});
+			if (overlapping.length) {
+				commonSlots[date] = overlapping;
+			}
+		});
+
+		let formattedCommonSlots = [];
+		Object.keys(commonSlots).forEach((date) => {
+			commonSlots[date].forEach((slot) => {
+				formattedCommonSlots.push(
+					`${date} from ${slot.start.format('HH:mm')} to ${slot.end.format('HH:mm')}`
+				);
 			});
+		});
 
-			if (slotsChanged(formattedCommonSlots, lastCalculated)) {
-				commonAvailability.set({ isLoading: false, slots: formattedCommonSlots });
-				lastCalculated = formattedCommonSlots;
-			} else {
-				if (!initialLoad) {
-					clearTimeout(loadingTimeout);
-					commonAvailability.update((values) => ({ ...values, isLoading: false }));
-				}
-			}
-		} else {
-			if (!initialLoad) {
-				clearTimeout(loadingTimeout);
-				commonAvailability.update((values) => ({ ...values, isLoading: false }));
-			}
-		}
-
-		initialLoad = false;
+		return { isLoading: false, slots: formattedCommonSlots };
 	}
 
 	async function loadTasks(groupId) {
@@ -476,13 +443,13 @@
 					>
 				</div>
 			{/each}
-			{#if $commonAvailability.isLoading}
+			{#if commonAvailability.isLoading}
 				<div class="common-availability-message">CALCULATING COMMON AVAILABILITIES...</div>
-			{:else if $commonAvailability.slots.length > 0}
+			{:else if commonAvailability.slots.length > 0}
 				<div class="common-availability-message">
 					<strong>Common Availabilities:</strong>
 					<ul>
-						{#each $commonAvailability.slots as slot}
+						{#each commonAvailability.slots as slot}
 							<li>{slot}</li>
 						{/each}
 					</ul>

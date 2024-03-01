@@ -8,6 +8,10 @@ const config = {
 	},
 	preview: {
 		port: 5173
+	},
+	build: {
+		// because we build and preview to debug.
+		minify: false
 	}
 };
 
