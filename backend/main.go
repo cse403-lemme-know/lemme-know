@@ -99,7 +99,11 @@ func newLambdaHandler(database Database, notification Notification, scheduler Sc
 		var cron events.EventBridgeEvent
 		if err := json.Unmarshal(event, &cron); err == nil && cron.DetailType != "" {
 			log.Println("received EventBridge event")
-			err := Cron(cron.Detail)
+			var activation Activation
+			if err := json.Unmarshal(cron.Detail, &activation); err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+			err := Activate(activation)
 			return events.APIGatewayProxyResponse{}, err
 		}
 
@@ -219,7 +223,7 @@ func runLocalService(port uint16, ctx context.Context) error {
 			_ = s.Close()
 			return
 		case <-time.After(time.Duration(int64(sleep) * int64(time.Minute))):
-			Cron(nil)
+			Activate(Activation{})
 		}
 	}()
 

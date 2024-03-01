@@ -11,7 +11,7 @@ resource "aws_lambda_function" "backend" {
     variables = {
       AWS_API_GATEWAY_WS_ENDPOINT = replace(aws_apigatewayv2_stage.backend.invoke_url, "wss:", "https:")
       AWS_LAMBDA_ARN              = "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:lemmeknow-backend"
-      AWS_SCHEDULER_ROLE_ARN = aws_iam_role.backend_role.arn
+      AWS_SCHEDULER_ROLE_ARN      = aws_iam_role.backend_role.arn
       #AWS_REGION                 = var.region
     }
   }
