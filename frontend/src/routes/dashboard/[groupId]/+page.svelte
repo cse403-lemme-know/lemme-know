@@ -1,7 +1,7 @@
 <script>
 	// @ts-nocheck
 
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
 	import { get, writable } from 'svelte/store';
 	import {
@@ -89,7 +89,7 @@
 		}
 	}
 
-	function slotsChanged(newSlots, oldSlots) {
+	function _slotsChanged(newSlots, oldSlots) {
 		if (newSlots.length !== oldSlots.length) return true;
 		for (let i = 0; i < newSlots.length; i++) {
 			if (newSlots[i] !== oldSlots[i]) {
