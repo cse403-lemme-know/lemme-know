@@ -165,10 +165,6 @@ async function getGroup(groupId) {
 	}
 }
 
-getUser().then((user) => {
-	userId.set(user.userId);
-});
-
 async function createPoll(groupId, title, options) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/${groupId}/poll/`, {
@@ -275,6 +271,7 @@ async function openWebSocket() {
 if (browser) {
 	getUser().then((user) => {
 		console.log(user);
+		userId.set(user.userId);
 		openWebSocket();
 	});
 }
