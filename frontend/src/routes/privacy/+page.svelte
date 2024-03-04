@@ -1,10 +1,10 @@
 <script>
 </script>
 
-<main>
+<main class="privacy-policy">
 	<h1>Privacy Policy for LemmeKnow</h1>
 
-	<p>Last updated: 03/04/2024</p>
+	<p class="last-updated">Last updated: 03/04/2024</p>
 
 	<p>
 		This privacy policy ("Policy") describes how LemmeKnow ("we", "us", or "our") collects,
@@ -56,29 +56,49 @@
 		Services.
 	</p>
 
-	<p>This document was last updated on 03/04/2024</p>
+	<p class="last-updated">This document was last updated on 03/04/2024</p>
 </main>
 
 <style>
-	h1,
-	h2,
-	h3 {
-		color: #333;
+	.privacy-policy {
+		max-width: 800px;
+		margin: auto;
+		padding: 20px;
+		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	}
 
-	p,
-	li {
+	h1, h2 {
+		color: #333;
+		margin-top: 20px;
+		margin-bottom: 10px;
+	}
+
+	p, li {
 		font-size: 16px;
 		color: #666;
-		line-height: 1.5;
+		line-height: 1.6;
 	}
 
-	a {
-		color: #007bff;
-		text-decoration: none;
+	.last-updated {
+		font-style: italic;
+		margin-bottom: 20px;
 	}
 
-	a:hover {
-		text-decoration: underline;
+	ul {
+		padding-left: 20px;
+	}
+
+	@media (max-width: 768px) {
+		.privacy-policy {
+			padding: 10px;
+		}
+
+		h1, h2 {
+			font-size: 1.25rem;
+		}
+
+		p, li {
+			font-size: 14px;
+		}
 	}
 </style>
