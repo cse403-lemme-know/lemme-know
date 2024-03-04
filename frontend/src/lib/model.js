@@ -247,6 +247,32 @@ async function updateUserName(userId, newName) {
 	}
 }
 
+async function updateStatus(status) {
+	try {
+		const response = await fetch(`/api/user/`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ status: status })
+		});
+
+		if (response.ok) {
+			console.log(`Status updated to ${status}`);
+			users.update((u) => {
+				if (u[userId]) {
+					u[userId].status = status;
+				}
+				return u;
+			});
+		} else {
+			console.error('Failed to update status');
+		}
+	} catch (error) {
+		console.error('Error updating status:', error);
+	}
+}
+
 async function fetchMessages(groupID, start, end) {
 	try {
 		const response = await fetch(
@@ -321,5 +347,6 @@ export {
 	deleteTask,
 	deleteAvailability,
 	updateTask,
-	updateUserName
+	updateUserName,
+	updateStatus
 };
