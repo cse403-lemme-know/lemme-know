@@ -225,12 +225,12 @@ async function updateUserName(userId, newName) {
 		const response = await fetch(`//${location.host}/api/user/`, {
 			method: 'PATCH',
 			headers: {
-				'Content-Type': 'application/json',
+				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify({ userId: userId, name: newName }),
+			body: JSON.stringify({ userId: userId, name: newName })
 		});
 		if (response.ok) {
-			users.update(allUsers => {
+			users.update((allUsers) => {
 				if (allUsers[userId]) {
 					allUsers[userId].name = newName;
 				}
@@ -272,7 +272,7 @@ async function openWebSocket() {
 	webSocket.onmessage = (event) => {
 		console.log(event);
 		const message = JSON.parse(event.data);
-		console.log("message", message);
+		console.log('message', message);
 		if (message.group) {
 			refreshGroup(message.group.groupId);
 		}
@@ -299,7 +299,7 @@ if (browser) {
 	getUser().then((user) => {
 		console.log(user);
 		userId.set(user.userId);
-		users.update(allUsers => {
+		users.update((allUsers) => {
 			allUsers[user.userId] = user;
 			return allUsers;
 		});

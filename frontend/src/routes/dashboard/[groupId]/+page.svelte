@@ -301,12 +301,17 @@
 			</button>
 			{#if isEditingName}
 				<form on:submit|preventDefault={handleNameChange}>
-					<input class="name-input" type="text" bind:value={newName} placeholder="Enter your name" />
+					<input
+						class="name-input"
+						type="text"
+						bind:value={newName}
+						placeholder="Enter your name"
+					/>
 					<button type="submit" class="update-button">Update Name</button>
-					<button type="button" on:click={() => isEditingName = false}>Cancel</button>
+					<button type="button" on:click={() => (isEditingName = false)}>Cancel</button>
 				</form>
 			{:else}
-				<button on:click={() => isEditingName = true} class="name-button">Change Name</button>
+				<button on:click={() => (isEditingName = true)} class="name-button">Change Name</button>
 			{/if}
 		</div>
 
@@ -350,23 +355,25 @@
 				{:else}
 					<div class="task-item">
 						<input
-								type="checkbox"
-								bind:checked={task.completed}
-								on:click={() => toggleCompletion(task.taskId, group)}
-								on:keypress={() => toggleCompletion(task.taskId, group)}
+							type="checkbox"
+							bind:checked={task.completed}
+							on:click={() => toggleCompletion(task.taskId, group)}
+							on:keypress={() => toggleCompletion(task.taskId, group)}
 						/>
 						<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
 						{#if task.assignee}
-							<span class={task.completed ? 'completed-task' : ''}>Assigned to: {getAssigneeDisplayName(task.assignee, $users)}</span>
+							<span class={task.completed ? 'completed-task' : ''}
+								>Assigned to: {getAssigneeDisplayName(task.assignee, $users)}</span
+							>
 						{/if}
-						<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}>delete</button
+						<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}
+							>delete</button
 						>
 						<button class="self-assign" on:click={() => assignTaskToUser(task.taskId)}
-						>Self Assign</button
+							>Self Assign</button
 						>
 					</div>
 				{/if}
-
 			{/each}
 			{#if commonAvailability.isLoading}
 				<div class="common-availability-message">CALCULATING COMMON AVAILABILITIES...</div>
@@ -715,5 +722,4 @@
 	.update-button {
 		margin-bottom: 0.25rem;
 	}
-
 </style>
