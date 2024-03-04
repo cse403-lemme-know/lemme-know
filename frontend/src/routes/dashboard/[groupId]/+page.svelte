@@ -3,7 +3,7 @@
 
 	import { onMount } from 'svelte';
 	import dayjs from 'dayjs';
-	import { get, writable } from 'svelte/store';
+	import { get } from 'svelte/store';
 	import {
 		createAvailability,
 		createTask,
@@ -13,80 +13,96 @@
 		groups,
 		refreshGroup,
 		updateTask,
-		userId
+		userId,
+		updateUserName,
+		users,
+		refreshUser
 	} from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
 	import { page } from '$app/stores';
 
 	$: groupId = $page.params.groupId;
-
-	let start, end;
-	let availableTimes = [];
-	let availability = writable({});
-	let successMsg = writable('');
 	$: group = $groups[groupId];
+	$: console.log(`group changed: ${JSON.stringify(group)}`);
+	$: availability = calculateAvailability($userId, group);
 	$: commonAvailability = calculateCommonAvailability(group);
 
-	let groupData = {};
-
-	let tasks = writable([]);
-	let taskInput = '';
-	let isPoll = false;
-
+	let isLoadingUsers = true;
+	// Bail if the group doesn't exist.
 	onMount(async () => {
-		// TODO: Refactor to avoid needing this.
-		let g = group;
-		if (!g) {
-			await refreshGroup(groupId);
-			g = get(groups)[groupId];
-			if (!g) {
-				goto('/');
-				return;
-			}
-		}
-		const calendarMode = g.calendarMode.split(' to ');
-		const dateFormat = 'YYYY-MM-DD';
-
-		start = dayjs(calendarMode[0], dateFormat);
-		end = dayjs(calendarMode[1], dateFormat);
-
-		function initializeAvailability(start, end) {
-			let days = {};
-			let loopEndDate = end.add(1, 'day');
-			for (let current = start; current.isBefore(loopEndDate); current = current.add(1, 'day')) {
-				const dateString = current.format('YYYY-MM-DD');
-				days[dateString] = new Array(16).fill(false);
-			}
-			availability.set(days);
-		}
-
-		if (start.isValid() && end.isValid()) {
-			initializeAvailability(start, end);
-			await loadExistingAvailabilities();
-			await loadTasks(groupId);
+		await refreshGroup(groupId);
+		const group = get(groups)[groupId];
+		if (group) {
+			const memberIds = group.members || [];
+			await Promise.all(memberIds.map(refreshUser));
+			isLoadingUsers = false;
 		} else {
-			console.error('Invalid start or end date');
+			goto('/');
+			return;
 		}
 	});
 
-	async function loadExistingAvailabilities() {
-		const currentUser = get(userId);
-		const groupData = await getGroup(groupId);
-		if (groupData && groupData.availabilities) {
-			const userAvailabilities = groupData.availabilities.filter(
-				(avail) => avail.userId === currentUser
-			);
-			availability.update((a) => {
-				userAvailabilities.forEach(({ date, start }) => {
-					const hour = parseInt(start.split(':')[0], 10) - 7;
-					if (a[date]) {
-						a[date][hour] = true;
-					}
-				});
-				return a;
-			});
+	function getAssigneeDisplayName(assigneeId, users) {
+		const assignee = users[assigneeId];
+		return assignee && assignee.name ? assignee.name : `user# ${assigneeId}`;
+	}
+
+	let newName = '';
+	let isEditingName = false;
+
+	async function handleNameChange() {
+		if (newName.trim()) {
+			const success = await updateUserName($userId, newName);
+			if (success) {
+				newName = '';
+				isEditingName = false;
+			}
 		}
+	}
+
+	let taskInput = '';
+	let isPoll = false;
+
+	function getStartEnd(group) {
+		if (!group) {
+			return { start: null, end: null };
+		}
+		const calendarMode = group.calendarMode.split(' to ');
+		const dateFormat = 'YYYY-MM-DD';
+		const start = dayjs(calendarMode[0], dateFormat);
+		const end = dayjs(calendarMode[1], dateFormat);
+		return { start, end };
+	}
+
+	function calculateAvailability(currentUserId, groupData) {
+		if (!currentUserId || !groupData) {
+			return {};
+		}
+
+		const { start, end } = getStartEnd(groupData);
+
+		if (!(start.isValid() && end.isValid())) {
+			return {};
+		}
+
+		let availability = {};
+		let loopEndDate = end.add(1, 'day');
+		for (let current = start; current.isBefore(loopEndDate); current = current.add(1, 'day')) {
+			const dateString = current.format('YYYY-MM-DD');
+			availability[dateString] = new Array(16).fill(false);
+		}
+
+		const userAvailabilities = groupData.availabilities.filter(
+			(avail) => avail.userId === currentUserId
+		);
+		userAvailabilities.forEach(({ date, start }) => {
+			const hour = parseInt(start.split(':')[0], 10) - 7;
+			if (availability[date]) {
+				availability[date][hour] = true;
+			}
+		});
+		return availability;
 	}
 
 	function _slotsChanged(newSlots, oldSlots) {
@@ -162,32 +178,6 @@
 		return { isLoading: false, slots: formattedCommonSlots };
 	}
 
-	async function loadTasks(groupId) {
-		try {
-			const groupData = await getGroup(groupId);
-			if (groupData && groupData.tasks) {
-				tasks.set(
-					groupData.tasks.map((task) => ({
-						taskId: task.taskId,
-						title: task.title,
-						assignee: task.assignee,
-						completed: task.completed
-					}))
-				);
-			}
-		} catch (error) {
-			console.error('Failed to load tasks', error);
-			tasks.set([]);
-		}
-	}
-
-	function toggleSlot(day, hour) {
-		availability.update((a) => {
-			a[day][hour] = !a[day][hour];
-			return a;
-		});
-	}
-
 	async function addTask(title) {
 		if (!groupId) {
 			return;
@@ -196,15 +186,6 @@
 		try {
 			const response = await createTask(groupId, title);
 			if (response.ok) {
-				await updateGroupData(groupId);
-				tasks.set(
-					groupData.tasks.map((task) => ({
-						taskId: task.taskId,
-						title: task.title,
-						assignee: task.assignee,
-						completed: task.completed
-					}))
-				);
 				taskInput = '';
 			} else {
 				console.error('server error');
@@ -212,27 +193,19 @@
 		} catch (e) {
 			console.error('task error ', e);
 		}
-		await updateGroupData(groupId);
 	}
 
-	async function toggleCompletion(taskId) {
-		const task = $tasks.find((t) => t.taskId === taskId);
+	async function toggleCompletion(taskId, groupData) {
+		const task = groupData.tasks.find((t) => t.taskId === taskId);
 		if (task) {
 			try {
 				const newCompletedStatus = !task.completed;
 				console.log('status', newCompletedStatus);
 				const success = await updateTask(groupId, taskId, { completed: newCompletedStatus });
 
-				if (success) {
-					tasks.update((currentTasks) => {
-						return currentTasks.map((t) =>
-							t.taskId === taskId ? { ...t, completed: newCompletedStatus } : t
-						);
-					});
-				} else {
+				if (!success) {
 					console.error('Failed to update task completion on server.');
 				}
-				await updateGroupData(groupId);
 			} catch (error) {
 				console.error('Error updating task completion:', error);
 			}
@@ -243,53 +216,17 @@
 		isPoll = true;
 	}
 
-	async function saveAllAvailabilities() {
-		const currentGroupId = groupId;
-		console.log('current group ', currentGroupId);
-		if (!currentGroupId) {
-			console.error('No group ID is set.');
-			return;
-		}
-
-		const allAvailabilityData = [];
-
-		for (const [date, slots] of Object.entries($availability)) {
-			slots.forEach((slot, hour) => {
-				hour = hour + 7;
-				if (slot) {
-					const timeId = `${date}_${hour < 10 ? `0${hour}` : hour}:00`;
-					if (!availableTimes.includes(timeId)) {
-						allAvailabilityData.push({
-							date: date,
-							start: `${hour < 10 ? `0${hour}` : hour}:00`,
-							end: `${hour + 1 < 10 ? `0${hour + 1}` : hour + 1}:00`
-						});
-						availableTimes.push(timeId);
-					}
-				}
-			});
-		}
-		console.log('Availabiltiy', availability);
-
-		try {
-			for (const availabilityData of allAvailabilityData) {
-				createAvailability(groupId, availabilityData);
-			}
-
-			const times = allAvailabilityData
-				.map((data) => `${data.date} from ${data.start} to ${data.end}`)
-				.join(', ');
-			successMsg.set('All availabilities saved successfully ' + times);
-			console.log('GroupID', groupId);
-			console.log('Saved times:', JSON.stringify(availableTimes));
-		} catch (error) {
-			successMsg.set('Failed to save availability');
-			console.error('Failed to save availability with error', error);
-			availableTimes = {};
-		}
+	async function addAvailability(date, hour) {
+		hour += 7;
+		await createAvailability(groupId, {
+			date,
+			start: `${hour < 10 ? `0${hour}` : hour}:00`,
+			end: `${hour + 1 < 10 ? `0${hour + 1}` : hour + 1}:00`
+		});
 	}
 
 	async function removeAvailability(selectedDay, selectedHour) {
+		selectedHour += 7;
 		const formattedHour = `${selectedHour < 10 ? `0${selectedHour}` : selectedHour}:00`;
 		const currentData = await getGroup(groupId);
 		const matchingAvailability = currentData.availabilities.find(
@@ -298,33 +235,20 @@
 
 		console.log(groupId);
 		if (matchingAvailability) {
-			await deleteAvailability(groupId, matchingAvailability.availabilityId);
 			console.log(
 				'making an attempt to delete availability with id: ',
 				matchingAvailability.availabilityId
 			);
-			await updateGroupData(groupId);
+			await deleteAvailability(groupId, matchingAvailability.availabilityId);
 			console.log(`Deleted availability with ID: ${matchingAvailability.availabilityId}`);
 		} else {
 			console.error('No matching availability found to delete');
 		}
 	}
 
-	async function updateGroupData(groupId) {
-		try {
-			groupData = await getGroup(groupId);
-			console.log('group after update: ', groupData);
-		} catch (e) {
-			console.error(e);
-		}
-	}
-
 	async function deleteTaskWrapper(taskId) {
 		try {
 			await deleteTask(groupId, taskId);
-			tasks.update((currentTasks) => {
-				return currentTasks.filter((task) => task.taskId !== taskId);
-			});
 		} catch (error) {
 			console.error(error);
 		}
@@ -338,22 +262,13 @@
 		};
 		const success = await updateTask(groupId, taskId, taskData);
 		if (success) {
-			tasks.update((currentTasks) => {
-				return currentTasks.map((t) => {
-					if (t.taskId === taskId) {
-						return { ...t, assignee: $userId };
-					}
-					return t;
-				});
-			});
 			console.log('Task assigned');
 		} else {
 			console.error('Failed to assign task.');
 		}
-		console.log('before: ', groupData);
-		await updateGroupData(groupId);
-		console.log('after: ', groupData);
 	}
+
+	$: console.log(availability);
 </script>
 
 <header />
@@ -370,8 +285,8 @@
 				<span class="members-title">Members</span>
 			</button>
 			<button class="menu-button" on:click={openPoll}>
-				<img src="../poll.png" alt="menu bar" class="user-icon" />
-				<span class="members-title">Create Poll</span>
+				<img src="../poll.png" alt="menu bar" class="poll-icon" />
+				<span class="poll-title">Create Poll</span>
 			</button>
 			<button
 				on:click={() => {
@@ -384,21 +299,35 @@
 				class="invite-button"
 				>Copy Invite Link!
 			</button>
+			{#if isEditingName}
+				<form on:submit|preventDefault={handleNameChange}>
+					<input
+						class="name-input"
+						type="text"
+						bind:value={newName}
+						placeholder="Enter your name"
+					/>
+					<button type="submit" class="update-button">Update Name</button>
+					<button type="button" on:click={() => (isEditingName = false)}>Cancel</button>
+				</form>
+			{:else}
+				<button on:click={() => (isEditingName = true)} class="name-button">Change Name</button>
+			{/if}
 		</div>
 
 		<Chat {groupId} {group} bind:isPoll />
 
 		<div class="calendar-container">
 			<span class="calendar-title">AVAILABILITY CALENDAR</span>
-			{#each Object.keys($availability) as day}
+			{#each Object.keys(availability) as day}
 				<div class="day">
 					<h3>{day}</h3>
 					<div class="slots">
-						{#each $availability[day] as available, hour}
+						{#each availability[day] as available, hour}
 							<div
 								class="slot {available ? 'available' : ''}"
-								on:click|preventDefault={() => toggleSlot(day, hour)}
-								on:keypress={() => toggleSlot(day, hour)}
+								on:click|preventDefault={() => !available && addAvailability(day, hour)}
+								on:keypress={() => !available && addAvailability(day, hour)}
 							>
 								{hour + 7}:00
 								{#if available}
@@ -411,10 +340,6 @@
 					</div>
 				</div>
 			{/each}
-			<button class="save-avail" on:click={saveAllAvailabilities}>SAVE AVAILABILITY</button>
-			{#if $successMsg}
-				<p class="success-msg">{$successMsg}</p>
-			{/if}
 			<form on:submit|preventDefault={() => addTask(taskInput)}>
 				<input
 					type="text"
@@ -424,24 +349,31 @@
 				/>
 				<button type="submit" disabled={!taskInput.trim()}>Add Task</button>
 			</form>
-			{#each $tasks as task (task.taskId)}
-				<div class="task-item">
-					<input
-						type="checkbox"
-						bind:checked={task.completed}
-						on:click={() => toggleCompletion(task.taskId)}
-						on:keypress={() => toggleCompletion(task.taskId)}
-					/>
-					<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
-					{#if task.assignee}
-						<span class={task.completed ? 'completed-task' : ''}>Assigned to: {task.assignee}</span>
-					{/if}
-					<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}>delete</button
-					>
-					<button class="self-assign" on:click={() => assignTaskToUser(task.taskId)}
-						>Self Assign</button
-					>
-				</div>
+			{#each group ? group.tasks : [] as task (task.taskId)}
+				{#if isLoadingUsers}
+					<p>Loading...</p>
+				{:else}
+					<div class="task-item">
+						<input
+							type="checkbox"
+							bind:checked={task.completed}
+							on:click={() => toggleCompletion(task.taskId, group)}
+							on:keypress={() => toggleCompletion(task.taskId, group)}
+						/>
+						<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
+						{#if task.assignee}
+							<span class={task.completed ? 'completed-task' : ''}
+								>Assigned to: {getAssigneeDisplayName(task.assignee, $users)}</span
+							>
+						{/if}
+						<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}
+							>delete</button
+						>
+						<button class="self-assign" on:click={() => assignTaskToUser(task.taskId)}
+							>Self Assign</button
+						>
+					</div>
+				{/if}
 			{/each}
 			{#if commonAvailability.isLoading}
 				<div class="common-availability-message">CALCULATING COMMON AVAILABILITIES...</div>
@@ -485,10 +417,24 @@
 		align-items: flex-start;
 	}
 
+	.menu-bar form {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		margin-left: 0.8rem;
+		margin-bottom: 1rem;
+		width: 90%;
+	}
+
 	.user-icon {
 		width: 3rem;
 		display: block;
 		margin-left: 1.5rem;
+	}
+	.poll-icon {
+		width: 3rem;
+		display: block;
+		margin-left: 0.5rem;
 	}
 
 	.menu-button {
@@ -529,6 +475,19 @@
 		font-size: 1.5rem;
 		margin-top: 0.25rem;
 		margin-left: 1rem;
+		font-family: 'Baloo Bhai 2';
+		font-weight: bolder;
+		color: black;
+	}
+
+	.poll-title {
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		text-align: center;
+		font-size: 1.5rem;
+		margin-top: 0.25rem;
+		margin-left: 0.5rem;
 		font-family: 'Baloo Bhai 2';
 		font-weight: bolder;
 		color: black;
@@ -745,8 +704,22 @@
 		color: white;
 	}
 
-	.success-msg {
-		margin-top: 0.5rem;
-		margin-bottom: 0.5rem;
+	.name-button {
+		display: block;
+		margin: 0.3rem auto;
+		background-color: #76a6e7;
+		font-weight: bolder;
+		font-family: 'Baloo Bhai 2';
+		font-size: large;
+		color: black;
+	}
+
+	.name-button:hover {
+		background-color: #afaeae;
+		color: white;
+	}
+
+	.update-button {
+		margin-bottom: 0.25rem;
 	}
 </style>

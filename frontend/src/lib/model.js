@@ -20,9 +20,17 @@ export const users = writable({});
 export const userId = writable(null);
 
 // @ts-nocheck
-async function getUser() {
+// If `userId` is undefined, gets the currently-logged-in user.
+/**
+ * @param {undefined|string} [userId]
+ */
+async function getUser(userId) {
 	try {
-		const response = await fetch(`//${location.host}/api/user/`);
+		let url = `//${location.host}/api/user/`;
+		if (userId) {
+			url += `${userId}/`;
+		}
+		const response = await fetch(url);
 		const user = await response.json();
 		return user;
 	} catch (e) {
@@ -32,11 +40,23 @@ async function getUser() {
 
 export async function refreshGroup(groupId) {
 	const group = await getGroup(groupId);
-	console.log(group);
 	groups.update((existing) => {
 		return {
-			[groupId]: { ...group, messages: existing[groupId] ? existing[groupId].messages : [] },
-			...existing
+			...existing,
+			[groupId]: { ...group, messages: existing[groupId] ? existing[groupId].messages : [] }
+		};
+	});
+}
+
+/**
+ * @param {string} userId
+ */
+export async function refreshUser(userId) {
+	const user = await getUser(userId);
+	users.update((existing) => {
+		return {
+			...existing,
+			[userId]: user
 		};
 	});
 }
@@ -156,10 +176,6 @@ async function getGroup(groupId) {
 	}
 }
 
-getUser().then((user) => {
-	userId.set(user.userId);
-});
-
 async function createPoll(groupId, title, options) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/${groupId}/poll/`, {
@@ -218,6 +234,33 @@ async function sendMessage(groupID, content) {
 	}
 }
 
+async function updateUserName(userId, newName) {
+	try {
+		const response = await fetch(`//${location.host}/api/user/`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ userId: userId, name: newName })
+		});
+		if (response.ok) {
+			users.update((allUsers) => {
+				if (allUsers[userId]) {
+					allUsers[userId].name = newName;
+				}
+				return allUsers;
+			});
+			return true;
+		} else {
+			console.error('Failed to update user name');
+			return false;
+		}
+	} catch (e) {
+		console.error('Error updating user name:', e);
+		return false;
+	}
+}
+
 async function fetchMessages(groupID, start, end) {
 	try {
 		const response = await fetch(
@@ -243,13 +286,13 @@ async function openWebSocket() {
 	webSocket.onmessage = (event) => {
 		console.log(event);
 		const message = JSON.parse(event.data);
-		console.log(message);
+		console.log('message', message);
 		if (message.group) {
 			refreshGroup(message.group.groupId);
 		}
 		if (message.user) {
 			users.update((existing) => {
-				return { [message.user.userId]: message.user, ...existing };
+				return { ...existing, [message.user.userId]: { ...message.user, userId: undefined } };
 			});
 		}
 		if (message.message) {
@@ -269,6 +312,11 @@ async function openWebSocket() {
 if (browser) {
 	getUser().then((user) => {
 		console.log(user);
+		userId.set(user.userId);
+		users.update((allUsers) => {
+			allUsers[user.userId] = user;
+			return allUsers;
+		});
 		openWebSocket();
 	});
 }
@@ -286,5 +334,6 @@ export {
 	getGroup,
 	deleteTask,
 	deleteAvailability,
-	updateTask
+	updateTask,
+	updateUserName
 };
