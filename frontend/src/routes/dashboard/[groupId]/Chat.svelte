@@ -1,4 +1,6 @@
 <script>
+// @ts-nocheck
+
 	import PollCreationModal from './PollCreationModal.svelte';
 	import { sendMessage } from '$lib/model';
 
@@ -33,8 +35,6 @@
 				<div class:message class:message.sender={message.sender}>
 					{#if true}
 						<strong class="user-message">{message.sender}:</strong> {message.content}
-					{:else if message.sender === 'system'}
-						<em class="system-message">{message.text}</em>
 					{/if}
 				</div>
 			{/each}
@@ -42,7 +42,7 @@
 	</div>
 	<div class="poll">
 		{#if isPoll}
-			<PollCreationModal />
+			<PollCreationModal {groupId} {group} />
 		{/if}
 	</div>
 	<div class="input-bar">

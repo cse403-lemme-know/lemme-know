@@ -1,12 +1,12 @@
 <script>
 	//@ts-nocheck
-	// import { createPoll, updateVotes, deletePoll } from '$lib/model';
-	// import { groupId } from '$lib/stores';
+	import { createPoll, updateVotes, deletePoll } from '$lib/model';
+
 
 	let title = '';
 	let options = [];
-	let pollData = null;
-	let votes = {};
+	let votes = [];
+
 
 	function addOption() {
 		options = [...options, ''];
@@ -17,20 +17,14 @@
 	}
 
 	async function handleCreatePoll() {
-		pollData = {
-			name: title,
-			options: options
-		};
-		// pollData = await createPoll($groupId, title, options);
+		createPoll(groupId, title, options);
 	}
 
-	function handleUpdateVotes(optionIndex) {
-		if (votes[optionIndex] === undefined) {
-			votes[optionIndex] = 1;
-		} else {
-			votes[optionIndex]++;
-		}
-		// votes = updateVotes(votes);
+	function handleUpdateVotes() {
+		updateVotes(groupId, votes);
+	}
+	async function handleDeletePoll() {
+		deletePoll(groupId);
 	}
 
 	function getTotalVotes() {
@@ -45,7 +39,7 @@
 	console.log('createPoll');
 </script>
 
-{#if !pollData}
+{#if !group}PollCreationModal # if
 	<div class="modal">
 		<div class="modal-content">
 			<h2>Create Poll</h2>
@@ -66,7 +60,7 @@
 	</div>
 {:else}
 	<div class="poll">
-		<h2>{pollData.name}</h2>
+		<h2>{groups..name}</h2>
 		{#each pollData.options as option, index}
 			<div class="option">
 				<span>{option}</span>
