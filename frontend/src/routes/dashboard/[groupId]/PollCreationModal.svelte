@@ -2,7 +2,8 @@
 	//@ts-nocheck
 	import { createPoll, updateVotes, deletePoll } from '$lib/model';
 
-
+	export let groupId;
+	export let group;
 	let title = '';
 	let options = [];
 	let votes = [];
@@ -16,14 +17,16 @@
 		options = options.filter((_, i) => i !== index);
 	}
 
-	async function handleCreatePoll() {
+	function handleCreatePoll() {
+		console.log(groupId);
 		createPoll(groupId, title, options);
+		console.log(group.Poll);
 	}
 
 	function handleUpdateVotes() {
 		updateVotes(groupId, votes);
 	}
-	async function handleDeletePoll() {
+	function handleDeletePoll() {
 		deletePoll(groupId);
 	}
 
@@ -35,11 +38,9 @@
 		const totalVotes = getTotalVotes();
 		return totalVotes === 0 ? 0 : ((votes[optionIndex] || 0) / totalVotes) * 100;
 	}
-
-	console.log('createPoll');
 </script>
 
-{#if !group}PollCreationModal # if
+{#if !group.Poll}
 	<div class="modal">
 		<div class="modal-content">
 			<h2>Create Poll</h2>
@@ -60,8 +61,8 @@
 	</div>
 {:else}
 	<div class="poll">
-		<h2>{groups..name}</h2>
-		{#each pollData.options as option, index}
+		<h2>{group.Poll.title}</h2>
+		{#each group.Poll.Options as option, index}
 			<div class="option">
 				<span>{option}</span>
 				<button on:click={() => handleUpdateVotes(index)}>Vote</button>

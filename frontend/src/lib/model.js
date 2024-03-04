@@ -2,9 +2,19 @@
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
 
-// Mapping of group ID to {...group, messages: []} (from backend).
+// Mapping of group ID to {...group, messages: []} where group is group data from the backend and messages is an array of chat messages from the backend.
+//
+// This should be updated by various `get` methods (using `fetch` internally) and also by the `WebSocket`.
+//
+// Most dashboard Svelte components will derive their properties/state from one particular group.
+//
+// In particular, the top level dashboard page will read the store, and pass the relevant group (as determined by group ID in path) as a normal property to child components.
 export const groups = writable({});
-// Mapping of user ID to user (from backend);
+// Mapping of user ID to user, where user is user data from the backend.
+//
+// This should be updated by various `get` methods (using `fetch` internally) and also by the `WebSocket`.
+//
+// Most dashboard components will derive usernames and statuses directly from this store.
 export const users = writable({});
 
 export const userId = writable(null);
@@ -153,7 +163,7 @@ getUser().then((user) => {
 async function createPoll(groupId, title, options) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/${groupId}/poll/`, {
-			method: 'PATCH',
+			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json'
 			},
