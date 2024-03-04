@@ -43,8 +43,8 @@
 		}
 	});
 
-	function getAssigneeDisplayName(assigneeId) {
-		const assignee = get(users)[assigneeId];
+	function getAssigneeDisplayName(assigneeId, users) {
+		const assignee = users[assigneeId];
 		return assignee && assignee.name ? assignee.name : `user# ${assigneeId}`;
 	}
 
@@ -357,7 +357,7 @@
 						/>
 						<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
 						{#if task.assignee}
-							<span class={task.completed ? 'completed-task' : ''}>Assigned to: {getAssigneeDisplayName(task.assignee)}</span>
+							<span class={task.completed ? 'completed-task' : ''}>Assigned to: {getAssigneeDisplayName(task.assignee, $users)}</span>
 						{/if}
 						<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}>delete</button
 						>
