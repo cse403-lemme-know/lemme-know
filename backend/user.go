@@ -56,7 +56,7 @@ func RestSpecificUserAPI(router *mux.Router, database Database) {
 			WriteJSON(w, GetUserResponse{
 				UserID: subjectUser.UserID,
 				Name:   subjectUser.Name,
-				Groups: subjectUser.Groups,
+				// omit Groups: subjectUser.Groups for privacy!
 				Status: subjectUser.Status,
 			})
 		default:

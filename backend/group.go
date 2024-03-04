@@ -34,7 +34,7 @@ type GetGroupResponsePoll struct {
 
 // Poll option sent over JSON.
 type GetGroupResponsePollOption struct {
-	Name  string   `json:"option"`
+	Name  string   `json:"name"`
 	Votes []UserID `json:"votes"`
 }
 
