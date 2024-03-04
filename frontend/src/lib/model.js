@@ -163,19 +163,22 @@ getUser().then((user) => {
 async function createPoll(groupId, title, options) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/${groupId}/poll/`, {
-			method: 'GET',
+			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({ title, options })
 		});
 		if (response.status === 200) {
-			console.log('success for creating poll');
+			console.log('poll created');
+			const group = await getGroup(groupId);
+			console.log('poll as: ', group.poll);
 		}
 	} catch (e) {
 		return null;
 	}
 }
+
 
 async function updateVotes(groupID, votes) {
 	try {

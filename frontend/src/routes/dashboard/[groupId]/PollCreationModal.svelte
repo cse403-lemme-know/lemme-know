@@ -19,8 +19,8 @@
 
 	function handleCreatePoll() {
 		console.log(groupId);
+		console.log('poll as: ', group.poll);
 		createPoll(groupId, title, options);
-		console.log(group.Poll);
 	}
 
 	function handleUpdateVotes() {
@@ -40,7 +40,7 @@
 	}
 </script>
 
-{#if !group.Poll}
+{#if !group.poll}
 	<div class="modal">
 		<div class="modal-content">
 			<h2>Create Poll</h2>
@@ -61,8 +61,8 @@
 	</div>
 {:else}
 	<div class="poll">
-		<h2>{group.Poll.title}</h2>
-		{#each group.Poll.Options as option, index}
+		<h2>{group.poll.title}</h2>	
+		{#each group.poll.options as option, index}
 			<div class="option">
 				<span>{option}</span>
 				<button on:click={() => handleUpdateVotes(index)}>Vote</button>
