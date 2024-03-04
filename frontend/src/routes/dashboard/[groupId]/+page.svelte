@@ -13,7 +13,9 @@
 		groups,
 		refreshGroup,
 		updateTask,
-		userId
+		userId,
+		updateUserName,
+		users
 	} from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
@@ -33,6 +35,24 @@
 			return;
 		}
 	});
+
+	let newName = '';
+	let isEditingName = false;
+
+	async function handleNameChange() {
+		if (newName.trim()) {
+			const success = await updateUserName($userId, newName);
+			if (success) {
+				newName = '';
+				isEditingName = false;
+			}
+		}
+	}
+
+	function getAssigneeDisplayName(assigneeId) {
+		const assignee = $users[assigneeId];
+		return assignee && assignee.name ? assignee.name : `UserId: ${assigneeId}`;
+	}
 
 	let taskInput = '';
 	let isPoll = false;
@@ -258,8 +278,8 @@
 				<span class="members-title">Members</span>
 			</button>
 			<button class="menu-button" on:click={openPoll}>
-				<img src="../poll.png" alt="menu bar" class="user-icon" />
-				<span class="members-title">Create Poll</span>
+				<img src="../poll.png" alt="menu bar" class="poll-icon" />
+				<span class="poll-title">Create Poll</span>
 			</button>
 			<button
 				on:click={() => {
@@ -272,6 +292,15 @@
 				class="invite-button"
 				>Copy Invite Link!
 			</button>
+			{#if isEditingName}
+				<form on:submit|preventDefault={handleNameChange}>
+					<input class="name-input" type="text" bind:value={newName} placeholder="Enter your name" />
+					<button type="submit" class="update-button">Update Name</button>
+					<button type="button" on:click={() => isEditingName = false}>Cancel</button>
+				</form>
+			{:else}
+				<button on:click={() => isEditingName = true} class="name-button">Change Name</button>
+			{/if}
 		</div>
 
 		<Chat {groupId} {group} bind:isPoll />
@@ -318,7 +347,7 @@
 					/>
 					<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
 					{#if task.assignee}
-						<span class={task.completed ? 'completed-task' : ''}>Assigned to: {task.assignee}</span>
+						<span class={task.completed ? 'completed-task' : ''}>Assigned to: {getAssigneeDisplayName(task.assignee)}</span>
 					{/if}
 					<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}>delete</button
 					>
@@ -369,10 +398,24 @@
 		align-items: flex-start;
 	}
 
+	.menu-bar form {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		margin-left: 0.8rem;
+		margin-bottom: 1rem;
+		width: 90%;
+	}
+
 	.user-icon {
 		width: 3rem;
 		display: block;
 		margin-left: 1.5rem;
+	}
+	.poll-icon {
+		width: 3rem;
+		display: block;
+		margin-left: 0.5rem;
 	}
 
 	.menu-button {
@@ -413,6 +456,19 @@
 		font-size: 1.5rem;
 		margin-top: 0.25rem;
 		margin-left: 1rem;
+		font-family: 'Baloo Bhai 2';
+		font-weight: bolder;
+		color: black;
+	}
+
+	.poll-title {
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		text-align: center;
+		font-size: 1.5rem;
+		margin-top: 0.25rem;
+		margin-left: 0.5rem;
 		font-family: 'Baloo Bhai 2';
 		font-weight: bolder;
 		color: black;
@@ -628,4 +684,24 @@
 		background-color: gray;
 		color: white;
 	}
+
+	.name-button {
+		display: block;
+		margin: 0.3rem auto;
+		background-color: #76a6e7;
+		font-weight: bolder;
+		font-family: 'Baloo Bhai 2';
+		font-size: large;
+		color: black;
+	}
+
+	.name-button:hover {
+		background-color: #afaeae;
+		color: white;
+	}
+
+	.update-button {
+		margin-bottom: 0.25rem;
+	}
+
 </style>
