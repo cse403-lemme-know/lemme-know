@@ -42,7 +42,7 @@ export async function refreshGroup(groupId) {
  */
 export async function refreshUser(userId) {
 	const user = await getUser(userId);
-	user.update((existing) => {
+	users.update((existing) => {
 		return {
 			...existing,
 			[userId]: user
@@ -272,7 +272,7 @@ async function openWebSocket() {
 	webSocket.onmessage = (event) => {
 		console.log(event);
 		const message = JSON.parse(event.data);
-		console.log(message);
+		console.log("message", message);
 		if (message.group) {
 			refreshGroup(message.group.groupId);
 		}

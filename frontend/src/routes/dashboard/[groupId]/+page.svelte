@@ -15,7 +15,8 @@
 		updateTask,
 		userId,
 		updateUserName,
-		users
+		users,
+		refreshUser
 	} from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
@@ -27,14 +28,25 @@
 	$: availability = calculateAvailability($userId, group);
 	$: commonAvailability = calculateCommonAvailability(group);
 
+	let isLoadingUsers = true;
 	// Bail if the group doesn't exist.
 	onMount(async () => {
 		await refreshGroup(groupId);
-		if (!get(groups)[groupId]) {
+		const group = get(groups)[groupId];
+		if (group) {
+			const memberIds = group.members || [];
+			await Promise.all(memberIds.map(refreshUser));
+			isLoadingUsers = false;
+		} else {
 			goto('/');
 			return;
 		}
 	});
+
+	function getAssigneeDisplayName(assigneeId) {
+		const assignee = get(users)[assigneeId];
+		return assignee && assignee.name ? assignee.name : `user# ${assigneeId}`;
+	}
 
 	let newName = '';
 	let isEditingName = false;
@@ -47,11 +59,6 @@
 				isEditingName = false;
 			}
 		}
-	}
-
-	function getAssigneeDisplayName(assigneeId) {
-		const assignee = $users[assigneeId];
-		return assignee && assignee.name ? assignee.name : `UserId: ${assigneeId}`;
 	}
 
 	let taskInput = '';
@@ -338,23 +345,28 @@
 				<button type="submit" disabled={!taskInput.trim()}>Add Task</button>
 			</form>
 			{#each group ? group.tasks : [] as task (task.taskId)}
-				<div class="task-item">
-					<input
-						type="checkbox"
-						bind:checked={task.completed}
-						on:click={() => toggleCompletion(task.taskId, group)}
-						on:keypress={() => toggleCompletion(task.taskId, group)}
-					/>
-					<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
-					{#if task.assignee}
-						<span class={task.completed ? 'completed-task' : ''}>Assigned to: {getAssigneeDisplayName(task.assignee)}</span>
-					{/if}
-					<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}>delete</button
-					>
-					<button class="self-assign" on:click={() => assignTaskToUser(task.taskId)}
+				{#if isLoadingUsers}
+					<p>Loading...</p>
+				{:else}
+					<div class="task-item">
+						<input
+								type="checkbox"
+								bind:checked={task.completed}
+								on:click={() => toggleCompletion(task.taskId, group)}
+								on:keypress={() => toggleCompletion(task.taskId, group)}
+						/>
+						<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
+						{#if task.assignee}
+							<span class={task.completed ? 'completed-task' : ''}>Assigned to: {getAssigneeDisplayName(task.assignee)}</span>
+						{/if}
+						<button class="delete-task" on:click={() => deleteTaskWrapper(task.taskId)}>delete</button
+						>
+						<button class="self-assign" on:click={() => assignTaskToUser(task.taskId)}
 						>Self Assign</button
-					>
-				</div>
+						>
+					</div>
+				{/if}
+
 			{/each}
 			{#if commonAvailability.isLoading}
 				<div class="common-availability-message">CALCULATING COMMON AVAILABILITIES...</div>
