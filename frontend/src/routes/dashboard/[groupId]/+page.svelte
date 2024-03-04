@@ -32,7 +32,7 @@
 	let isLoadingUsers = true;
 	let showMembers = false;
 	$: if (group && group.members) {
-		group.members.forEach(memberId => {
+		group.members.forEach((memberId) => {
 			getAssigneeDisplayName(memberId, $users);
 		});
 	}
@@ -293,7 +293,7 @@
 				<img src="../menubar.png" alt="menu bar" class="hamburger-icon" />
 				<span class="logo">LemmeKnow</span>
 			</button>
-			<button class="menu-button" on:click={() => showMembers = !showMembers}>
+			<button class="menu-button" on:click={() => (showMembers = !showMembers)}>
 				<img src="../users.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Members</span>
 			</button>
@@ -337,11 +337,11 @@
 									</li>
 									<li>
 										{#if $userId === memberId}
-										<select on:change="{(event) => updateStatus(memberId, event.target.value)}">
-											<option value="online">Online</option>
-											<option value="busy">Busy</option>
-											<option value="offline">Offline</option>
-										</select>
+											<select on:change={(event) => updateStatus(memberId, event.target.value)}>
+												<option value="online">Online</option>
+												<option value="busy">Busy</option>
+												<option value="offline">Offline</option>
+											</select>
 										{/if}
 									</li>
 								{/each}
@@ -525,7 +525,7 @@
 	.members-list li {
 		margin-left: 1rem;
 		display: inline-list-item;
-		font-family: "Baloo Da 2";
+		font-family: 'Baloo Da 2';
 		font-weight: bold;
 		font-size: large;
 	}

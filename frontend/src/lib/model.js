@@ -255,14 +255,14 @@ async function updateStatus(userId, status) {
 		const response = await fetch(`/api/user/`, {
 			method: 'PATCH',
 			headers: {
-				'Content-Type': 'application/json',
+				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify({ name: user.name, status: status }),
+			body: JSON.stringify({ name: user.name, status: status })
 		});
 
 		if (response.ok) {
 			console.log(`Status updated to ${status}`);
-			users.update(u => {
+			users.update((u) => {
 				if (u[userId]) {
 					u[userId].status = status;
 				}
