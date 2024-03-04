@@ -42,7 +42,7 @@ export async function refreshGroup(groupId) {
  */
 export async function refreshUser(userId) {
 	const user = await getUser(userId);
-	user.update((existing) => {
+	users.update((existing) => {
 		return {
 			...existing,
 			[userId]: user
@@ -220,6 +220,33 @@ async function sendMessage(groupID, content) {
 	}
 }
 
+async function updateUserName(userId, newName) {
+	try {
+		const response = await fetch(`//${location.host}/api/user/`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ userId: userId, name: newName })
+		});
+		if (response.ok) {
+			users.update((allUsers) => {
+				if (allUsers[userId]) {
+					allUsers[userId].name = newName;
+				}
+				return allUsers;
+			});
+			return true;
+		} else {
+			console.error('Failed to update user name');
+			return false;
+		}
+	} catch (e) {
+		console.error('Error updating user name:', e);
+		return false;
+	}
+}
+
 async function fetchMessages(groupID, start, end) {
 	try {
 		const response = await fetch(
@@ -245,7 +272,7 @@ async function openWebSocket() {
 	webSocket.onmessage = (event) => {
 		console.log(event);
 		const message = JSON.parse(event.data);
-		console.log(message);
+		console.log('message', message);
 		if (message.group) {
 			refreshGroup(message.group.groupId);
 		}
@@ -272,6 +299,10 @@ if (browser) {
 	getUser().then((user) => {
 		console.log(user);
 		userId.set(user.userId);
+		users.update((allUsers) => {
+			allUsers[user.userId] = user;
+			return allUsers;
+		});
 		openWebSocket();
 	});
 }
@@ -289,5 +320,6 @@ export {
 	getGroup,
 	deleteTask,
 	deleteAvailability,
-	updateTask
+	updateTask,
+	updateUserName
 };
