@@ -1,5 +1,5 @@
 <script>
-// @ts-nocheck
+	// @ts-nocheck
 
 	import PollCreationModal from './PollCreationModal.svelte';
 	import { sendMessage } from '$lib/model';
@@ -88,11 +88,6 @@
 	.user-message {
 		background-color: #e6f7ff;
 		text-align: right;
-	}
-
-	.system-message {
-		color: #888;
-		font-style: italic;
 	}
 
 	.input-bar {

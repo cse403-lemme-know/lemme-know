@@ -8,7 +8,6 @@
 	let options = [];
 	let votes = [];
 
-
 	function addOption() {
 		options = [...options, ''];
 	}
@@ -20,28 +19,35 @@
 	function handleCreatePoll() {
 		createPoll(groupId, title, options);
 	}
-
-	function handleUpdateVotes(optionIndex) {
-		if (votes[optionIndex] === undefined) {
-			votes[optionIndex] = 1;
-		} else {
-			votes[optionIndex]++;
-		}
+	function addVote(vote) {
+		votes = [...votes, vote];
+	}
+	function handleUpdateVotes(vote) {
+		addVote(vote);
 		updateVotes(groupId, votes);
 	}
 	function handleDeletePoll() {
 		deletePoll(groupId);
+		votes = [];
 	}
-
-	function getTotalVotes() {
-		return Object.values(group.poll.votes).reduce((acc, curr) => acc + curr, 0);
+	function getNumVotes(votes) {
+		return votes.length;
 	}
+	$: totalVotes = group.poll
+		? group.poll.options.reduce((acc, option) => acc + getNumVotes(option.votes), 0)
+		: 0;
 
+	// function getTotalVotes() {
+	// 	if (!group.poll || !group.poll.options) {
+	// 		return 0;
+	// 	}
+	// 	return group.poll.options.reduce((total, opt) => total + opt.votes.length, 0);
+	// }
 
-	function getPercentage(optionIndex) {
-		const totalVotes = getTotalVotes();
-		return totalVotes === 0 ? 0 : ((group.poll.votes[optionIndex] || 0) / totalVotes) * 100;
-	}
+	// function getPercentage(optionIndex) {
+	// 	const totalVotes = getTotalVotes();
+	// 	return totalVotes === 0 ? 0 : ((group.poll.votes[optionIndex] || 0) / totalVotes) * 100;
+	// }
 </script>
 
 {#if !group.poll}
@@ -65,17 +71,17 @@
 	</div>
 {:else}
 	<div class="poll">
-		<h2>{group.poll.title}</h2>	
-		{#each group.poll.options as name, index}
+		<h2>{group.poll.title}</h2>
+		{#each group.poll.options as option}
 			<div class="option">
-				<span>{name}</span>
-				<button on:click={() => handleUpdateVotes(index)}>Vote</button>
-				<!-- <span>({group.poll.votes[index]} votes)</span> -->
+				<span>{option.option}</span>
+				<button on:click={() => handleUpdateVotes(option.option)}>Vote</button>
+				<span>({getNumVotes(option.votes)} votes)</span>
 				<!-- <span>({getPercentage(index).toFixed(2)}% of total votes)</span> -->
 			</div>
 		{/each}
-		<!-- <p>Total Votes: {getTotalVotes()}</p> -->
-		<button on:click={() => handleDeletePoll()}>Delete</button>
+		<p>Total Votes: {$totalVotes}</p>
+		<button on:click={() => handleDeletePoll}>Dismiss Poll</button>
 	</div>
 {/if}
 

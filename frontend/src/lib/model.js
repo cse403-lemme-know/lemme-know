@@ -186,7 +186,7 @@ async function createPoll(groupId, title, options) {
 			body: JSON.stringify({ title, options })
 		});
 		if (response.status === 200) {
-			console.log('poll created');
+			console.log('success for creating poll');
 			const group = await getGroup(groupId);
 			console.log('poll as: ', group.poll);
 		}
@@ -194,7 +194,6 @@ async function createPoll(groupId, title, options) {
 		return null;
 	}
 }
-
 
 async function updateVotes(groupID, votes) {
 	try {
