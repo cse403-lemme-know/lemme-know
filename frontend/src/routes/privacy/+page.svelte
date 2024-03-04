@@ -67,13 +67,15 @@
 		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	}
 
-	h1, h2 {
+	h1,
+	h2 {
 		color: #333;
 		margin-top: 20px;
 		margin-bottom: 10px;
 	}
 
-	p, li {
+	p,
+	li {
 		font-size: 16px;
 		color: #666;
 		line-height: 1.6;
@@ -93,11 +95,13 @@
 			padding: 10px;
 		}
 
-		h1, h2 {
+		h1,
+		h2 {
 			font-size: 1.25rem;
 		}
 
-		p, li {
+		p,
+		li {
 			font-size: 14px;
 		}
 	}
