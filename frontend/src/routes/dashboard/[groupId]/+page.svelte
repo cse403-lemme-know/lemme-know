@@ -16,7 +16,8 @@
 		userId,
 		updateUserName,
 		users,
-		refreshUser
+		refreshUser,
+		updateStatus
 	} from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
@@ -29,6 +30,13 @@
 	$: commonAvailability = calculateCommonAvailability(group);
 
 	let isLoadingUsers = true;
+	let showMembers = false;
+	$: if (group && group.members) {
+		group.members.forEach(memberId => {
+			getAssigneeDisplayName(memberId, $users);
+		});
+	}
+
 	// Bail if the group doesn't exist.
 	onMount(async () => {
 		await refreshGroup(groupId);
@@ -46,6 +54,11 @@
 	function getAssigneeDisplayName(assigneeId, users) {
 		const assignee = users[assigneeId];
 		return assignee && assignee.name ? assignee.name : `user# ${assigneeId}`;
+	}
+
+	function getUserStatus(userId, users) {
+		const user = users[userId];
+		return user && user.status ? user.status : 'offline';
 	}
 
 	let newName = '';
@@ -280,7 +293,7 @@
 				<img src="../menubar.png" alt="menu bar" class="hamburger-icon" />
 				<span class="logo">LemmeKnow</span>
 			</button>
-			<button class="menu-button">
+			<button class="menu-button" on:click={() => showMembers = !showMembers}>
 				<img src="../users.png" alt="menu bar" class="user-icon" />
 				<span class="members-title">Members</span>
 			</button>
@@ -312,6 +325,30 @@
 				</form>
 			{:else}
 				<button on:click={() => (isEditingName = true)} class="name-button">Change Name</button>
+				{#if showMembers}
+					<div class="members-list">
+						{#if group && group.members}
+							<ul>
+								<li>Members:</li>
+								{#each group.members as memberId (memberId)}
+									<li>
+										{getAssigneeDisplayName(memberId, $users)}
+										<span class="status-button">{getUserStatus(memberId, $users)}</span>
+									</li>
+									<li>
+										{#if $userId === memberId}
+										<select on:change="{(event) => updateStatus(memberId, event.target.value)}">
+											<option value="online">Online</option>
+											<option value="busy">Busy</option>
+											<option value="offline">Offline</option>
+										</select>
+										{/if}
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+				{/if}
 			{/if}
 		</div>
 
@@ -478,6 +515,19 @@
 		font-family: 'Baloo Bhai 2';
 		font-weight: bolder;
 		color: black;
+	}
+
+	.members-list ul {
+		list-style: none;
+		padding: 0;
+	}
+
+	.members-list li {
+		margin-left: 1rem;
+		display: inline-list-item;
+		font-family: "Baloo Da 2";
+		font-weight: bold;
+		font-size: large;
 	}
 
 	.poll-title {
@@ -721,5 +771,9 @@
 
 	.update-button {
 		margin-bottom: 0.25rem;
+	}
+
+	.status-button {
+		color: red;
 	}
 </style>
