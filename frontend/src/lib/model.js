@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { writable, get } from 'svelte/store';
+import { writable } from 'svelte/store';
 
 // Mapping of group ID to {...group, messages: []} (from backend).
 export const groups = writable({});
@@ -247,17 +247,14 @@ async function updateUserName(userId, newName) {
 	}
 }
 
-async function updateStatus(userId, status) {
-	const allUsers = get(users);
-	const user = allUsers[userId];
-
+async function updateStatus(status) {
 	try {
 		const response = await fetch(`/api/user/`, {
 			method: 'PATCH',
 			headers: {
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify({ name: user.name, status: status })
+			body: JSON.stringify({ status: status })
 		});
 
 		if (response.ok) {

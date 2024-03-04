@@ -336,13 +336,11 @@
 										<span class="status-button">{getUserStatus(memberId, $users)}</span>
 									</li>
 									<li>
-										{#if $userId === memberId}
-											<select on:change={(event) => updateStatus(memberId, event.target.value)}>
-												<option value="online">Online</option>
-												<option value="busy">Busy</option>
-												<option value="offline">Offline</option>
-											</select>
-										{/if}
+										<select on:change={(event) => updateStatus(event.target.value)}>
+											<option value="online">Online</option>
+											<option value="busy">Busy</option>
+											<option value="offline">Offline</option>
+										</select>
 									</li>
 								{/each}
 							</ul>
