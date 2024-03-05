@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -245,7 +246,8 @@ func (dynamoDB *DynamoDB) UpdateGroup(groupID GroupID, transaction func(*Group) 
 func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error) {
 	var messages []Message
 	const limit = 5
-	err := dynamoDB.messages.Get("GroupID", groupID).Range("Timestamp", "BETWEEN", startTime, endTime).Consistent(true).Limit(limit).All(&messages)
+	err := dynamoDB.messages.Get("GroupID", groupID).Range("Timestamp", "BETWEEN", startTime, endTime).Consistent(true).Order(dynamo.Descending).Limit(limit).All(&messages)
+	slices.Sort()
 	return messages, len(messages) >= limit, err
 }
 
