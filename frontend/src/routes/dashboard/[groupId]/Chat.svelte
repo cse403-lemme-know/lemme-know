@@ -2,7 +2,7 @@
 	// @ts-nocheck
 
 	import PollCreationModal from './PollCreationModal.svelte';
-	import { sendMessage } from '$lib/model';
+	import { sendMessage, users } from '$lib/model';
 
 	export let groupId;
 	export let group;
@@ -34,7 +34,11 @@
 			{#each group.messages as message (message.timestamp)}
 				<div class:message class:message.sender={message.sender}>
 					{#if true}
-						<strong class="user-message">{message.sender}:</strong> {message.content}
+						{#if $users[message.sender] && $users[message.sender].name !== ''}
+							<strong class="user-message">{$users[message.sender].name}:</strong> {message.content}
+						{:else}
+							<strong class="user-message">{message.sender}:</strong> {message.content}
+						{/if}
 					{/if}
 				</div>
 			{/each}
