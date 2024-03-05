@@ -17,7 +17,8 @@
 		updateUserName,
 		users,
 		refreshUser,
-		updateStatus
+		updateStatus,
+		fetchMessages
 	} from '$lib/model';
 	import { goto } from '$app/navigation';
 	import Chat from './Chat.svelte';
@@ -42,6 +43,7 @@
 		await refreshGroup(groupId);
 		const group = get(groups)[groupId];
 		if (group) {
+			fetchMessages(groupId, 0, Number.MAX_SAFE_INTEGER);
 			const memberIds = group.members || [];
 			await Promise.all(memberIds.map(refreshUser));
 			isLoadingUsers = false;

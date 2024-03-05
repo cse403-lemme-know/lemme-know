@@ -286,19 +286,29 @@ async function updateStatus(status) {
 	}
 }
 
-async function fetchMessages(groupID, start, end) {
+async function fetchMessages(groupId, start, end) {
 	try {
 		const response = await fetch(
-			`//${location.host}/api/group/${groupID}/chat/?` + new URLSearchParams({ start, end }),
+			`//${location.host}/api/group/${groupId}/chat/?` + new URLSearchParams({ start, end }),
 			{
 				method: 'GET'
 			}
 		);
 		const result = await response.json();
-		if (result.continue == true) {
-			result.messages[result.messages.length - 1].timestamp + 1;
-		}
+		// if (result.continue == true) {
+		// 	result.messages[result.messages.length - 1].timestamp + 1;
+		// }
+		console.log(result);
+		groups.update((existing) => {
+			if (!(groupId in existing)) {
+				existing[groupId] = { messages: [] };
+			}
+			existing[groupId].messages = existing[groupId].messages.concat(result.messages);
+			console.log('Existing :', JSON.stringify(existing));
+			return existing;
+		});
 	} catch (e) {
+		console.log(e);
 		return null;
 	}
 }
