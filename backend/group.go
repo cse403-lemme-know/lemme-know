@@ -193,7 +193,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				for _, option := range group.Poll.Options {
 					response.Poll.Options = append(response.Poll.Options, GetGroupResponsePollOption{
 						Name:  censor(option.Name),
-						Votes: option.Votes,
+						Votes: append([]UserID{}, option.Votes...),
 					})
 				}
 			}
@@ -205,7 +205,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 					Date:       activity.Date,
 					Start:      activity.Start,
 					End:        activity.End,
-					Confirmed:  activity.Confirmed,
+					Confirmed:  append([]UserID{}, activity.Confirmed...),
 				})
 			}
 
