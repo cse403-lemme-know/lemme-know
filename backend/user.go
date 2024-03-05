@@ -97,7 +97,7 @@ func RestUserAPI(router *mux.Router, database Database, notification Notificatio
 			WriteJSON(w, GetUserResponse{
 				UserID: user.UserID,
 				Name:   user.Name,
-				Groups: user.Groups,
+				Groups: append([]GroupID{}, user.Groups...),
 				Status: user.Status,
 			})
 		case http.MethodPatch:
