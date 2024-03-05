@@ -6,12 +6,17 @@
 
 LemmeKnow is a group activity planning platform with an integrated calendar to show availability and an integrated polling system to help make decisions. It offers a centralized dashboard of who is attending an event, their status, and that of their assigned tasks.
 
-## Goals
+## Features
 - Interactive web-based dashboard
-- Calendar, shared between members, showing activities and time conflicts
+- Calendar, shared between members, showing group activities and individual availabilities
 - Polls, for reaching a consensus based on individual preferences
+- Tasks, for assigning preparation steps in advance
 - Messaging system, for general discussion and coordination
 - Reminders, to increase the chance of attendance
+
+## Use case
+
+LemmeKnow helps small groups, such as groups of students or friends, organize meetings or activities. Each member may express their time constraints, self-assign tasks, reach a consensus by creating a poll, and communicate via chat. As an activity approaches, members receive reminders and can check the confirmation status of other members.
 
 ## Layout
 
