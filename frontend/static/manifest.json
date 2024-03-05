@@ -7,7 +7,13 @@
 	"orientation": "landscape",
 	"id": "/lemmeknow",
 	"start_url": "/",
-	"icons": [],
+	"icons": [
+		{
+			"src": "/icon.png",
+			"sizes": "256x256",
+			"type": "image/png"
+		}
+	],
 	"screenshots": [],
 	"handle_links": "not-preferred"
 }
