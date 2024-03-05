@@ -515,7 +515,6 @@
 		color: black;
 	}
 
-
 	.members-list ul {
 		list-style: none;
 		padding: 0;

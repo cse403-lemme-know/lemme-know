@@ -79,10 +79,10 @@
 		<h2>{group.poll.title}</h2>
 		{#each group.poll.options as option}
 			<div class="option">
-				<span>{option.option}</span>
+				<span>{option.name}</span>
 				<!-- <button on:click={() => handleUpdateVotes(option.option)}>Vote</button> -->
-				<button on:click={() => handleUpdateVotes(option.option)}
-					>{votes.includes(option.option) ? 'Unvote' : 'Vote'}</button
+				<button on:click={() => handleUpdateVotes(option.name)}
+					>{votes.includes(option.name) ? 'Unvote' : 'Vote'}</button
 				>
 
 				<span>({option.votes.length} votes)</span>
