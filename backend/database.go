@@ -55,7 +55,7 @@ type Database interface {
 	// from the database.
 	//
 	// May not return all messages. If the returned `bool` is true, there may be
-	// messages remaining (set `startTime` to the earliest `message.Timestamp` and try again).
+	// messages remaining (set `endTime` to the earliest `message.Timestamp` and try again).
 	ReadMessages(GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error)
 	// Returns an error if the operation could not be completed.
 	DeleteGroup(GroupID) error
