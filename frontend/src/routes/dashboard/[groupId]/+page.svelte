@@ -228,7 +228,11 @@
 	}
 
 	function openPoll() {
-		isPoll = true;
+		if (isPoll) {
+			isPoll = false
+		} else {
+			isPoll = true
+		}
 	}
 
 	async function addAvailability(date, hour) {
@@ -301,7 +305,7 @@
 			</button>
 			<button class="menu-button" on:click={openPoll}>
 				<img src="../poll.png" alt="menu bar" class="poll-icon" />
-				<span class="poll-title">Create Poll</span>
+				<span class="poll-title">Poll</span>
 			</button>
 			<button
 				on:click={() => {
@@ -473,7 +477,7 @@
 	.poll-icon {
 		width: 3rem;
 		display: block;
-		margin-left: 0.5rem;
+		margin-left: 1.5rem;
 	}
 
 	.menu-button {

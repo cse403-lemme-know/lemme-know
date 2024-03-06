@@ -45,7 +45,7 @@
 		{/if}
 	</div>
 	<div class="poll">
-		{#if isPoll}
+		{#if isPoll || (group && group.poll)}
 			<PollCreationModal {groupId} {group} />
 		{/if}
 	</div>
