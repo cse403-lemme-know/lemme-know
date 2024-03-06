@@ -97,15 +97,66 @@
 <style>
 	.modal {
 		background-color: #f0f0f0;
+		padding: 20px;
+		border-radius: 5px;
+		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+		margin-bottom: 20px;
 	}
 
 	.poll {
 		background-color: #f0f0f0;
-		padding: 20px;
+		padding: 10px;
 		border-radius: 5px;
+		box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+		margin-bottom: 20px;
 	}
 
 	.option {
-		margin-bottom: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 5px;
+		border-radius: 5px;
+		background-color: #ffffff;
+		box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.option input[type='text'] {
+		flex-grow: 1;
+		margin-right: 5px;
+		font-size: 14px;
+	}
+
+	.option button {
+		margin-left: 5px;
+		padding: 5px;
+		border: none;
+		border-radius: 3px;
+		background-color: #4caf50;
+		color: white;
+		cursor: pointer;
+		font-size: 12px;
+	}
+
+	.poll h2 {
+		margin-bottom: 5px;
+		font-size: 18px;
+	}
+
+	.poll p {
+		margin-top: 10px;
+		font-weight: bold;
+		font-size: 14px;
+	}
+
+	.poll button {
+		padding: 5px 10px;
+		border: none;
+		border-radius: 5px;
+		background-color: #f44336;
+		color: white;
+		cursor: pointer;
+		margin-top: 10px;
+		font-size: 14px;
 	}
 </style>

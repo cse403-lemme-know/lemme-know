@@ -305,7 +305,7 @@
 			</button>
 			<button class="menu-button" on:click={openPoll}>
 				<img src="../poll.png" alt="menu bar" class="poll-icon" />
-				<span class="poll-title">Poll</span>
+				<span class="members-title">Poll</span>
 			</button>
 			<button
 				on:click={() => {
@@ -477,7 +477,7 @@
 	.poll-icon {
 		width: 3rem;
 		display: block;
-		margin-left: 1.5rem;
+		margin-left: 2.5rem;
 	}
 
 	.menu-button {
@@ -534,19 +534,6 @@
 		font-family: 'Baloo Da 2';
 		font-weight: bold;
 		font-size: large;
-	}
-
-	.poll-title {
-		display: flex;
-		align-items: flex-start;
-		justify-content: center;
-		text-align: center;
-		font-size: 1.5rem;
-		margin-top: 0.25rem;
-		margin-left: 0.5rem;
-		font-family: 'Baloo Bhai 2';
-		font-weight: bolder;
-		color: black;
 	}
 
 	.menu-button:hover .hamburger-icon {
