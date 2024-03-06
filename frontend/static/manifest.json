@@ -1,0 +1,19 @@
+{
+	"name": "LemmeKnow",
+	"short_name": "LemmeKnow",
+	"description": "Group activity coordination.",
+	"categories": [],
+	"display": "standalone",
+	"orientation": "landscape",
+	"id": "/lemmeknow",
+	"start_url": "/",
+	"icons": [
+		{
+			"src": "/icon.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		}
+	],
+	"screenshots": [],
+	"handle_links": "not-preferred"
+}
