@@ -304,8 +304,8 @@
 				<span class="members-title">Members</span>
 			</button>
 			<button class="menu-button" on:click={openPoll}>
-				<img src="../poll.png" alt="menu bar" class="poll-icon" />
-				<span class="members-title">Poll</span>
+				<img src="../vote.png" alt="menu bar" class="poll-icon" />
+				<span class="members-title-poll">Poll</span>
 			</button>
 			<button
 				on:click={() => {
@@ -518,6 +518,18 @@
 		font-size: 1.5rem;
 		margin-top: 0.25rem;
 		margin-left: 1rem;
+		font-family: 'Baloo Bhai 2';
+		font-weight: bolder;
+		color: black;
+	}
+	.members-title-poll {
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		text-align: center;
+		font-size: 1.5rem;
+		margin-top: 0.25rem;
+		margin-left: 2rem;
 		font-family: 'Baloo Bhai 2';
 		font-weight: bolder;
 		color: black;
