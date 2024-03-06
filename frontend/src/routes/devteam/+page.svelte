@@ -7,15 +7,15 @@
 	<div class="team-section">
 		<div class="team-member">
 			<span class="role">Finn Bear:</span> Backend Developer
-			<img class="team-member-image" src="../finn.png" alt="Finn Bear">
+			<img class="team-member-image" src="../finn.png" alt="Finn Bear" />
 		</div>
 		<div class="team-member">
 			<span class="role">Daven Tejalaksana:</span> Backend Developer
-			<img class="team-member-image" src="daven.png" alt="Daven Tejalaksana">
+			<img class="team-member-image" src="daven.png" alt="Daven Tejalaksana" />
 		</div>
 		<div class="team-member">
 			<span class="role">Mohamad Abdi:</span> Backend Developer
-			<img class="team-member-image" src="../mohamed.png" alt="Mohamad Abdi">
+			<img class="team-member-image" src="../mohamed.png" alt="Mohamad Abdi" />
 		</div>
 	</div>
 
@@ -23,11 +23,11 @@
 	<div class="team-section">
 		<div class="team-member">
 			<span class="role">Brooklyn Zhu:</span> Frontend Developer
-			<img class="team-member-image" src="../brooklyn.png" alt="Brooklyn Zhu">
+			<img class="team-member-image" src="../brooklyn.png" alt="Brooklyn Zhu" />
 		</div>
 		<div class="team-member">
 			<span class="role">Zohar Le:</span> Frontend Developer
-			<img class="team-member-image" src="../zohar.png" alt="Zohar Le">
+			<img class="team-member-image" src="../zohar.png" alt="Zohar Le" />
 		</div>
 	</div>
 </main>
@@ -71,5 +71,4 @@
 		display: block;
 		margin: 10px auto;
 	}
-
 </style>
