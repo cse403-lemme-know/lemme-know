@@ -286,6 +286,13 @@ async function updateStatus(status) {
 	}
 }
 
+/**
+ * @param {any[]} messages
+ */
+function sortMessages(messages) {
+	messages.sort((a, b) => a.timestamp - b.timestamp);
+}
+
 async function fetchMessages(groupId, start, end) {
 	try {
 		const response = await fetch(
@@ -304,7 +311,7 @@ async function fetchMessages(groupId, start, end) {
 				existing[groupId] = { messages: [] };
 			}
 			existing[groupId].messages = existing[groupId].messages.concat(result.messages);
-			console.log('Existing :', JSON.stringify(existing));
+			sortMessages(existing[groupId].messages);
 			return existing;
 		});
 	} catch (e) {
@@ -336,6 +343,7 @@ async function openWebSocket() {
 					existing[message.message.groupId] = [];
 				}
 				existing[message.message.groupId].messages.push(message.message);
+				sortMessages(existing[message.message.groupId].messages);
 				return existing;
 			});
 		}
