@@ -3,7 +3,7 @@
 
 <main class="container">
 	<h1>LemmeKnow</h1>
-	<p>Description</p>
+	<h2>Description</h2>
 	<article>
 		<p>
 			LemmeKnow helps small groups, such as groups of students or friends, organize meetings or

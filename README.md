@@ -26,6 +26,7 @@ LemmeKnow helps small groups, such as groups of students or friends, organize me
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) offers advice on contributing
 - [`.github/workflows/`](./.github/workflows/) contains the CI
   - [here](https://github.com/cse403-lemmeknow/lemmeknow/actions) is the build history
+- Our [user manual](https://lemmeknow.xyz/features) is hosted along with the software
 
 ## Prerequisites
 
