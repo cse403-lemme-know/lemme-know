@@ -1,6 +1,8 @@
 <script>
+	// @ts-nocheck
+
 	import PollCreationModal from './PollCreationModal.svelte';
-	import { sendMessage } from '$lib/model';
+	import { sendMessage, users } from '$lib/model';
 
 	export let groupId;
 	export let group;
@@ -32,9 +34,11 @@
 			{#each group.messages as message (message.timestamp)}
 				<div class:message class:message.sender={message.sender}>
 					{#if true}
-						<strong class="user-message">{message.sender}:</strong> {message.content}
-					{:else if message.sender === 'system'}
-						<em class="system-message">{message.text}</em>
+						{#if $users[message.sender] && $users[message.sender].name !== ''}
+							<strong class="user-message">{$users[message.sender].name}:</strong> {message.content}
+						{:else}
+							<strong class="user-message">{message.sender}:</strong> {message.content}
+						{/if}
 					{/if}
 				</div>
 			{/each}
@@ -42,7 +46,7 @@
 	</div>
 	<div class="poll">
 		{#if isPoll}
-			<PollCreationModal />
+			<PollCreationModal {groupId} {group} />
 		{/if}
 	</div>
 	<div class="input-bar">
@@ -88,11 +92,6 @@
 	.user-message {
 		background-color: #e6f7ff;
 		text-align: right;
-	}
-
-	.system-message {
-		color: #888;
-		font-style: italic;
 	}
 
 	.input-bar {
