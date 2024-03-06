@@ -247,6 +247,13 @@ async function updateUserName(userId, newName) {
 	}
 }
 
+/**
+ * @param {any[]} messages
+ */
+function sortMessages(messages) {
+	messages.sort((a, b) => a.timestamp - b.timestamp);
+}
+
 async function fetchMessages(groupID, start, end) {
 	try {
 		const response = await fetch(

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -50,10 +51,11 @@ type Database interface {
 	//
 	// Returns an error if the operation could not be completed.
 	UpdateGroup(GroupID, func(group *Group) error) error
-	// Reads group chat messagses, on or after startTime and on or before endTime, from the database.
+	// Reads group chat messagses, on or after startTime, on or before endTime, and in chronological order,
+	// from the database.
 	//
 	// May not return all messages. If the returned `bool` is true, there may be
-	// messages remaining (set `startTime` to the latest `message.Timestamp` and try again).
+	// messages remaining (set `startTime` to the earliest `message.Timestamp` and try again).
 	ReadMessages(GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error)
 	// Returns an error if the operation could not be completed.
 	DeleteGroup(GroupID) error
@@ -246,8 +248,12 @@ func (dynamoDB *DynamoDB) UpdateGroup(groupID GroupID, transaction func(*Group) 
 func (dynamoDB *DynamoDB) ReadMessages(groupID GroupID, startTime UnixMillis, endTime UnixMillis) ([]Message, bool, error) {
 	var messages []Message
 	const limit = 5
+	// Iterate in reverse to get the recent ones first.
 	err := dynamoDB.messages.Get("GroupID", groupID).Range("Timestamp", "BETWEEN", startTime, endTime).Consistent(true).Order(dynamo.Descending).Limit(limit).All(&messages)
-	slices.Sort()
+	// Sort in chronological order again.
+	slices.SortFunc(messages, func(a Message, b Message) int {
+		return cmp.Compare(a.Timestamp, b.Timestamp)
+	})
 	return messages, len(messages) >= limit, err
 }
 
@@ -416,19 +422,18 @@ func (memoryDatabase *MemoryDatabase) ReadMessages(groupID GroupID, startTime Un
 	memoryDatabase.mu.Lock()
 	defer memoryDatabase.mu.Unlock()
 	var messages []Message
-	var more bool
 	// Okay to do inefficient linear table scan on mock database.
 	for _, message := range memoryDatabase.messages {
 		if message.GroupID != groupID || message.Timestamp < startTime || message.Timestamp > endTime {
 			continue
 		}
-		if len(messages) >= 5 {
-			more = true
-			break
-		}
 		messages = append(messages, message)
 	}
-	return messages, more, nil
+	slices.SortFunc(messages, func(a Message, b Message) int {
+		return cmp.Compare(a.Timestamp, b.Timestamp)
+	})
+	first := max(len(messages)-5, 0)
+	return messages[first:], first > 0, nil
 }
 
 func (memoryDatabase *MemoryDatabase) DeleteGroup(groupID GroupID) error {
