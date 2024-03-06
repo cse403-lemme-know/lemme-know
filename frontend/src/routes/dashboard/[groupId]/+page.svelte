@@ -229,9 +229,9 @@
 
 	function openPoll() {
 		if (isPoll) {
-			isPoll = false
+			isPoll = false;
 		} else {
-			isPoll = true
+			isPoll = true;
 		}
 	}
 
