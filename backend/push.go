@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
+	"slices"
 	"strings"
 	"sync"
 
@@ -66,10 +68,6 @@ func pushGroup(group *Group, data any, database Database) {
 func RestPushAPI(router *mux.Router, database Database, notification Notification) {
 	router.Use(AuthenticateMiddleware(database))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			return
-		}
-
 		switch r.Method {
 		case http.MethodGet:
 			_, vapidPublicKey, err := getVAPIDKeys(database)
@@ -88,6 +86,7 @@ func RestPushAPI(router *mux.Router, database Database, notification Notificatio
 			}
 			user := r.Context().Value(UserKey).(*User)
 			if err := database.UpdateUser(user.UserID, func(user *User) error {
+				user.Subscriptions = slices.DeleteFunc(user.Subscriptions, func(s webpush.Subscription) bool { return reflect.DeepEqual(s, request) })
 				user.Subscriptions = append(user.Subscriptions, request)
 				return nil
 			}); err != nil {
