@@ -361,6 +361,11 @@
 		<Chat {groupId} {group} bind:isPoll />
 
 		<div class="calendar-container">
+			{#if $users[$userId] && $users[$userId].name}
+				<div class="name-display">
+					<h2>Hello, {$users[$userId].name}!</h2>
+				</div>
+			{/if}
 			<span class="calendar-title">AVAILABILITY CALENDAR</span>
 			{#each Object.keys(availability) as day}
 				<div class="day">
@@ -383,12 +388,27 @@
 					</div>
 				</div>
 			{/each}
+			{#if commonAvailability.isLoading}
+				<div class="common-availability-message">CALCULATING COMMON AVAILABILITIES...</div>
+			{:else if commonAvailability.slots.length > 0}
+				<div class="common-availability-message">
+					<strong>Common Availabilities:</strong>
+					<ul>
+						{#each commonAvailability.slots as slot}
+							<li>{slot}</li>
+						{/each}
+					</ul>
+				</div>
+			{:else}
+				<div class="common-availability-message">NO COMMON AVAILABILITIES FOUND.</div>
+			{/if}
 			<form on:submit|preventDefault={() => addTask(taskInput)}>
 				<input
 					type="text"
 					bind:value={taskInput}
 					placeholder="Enter task description (50 characters max)"
 					maxlength="50"
+					style="margin-bottom: -3rem;"
 				/>
 				<button type="submit" disabled={!taskInput.trim()}>Add Task</button>
 			</form>
@@ -405,7 +425,7 @@
 						/>
 						<span class={task.completed ? 'completed-task' : ''}>{task.title}</span>
 						{#if task.assignee}
-							<span class={task.completed ? 'completed-task' : ''}
+							<span class={task.completed ? 'completed-task' : 'incomplete-task'}
 								>Assigned to: {getAssigneeDisplayName(task.assignee, $users)}</span
 							>
 						{/if}
@@ -418,20 +438,6 @@
 					</div>
 				{/if}
 			{/each}
-			{#if commonAvailability.isLoading}
-				<div class="common-availability-message">CALCULATING COMMON AVAILABILITIES...</div>
-			{:else if commonAvailability.slots.length > 0}
-				<div class="common-availability-message">
-					<strong>Common Availabilities:</strong>
-					<ul>
-						{#each commonAvailability.slots as slot}
-							<li>{slot}</li>
-						{/each}
-					</ul>
-				</div>
-			{:else}
-				<div class="common-availability-message">NO COMMON AVAILABILITIES FOUND.</div>
-			{/if}
 		</div>
 	</div>
 </main>
@@ -444,9 +450,21 @@
 		flex-direction: column;
 		text-align: center;
 		font-size: 3rem;
-		margin-top: 0.25rem;
 		font-family: 'Baloo Bhai 2';
-		margin-left: 1rem;
+		margin-left: 0.5rem;
+		font-weight: bolder;
+		color: black;
+	}
+	.name-display {
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		flex-direction: column;
+		text-align: center;
+		font-size: 1.5rem;
+		font-family: 'Baloo Bhai 2';
+		margin-left: 2rem;
+		margin-bottom: -2.5rem; /* Adjusted margin-bottom */
 		font-weight: bolder;
 		color: black;
 	}
@@ -571,7 +589,6 @@
 		flex-direction: column;
 		flex-wrap: wrap;
 		margin-left: 2rem;
-		margin-top: 3rem;
 		margin-bottom: 0.15rem;
 	}
 
@@ -633,7 +650,7 @@
 		border-radius: 0.2rem;
 		font-family: 'Baloo Bhai 2';
 		align-items: center;
-		font-size: 1.25rem;
+		font-size: 1rem;
 		margin-top: 0;
 		margin-bottom: 0.5rem;
 	}
