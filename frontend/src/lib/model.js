@@ -302,9 +302,10 @@ async function fetchMessages(groupId, start, end) {
 			}
 		);
 		const result = await response.json();
-		// if (result.continue == true) {
-		// 	result.messages[result.messages.length - 1].timestamp + 1;
-		// }
+		if (result.continue == true) {
+			const newEnd = result.messages[0].timestamp - 1;
+			fetchMessages(groupId, start, newEnd);
+		}
 		console.log(result);
 		groups.update((existing) => {
 			if (!(groupId in existing)) {
