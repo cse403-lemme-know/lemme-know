@@ -366,6 +366,11 @@
 					<h2>Hello, {$users[$userId].name}!</h2>
 				</div>
 			{/if}
+			{#if group}
+				<div class="group-name-display">
+					<h2>Welcome to "{group.name}"!</h2>
+				</div>
+			{/if}
 			<span class="calendar-title">AVAILABILITY CALENDAR</span>
 			{#each Object.keys(availability) as day}
 				<div class="day">
@@ -464,7 +469,23 @@
 		font-size: 1.5rem;
 		font-family: 'Baloo Bhai 2';
 		margin-left: 2rem;
+		margin-top: -1rem;
 		margin-bottom: -2.5rem; /* Adjusted margin-bottom */
+		font-weight: bolder;
+		color: black;
+	}
+
+	.group-name-display {
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		flex-direction: column;
+		text-align: center;
+		font-size: 1.25rem;
+		font-family: 'Baloo Bhai 2';
+		margin-left: 2rem;
+		margin-top: -1rem;
+		margin-bottom: -2rem; /* Adjusted margin-bottom */
 		font-weight: bolder;
 		color: black;
 	}
