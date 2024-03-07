@@ -89,11 +89,13 @@
 		background-color: #f0f0f0;
 		border-radius: 4px;
 		word-wrap: break-word;
+		font-family: 'Playfair Display', serif;
 	}
 
 	.user-message {
 		background-color: #e6f7ff;
 		text-align: right;
+		font-family: 'Poppins', sans-serif;
 	}
 
 	.input-bar {

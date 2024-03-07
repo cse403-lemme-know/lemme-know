@@ -99,6 +99,7 @@
 		background-color: #f0f0f0;
 		padding: 20px;
 		border-radius: 5px;
+		font-family: 'Baloo Bhai 2';
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 		margin-bottom: 20px;
 	}
@@ -107,6 +108,7 @@
 		background-color: #f0f0f0;
 		padding: 10px;
 		border-radius: 5px;
+		font-family: 'Baloo Bhai 2';
 		box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 		margin-bottom: 20px;
 	}
@@ -132,7 +134,7 @@
 		padding: 5px;
 		border: none;
 		border-radius: 3px;
-		background-color: #4caf50;
+		background-color: #f44336;
 		color: white;
 		cursor: pointer;
 		font-size: 12px;
@@ -153,7 +155,7 @@
 		padding: 5px 10px;
 		border: none;
 		border-radius: 5px;
-		background-color: #f44336;
+		background-color: #4caf50;
 		color: white;
 		cursor: pointer;
 		margin-top: 10px;
