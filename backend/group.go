@@ -18,7 +18,7 @@ const (
 // Group sent over JSON.
 type GetGroupResponse struct {
 	Name           string                         `json:"name"`
-	Members        []UserID                       `json:"members,omitempty"`
+	Members        []UserID                       `json:"members"`
 	Poll           *GetGroupResponsePoll          `json:"poll"`
 	Availabilities []GetGroupResponseAvailability `json:"availabilities"`
 	Activities     []GetGroupResponseActivity     `json:"activities"`
@@ -34,7 +34,7 @@ type GetGroupResponsePoll struct {
 
 // Poll option sent over JSON.
 type GetGroupResponsePollOption struct {
-	Name  string   `json:"option"`
+	Name  string   `json:"name"`
 	Votes []UserID `json:"votes"`
 }
 
@@ -193,7 +193,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 				for _, option := range group.Poll.Options {
 					response.Poll.Options = append(response.Poll.Options, GetGroupResponsePollOption{
 						Name:  censor(option.Name),
-						Votes: option.Votes,
+						Votes: append([]UserID{}, option.Votes...),
 					})
 				}
 			}
@@ -205,7 +205,7 @@ func RestSpecificGroupAPI(router *mux.Router, database Database, notification No
 					Date:       activity.Date,
 					Start:      activity.Start,
 					End:        activity.End,
-					Confirmed:  activity.Confirmed,
+					Confirmed:  append([]UserID{}, activity.Confirmed...),
 				})
 			}
 

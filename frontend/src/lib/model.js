@@ -1,17 +1,36 @@
+// @ts-nocheck
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
 
-// Mapping of group ID to {...group, messages: []} (from backend).
+// Mapping of group ID to {...group, messages: []} where group is group data from the backend and messages is an array of chat messages from the backend.
+//
+// This should be updated by various `get` methods (using `fetch` internally) and also by the `WebSocket`.
+//
+// Most dashboard Svelte components will derive their properties/state from one particular group.
+//
+// In particular, the top level dashboard page will read the store, and pass the relevant group (as determined by group ID in path) as a normal property to child components.
 export const groups = writable({});
-// Mapping of user ID to user (from backend);
+// Mapping of user ID to user, where user is user data from the backend.
+//
+// This should be updated by various `get` methods (using `fetch` internally) and also by the `WebSocket`.
+//
+// Most dashboard components will derive usernames and statuses directly from this store.
 export const users = writable({});
 
 export const userId = writable(null);
 
 // @ts-nocheck
-async function getUser() {
+// If `userId` is undefined, gets the currently-logged-in user.
+/**
+ * @param {undefined|string} [userId]
+ */
+async function getUser(userId) {
 	try {
-		const response = await fetch(`//${location.host}/api/user/`);
+		let url = `//${location.host}/api/user/`;
+		if (userId) {
+			url += `${userId}/`;
+		}
+		const response = await fetch(url);
 		const user = await response.json();
 		return user;
 	} catch (e) {
@@ -21,11 +40,23 @@ async function getUser() {
 
 export async function refreshGroup(groupId) {
 	const group = await getGroup(groupId);
-	console.log(group);
 	groups.update((existing) => {
 		return {
-			[groupId]: { ...group, messages: existing[groupId] ? existing[groupId].messages : [] },
-			...existing
+			...existing,
+			[groupId]: { ...group, messages: existing[groupId] ? existing[groupId].messages : [] }
+		};
+	});
+}
+
+/**
+ * @param {string} userId
+ */
+export async function refreshUser(userId) {
+	const user = await getUser(userId);
+	users.update((existing) => {
+		return {
+			...existing,
+			[userId]: user
 		};
 	});
 }
@@ -145,14 +176,10 @@ async function getGroup(groupId) {
 	}
 }
 
-getUser().then((user) => {
-	userId.set(user.userId);
-});
-
 async function createPoll(groupId, title, options) {
 	try {
 		const response = await fetch(`//${location.host}/api/group/${groupId}/poll/`, {
-			method: 'PATCH',
+			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json'
 			},
@@ -160,6 +187,8 @@ async function createPoll(groupId, title, options) {
 		});
 		if (response.status === 200) {
 			console.log('success for creating poll');
+			const group = await getGroup(groupId);
+			console.log('poll as: ', group.poll);
 		}
 	} catch (e) {
 		return null;
@@ -204,19 +233,90 @@ async function sendMessage(groupID, content) {
 	}
 }
 
-async function fetchMessages(groupID, start, end) {
+async function updateUserName(userId, newName) {
+	try {
+		const response = await fetch(`//${location.host}/api/user/`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ userId: userId, name: newName })
+		});
+		if (response.ok) {
+			users.update((allUsers) => {
+				if (allUsers[userId]) {
+					allUsers[userId].name = newName;
+				}
+				return allUsers;
+			});
+			return true;
+		} else {
+			console.error('Failed to update user name');
+			return false;
+		}
+	} catch (e) {
+		console.error('Error updating user name:', e);
+		return false;
+	}
+}
+
+async function updateStatus(status) {
+	try {
+		const response = await fetch(`/api/user/`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ status: status })
+		});
+
+		if (response.ok) {
+			console.log(`Status updated to ${status}`);
+			users.update((u) => {
+				if (u[userId]) {
+					u[userId].status = status;
+				}
+				return u;
+			});
+		} else {
+			console.error('Failed to update status');
+		}
+	} catch (error) {
+		console.error('Error updating status:', error);
+	}
+}
+
+/**
+ * @param {any[]} messages
+ */
+function sortMessages(messages) {
+	messages.sort((a, b) => a.timestamp - b.timestamp);
+}
+
+async function fetchMessages(groupId, start, end) {
 	try {
 		const response = await fetch(
-			`//${location.host}/api/group/${groupID}/chat/?` + new URLSearchParams({ start, end }),
+			`//${location.host}/api/group/${groupId}/chat/?` + new URLSearchParams({ start, end }),
 			{
 				method: 'GET'
 			}
 		);
 		const result = await response.json();
 		if (result.continue == true) {
-			result.messages[result.messages.length - 1].timestamp + 1;
+			const newEnd = result.messages[0].timestamp - 1;
+			fetchMessages(groupId, start, newEnd);
 		}
+		console.log(result);
+		groups.update((existing) => {
+			if (!(groupId in existing)) {
+				existing[groupId] = { messages: [] };
+			}
+			existing[groupId].messages = existing[groupId].messages.concat(result.messages);
+			sortMessages(existing[groupId].messages);
+			return existing;
+		});
 	} catch (e) {
+		console.log(e);
 		return null;
 	}
 }
@@ -229,13 +329,13 @@ async function openWebSocket() {
 	webSocket.onmessage = (event) => {
 		console.log(event);
 		const message = JSON.parse(event.data);
-		console.log(message);
+		console.log('message', message);
 		if (message.group) {
 			refreshGroup(message.group.groupId);
 		}
 		if (message.user) {
 			users.update((existing) => {
-				return { [message.user.userId]: message.user, ...existing };
+				return { ...existing, [message.user.userId]: { ...message.user, userId: undefined } };
 			});
 		}
 		if (message.message) {
@@ -244,6 +344,7 @@ async function openWebSocket() {
 					existing[message.message.groupId] = [];
 				}
 				existing[message.message.groupId].messages.push(message.message);
+				sortMessages(existing[message.message.groupId].messages);
 				return existing;
 			});
 		}
@@ -255,6 +356,11 @@ async function openWebSocket() {
 if (browser) {
 	getUser().then((user) => {
 		console.log(user);
+		userId.set(user.userId);
+		users.update((allUsers) => {
+			allUsers[user.userId] = user;
+			return allUsers;
+		});
 		openWebSocket();
 	});
 }
@@ -272,5 +378,7 @@ export {
 	getGroup,
 	deleteTask,
 	deleteAvailability,
-	updateTask
+	updateTask,
+	updateUserName,
+	updateStatus
 };

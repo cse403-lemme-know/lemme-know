@@ -1,12 +1,12 @@
 <script>
 	//@ts-nocheck
-	// import { createPoll, updateVotes, deletePoll } from '$lib/model';
-	// import { groupId } from '$lib/stores';
+	import { createPoll, updateVotes, deletePoll } from '$lib/model';
 
+	export let groupId;
+	export let group;
 	let title = '';
 	let options = [];
-	let pollData = null;
-	let votes = {};
+	let votes = [];
 
 	function addOption() {
 		options = [...options, ''];
@@ -16,36 +16,46 @@
 		options = options.filter((_, i) => i !== index);
 	}
 
-	async function handleCreatePoll() {
-		pollData = {
-			name: title,
-			options: options
-		};
-		// pollData = await createPoll($groupId, title, options);
+	function handleCreatePoll() {
+		createPoll(groupId, title, options);
 	}
-
-	function handleUpdateVotes(optionIndex) {
-		if (votes[optionIndex] === undefined) {
-			votes[optionIndex] = 1;
+	// function addVote(vote) {
+	// 	votes = [...votes, vote];
+	// }
+	function addVote(vote) {
+		if (votes.includes(vote)) {
+			votes = votes.filter((v) => v !== vote);
 		} else {
-			votes[optionIndex]++;
+			votes = [...votes, vote];
 		}
-		// votes = updateVotes(votes);
+		updateVotes(groupId, votes);
+	}
+	function handleUpdateVotes(vote) {
+		addVote(vote);
+		updateVotes(groupId, votes);
+	}
+	function handleDeletePoll() {
+		deletePoll(groupId);
+		votes = [];
 	}
 
-	function getTotalVotes() {
-		return Object.values(votes).reduce((acc, curr) => acc + curr, 0);
-	}
+	$: totalVotes = group.poll
+		? group.poll.options.reduce((acc, option) => acc + option.votes.length, 0)
+		: 0;
 
-	function getPercentage(optionIndex) {
-		const totalVotes = getTotalVotes();
-		return totalVotes === 0 ? 0 : ((votes[optionIndex] || 0) / totalVotes) * 100;
-	}
+	// function getTotalVotes() {
+	// 	if (!group.poll || !group.poll.options) {
+	// 		return 0;
+	// 	}
+	// 	return group.poll.options.reduce((total, opt) => total + opt.votes.length, 0);
+	// }
 
-	console.log('createPoll');
+	function getPercentage(numVotes) {
+		return totalVotes === 0 ? 0 : ((numVotes || 0) / totalVotes) * 100;
+	}
 </script>
 
-{#if !pollData}
+{#if !group.poll}
 	<div class="modal">
 		<div class="modal-content">
 			<h2>Create Poll</h2>
@@ -66,31 +76,89 @@
 	</div>
 {:else}
 	<div class="poll">
-		<h2>{pollData.name}</h2>
-		{#each pollData.options as option, index}
+		<h2>{group.poll.title}</h2>
+		{#each group.poll.options as option}
 			<div class="option">
-				<span>{option}</span>
-				<button on:click={() => handleUpdateVotes(index)}>Vote</button>
-				<span>({votes[index] || 0} votes)</span>
-				<span>({getPercentage(index).toFixed(2)}% of total votes)</span>
+				<span>{option.name}</span>
+				<!-- <button on:click={() => handleUpdateVotes(option.option)}>Vote</button> -->
+				<button on:click={() => handleUpdateVotes(option.name)}
+					>{votes.includes(option.name) ? 'Unvote' : 'Vote'}</button
+				>
+
+				<span>({option.votes.length} votes)</span>
+				<span>({getPercentage(option.votes.length).toFixed(2)}%)</span>
 			</div>
 		{/each}
-		<p>Total Votes: {getTotalVotes()}</p>
+		<p>Total Votes: {totalVotes}</p>
+		<button on:click={() => handleDeletePoll()}>Dismiss Poll</button>
 	</div>
 {/if}
 
 <style>
 	.modal {
 		background-color: #f0f0f0;
+		padding: 20px;
+		border-radius: 5px;
+		font-family: 'Baloo Bhai 2';
+		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+		margin-bottom: 20px;
 	}
 
 	.poll {
 		background-color: #f0f0f0;
-		padding: 20px;
+		padding: 10px;
 		border-radius: 5px;
+		font-family: 'Baloo Bhai 2';
+		box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+		margin-bottom: 20px;
 	}
 
 	.option {
-		margin-bottom: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 5px;
+		border-radius: 5px;
+		background-color: #ffffff;
+		box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.option input[type='text'] {
+		flex-grow: 1;
+		margin-right: 5px;
+		font-size: 14px;
+	}
+
+	.option button {
+		margin-left: 5px;
+		padding: 5px;
+		border: none;
+		border-radius: 3px;
+		background-color: #f44336;
+		color: white;
+		cursor: pointer;
+		font-size: 12px;
+	}
+
+	.poll h2 {
+		margin-bottom: 5px;
+		font-size: 18px;
+	}
+
+	.poll p {
+		margin-top: 10px;
+		font-weight: bold;
+		font-size: 14px;
+	}
+
+	.poll button {
+		padding: 5px 10px;
+		border: none;
+		border-radius: 5px;
+		background-color: #4caf50;
+		color: white;
+		cursor: pointer;
+		margin-top: 10px;
+		font-size: 14px;
 	}
 </style>

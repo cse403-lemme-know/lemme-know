@@ -10,6 +10,8 @@ resource "aws_lambda_function" "backend" {
   environment {
     variables = {
       AWS_API_GATEWAY_WS_ENDPOINT = replace(aws_apigatewayv2_stage.backend.invoke_url, "wss:", "https:")
+      AWS_LAMBDA_ARN              = "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:lemmeknow-backend"
+      AWS_SCHEDULER_ROLE_ARN      = aws_iam_role.backend_role.arn
       #AWS_REGION                 = var.region
     }
   }
@@ -29,7 +31,7 @@ data "aws_iam_policy_document" "backend_role" {
     ]
     principals {
       type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
+      identifiers = ["lambda.amazonaws.com", "scheduler.amazonaws.com"]
     }
   }
 }
@@ -78,5 +80,19 @@ data "aws_iam_policy_document" "backend_policy" {
     resources = [
       "arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.backend.id}/*/*/*"
     ]
+  }
+  statement {
+    sid = "scheduler"
+    actions = [
+      "scheduler:CreateSchedule"
+    ]
+    resources = ["*"]
+  }
+  statement {
+    sid = "iam"
+    actions = [
+      "iam:PassRole"
+    ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/lemmeknow-backend-role"]
   }
 }

@@ -12,9 +12,9 @@ import (
 // User sent over JSON.
 type GetUserResponse struct {
 	UserID UserID    `json:"userId"`
-	Name   string    `json:"name,omitempty"`
+	Name   string    `json:"name"`
 	Status string    `json:"status"`
-	Groups []GroupID `json:"groups,omitempty"`
+	Groups []GroupID `json:"groups"`
 }
 
 // User edit sent over JSON.
@@ -56,7 +56,7 @@ func RestSpecificUserAPI(router *mux.Router, database Database) {
 			WriteJSON(w, GetUserResponse{
 				UserID: subjectUser.UserID,
 				Name:   subjectUser.Name,
-				Groups: subjectUser.Groups,
+				// omit Groups: subjectUser.Groups for privacy!
 				Status: subjectUser.Status,
 			})
 		default:
@@ -97,7 +97,7 @@ func RestUserAPI(router *mux.Router, database Database, notification Notificatio
 			WriteJSON(w, GetUserResponse{
 				UserID: user.UserID,
 				Name:   user.Name,
-				Groups: user.Groups,
+				Groups: append([]GroupID{}, user.Groups...),
 				Status: user.Status,
 			})
 		case http.MethodPatch:
