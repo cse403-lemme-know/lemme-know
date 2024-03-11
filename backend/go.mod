@@ -7,7 +7,7 @@ toolchain go1.21.6
 require (
 	github.com/Appboy/webpush-go v0.0.0-20221006204155-f206645c3cb7
 	github.com/aws/aws-lambda-go v1.46.0
-	github.com/aws/aws-sdk-go v1.50.30
+	github.com/aws/aws-sdk-go v1.50.35
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.1
 	github.com/finnbear/moderation v0.11.4
 	github.com/gorilla/handlers v1.5.2
